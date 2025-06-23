@@ -32,6 +32,7 @@ License
 #include "demandDrivenData.H"
 #include "HashSet.H"
 #include "boolList.H"
+#include "SLList.H"
 
 //#define DEBUG_ZIPUP
 
@@ -457,7 +458,22 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
 
                 if (pointChain.size() > 2)
                 {
-                    edgesToInsert[nEdgesToInsert] = pointChain;
+                    // OLD: edgesToInsert[nEdgesToInsert] = pointChain;
+
+                    // Cannot use std::copy algorithm
+                    // - SLList doesn't define iterator category
+
+                    auto& dest = edgesToInsert[nEdgesToInsert];
+                    dest.resize_nocopy(pointChain.size());
+
+                    auto iter = dest.begin();
+
+                    for (const auto& val : pointChain)
+                    {
+                        *iter = val;
+                        ++iter;
+                    }
+
                     nEdgesToInsert++;
                 }
             }

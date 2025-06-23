@@ -31,7 +31,6 @@ License
 #include "polyMeshGenModifier.H"
 #include "demandDrivenData.H"
 #include "polyMeshGenAddressing.H"
-#include "SLList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
