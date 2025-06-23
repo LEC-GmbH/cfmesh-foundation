@@ -403,8 +403,7 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
         {
             procPatches[Pstream::myProcNo()][i] = flattenedPatches[i];
         }
-        Pstream::gatherList(procPatches);
-        Pstream::scatterList(procPatches);
+        Pstream::allGatherList(procPatches);
 
         forAll(procPatches, procI)
         {

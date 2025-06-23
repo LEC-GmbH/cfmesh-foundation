@@ -186,8 +186,7 @@ void Foam::Module::partTriMesh::createParallelAddressing
     labelList nPointsAtProc(Pstream::nProcs());
     nSharedPoints -= nLocalPoints;
     nPointsAtProc[Pstream::myProcNo()] = pts.size() - nSharedPoints;
-    Pstream::gatherList(nPointsAtProc);
-    Pstream::scatterList(nPointsAtProc);
+    Pstream::allGatherList(nPointsAtProc);
 
     for (label i = 0; i < Pstream::myProcNo(); ++i)
     {

@@ -127,8 +127,7 @@ void Foam::Module::meshOctreeModifier::loadDistribution
 
     labelList procWeights(Pstream::nProcs());
     procWeights[Pstream::myProcNo()] = localNumWeighs;
-    Pstream::gatherList(procWeights);
-    Pstream::scatterList(procWeights);
+    Pstream::allGatherList(procWeights);
 
     for (label procI = 0; procI < Pstream::myProcNo(); ++procI)
         doBalancing += procWeights[procI];
@@ -194,8 +193,7 @@ void Foam::Module::meshOctreeModifier::loadDistribution
         sendToProcesssors[Pstream::myProcNo()][counter++] = it->first;
     }
 
-    Pstream::gatherList(sendToProcesssors);
-    Pstream::scatterList(sendToProcesssors);
+    Pstream::allGatherList(sendToProcesssors);
 
     labelHashSet receiveFrom;
     forAll(sendToProcesssors, procI)

@@ -412,8 +412,7 @@ Foam::label Foam::Module::help::groupMarking
         labelList nGroupsAtProc(Pstream::nProcs());
         nGroupsAtProc[Pstream::myProcNo()] = nGroups;
 
-        Pstream::gatherList(nGroupsAtProc);
-        Pstream::scatterList(nGroupsAtProc);
+        Pstream::allGatherList(nGroupsAtProc);
 
         label startGroup(0), totalNumGroups(0);
         for (label procI = 0; procI < Pstream::nProcs(); ++procI)

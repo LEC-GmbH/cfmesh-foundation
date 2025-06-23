@@ -183,8 +183,7 @@ void Foam::Module::partTetMesh::createParallelAddressing
     labelList nPointsAtProc(Pstream::nProcs());
     nSharedPoints -= nLocalPoints;
     nPointsAtProc[Pstream::myProcNo()] = points_.size() - nSharedPoints;
-    Pstream::gatherList(nPointsAtProc);
-    Pstream::scatterList(nPointsAtProc);
+    Pstream::allGatherList(nPointsAtProc);
 
     for (label i = 0; i < Pstream::myProcNo(); ++i)
     {

@@ -213,8 +213,8 @@ void Foam::Module::polyMeshGenAddressing::calcGlobalPointLabels() const
     label startPoint(0);
     labelList nPointsAtProc(Pstream::nProcs());
     nPointsAtProc[Pstream::myProcNo()] = nLocalPoints;
-    Pstream::gatherList(nPointsAtProc);
-    Pstream::scatterList(nPointsAtProc);
+    Pstream::allGatherList(nPointsAtProc);
+
     for (label i = 0; i < Pstream::myProcNo(); ++i)
     {
         startPoint += nPointsAtProc[i];
@@ -346,8 +346,8 @@ void Foam::Module::polyMeshGenAddressing::calcGlobalFaceLabels() const
     labelList numberOfInternalFaces(Pstream::nProcs());
     numberOfInternalFaces[Pstream::myProcNo()] = nIntFaces + nBoundaryFaces;
 
-    Pstream::gatherList(numberOfInternalFaces);
-    Pstream::scatterList(numberOfInternalFaces);
+    Pstream::allGatherList(numberOfInternalFaces);
+
     for (label i = 0; i < Pstream::myProcNo(); ++i)
     {
         startFace += numberOfInternalFaces[i];
@@ -418,8 +418,7 @@ void Foam::Module::polyMeshGenAddressing::calcGlobalFaceLabels() const
         numberOfBoundaryFaces[Pstream::myProcNo()][patchI] =
             boundaries[patchI].patchSize();
     }
-    Pstream::gatherList(numberOfBoundaryFaces);
-    Pstream::scatterList(numberOfBoundaryFaces);
+    Pstream::allGatherList(numberOfBoundaryFaces);
 
     forAll(boundaries, patchI)
     {
@@ -467,8 +466,8 @@ void Foam::Module::polyMeshGenAddressing::calcGlobalCellLabels() const
     label startLabel(0);
     labelList nCellsAtProc(Pstream::nProcs());
     nCellsAtProc[Pstream::myProcNo()] = globalCellLabel.size();
-    Pstream::gatherList(nCellsAtProc);
-    Pstream::scatterList(nCellsAtProc);
+    Pstream::allGatherList(nCellsAtProc);
+
     for (label i = 0; i < Pstream::myProcNo(); ++i)
     {
         startLabel += nCellsAtProc[i];
@@ -666,8 +665,8 @@ void Foam::Module::polyMeshGenAddressing::calcGlobalEdgeLabels() const
     label startEdge(0);
     labelList nEdgesAtProc(Pstream::nProcs());
     nEdgesAtProc[Pstream::myProcNo()] = nLocalEdges;
-    Pstream::gatherList(nEdgesAtProc);
-    Pstream::scatterList(nEdgesAtProc);
+    Pstream::allGatherList(nEdgesAtProc);
+
     for (label i = 0; i < Pstream::myProcNo(); ++i)
     {
         startEdge += nEdgesAtProc[i];

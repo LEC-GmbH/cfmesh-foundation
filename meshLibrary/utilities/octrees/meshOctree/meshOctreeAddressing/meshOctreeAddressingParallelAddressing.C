@@ -126,8 +126,7 @@ void Foam::Module::meshOctreeAddressing::calcGlobalPointLabels() const
     }
 
     // exchange data with other processors
-    Pstream::gatherList(nLocalPoints);
-    Pstream::scatterList(nLocalPoints);
+    Pstream::allGatherList(nLocalPoints);
 
     // find the starting point label
     label startPoint(0);
@@ -416,8 +415,7 @@ void Foam::Module::meshOctreeAddressing::calcGlobalLeafLabels() const
     nLeavesAtProc[Pstream::myProcNo()] = nLeaves;
 
     // exchange the data with other processors
-    Pstream::gatherList(nLeavesAtProc);
-    Pstream::scatterList(nLeavesAtProc);
+    Pstream::allGatherList(nLeavesAtProc);
 
     // find the starting labels for
     nLeaves = 0;

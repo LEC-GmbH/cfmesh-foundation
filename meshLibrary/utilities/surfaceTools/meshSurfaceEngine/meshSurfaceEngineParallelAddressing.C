@@ -200,8 +200,8 @@ void Foam::Module::meshSurfaceEngine::calcGlobalBoundaryPointLabels() const
     label startPoint(0);
     labelList nPointsAtProc(Pstream::nProcs());
     nPointsAtProc[Pstream::myProcNo()] = nLocalPoints;
-    Pstream::gatherList(nPointsAtProc);
-    Pstream::scatterList(nPointsAtProc);
+    Pstream::allGatherList(nPointsAtProc);
+
     for (label i = 0; i < Pstream::myProcNo(); ++i)
         startPoint += nPointsAtProc[i];
 
@@ -524,8 +524,8 @@ void Foam::Module::meshSurfaceEngine::calcGlobalBoundaryEdgeLabels() const
     label startEdge(0);
     labelList nEdgesAtProc(Pstream::nProcs());
     nEdgesAtProc[Pstream::myProcNo()] = nLocalEdges;
-    Pstream::gatherList(nEdgesAtProc);
-    Pstream::scatterList(nEdgesAtProc);
+    Pstream::allGatherList(nEdgesAtProc);
+
     for (label i = 0; i < Pstream::myProcNo(); ++i)
         startEdge += nEdgesAtProc[i];
 
@@ -765,8 +765,7 @@ void Foam::Module::meshSurfaceEngine::calcGlobalBoundaryFaceLabels() const
 
     labelList nFacesAtProc(Pstream::nProcs());
     nFacesAtProc[Pstream::myProcNo()] = bFaces.size();
-    Pstream::gatherList(nFacesAtProc);
-    Pstream::scatterList(nFacesAtProc);
+    Pstream::allGatherList(nFacesAtProc);
 
     label startFace(0);
     for (label i = 0; i < Pstream::myProcNo(); ++i)
