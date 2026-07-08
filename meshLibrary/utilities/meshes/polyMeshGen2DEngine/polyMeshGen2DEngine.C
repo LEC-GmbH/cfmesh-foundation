@@ -42,9 +42,7 @@ void Foam::Module::polyMeshGen2DEngine::findActiveFaces() const
 
     activeFacePtr_ = new boolList(faces.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(faces, faceI)
     {
         bool hasZMin(false), hasZMax(false);
@@ -96,9 +94,7 @@ void Foam::Module::polyMeshGen2DEngine::findZMinPoints() const
 
     const scalar tZ = 0.05*(bb_.max().z() - bb_.min().z()); ;
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(points, pointI)
     {
         if (Foam::mag(points[pointI].z() - bb_.min().z()) < tZ)
@@ -157,9 +153,7 @@ void Foam::Module::polyMeshGen2DEngine::findZMinOffsetPoints() const
     zMinToZMaxPtr_ = new labelList(zMinPointLabels.size());
 
     const VRWGraph& pointPoints = mesh_.addressingData().pointPoints();
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(zMinPointLabels, pI)
     {
         const label pointI = zMinPointLabels[pI];
@@ -195,9 +189,7 @@ void Foam::Module::polyMeshGen2DEngine::findZMaxPoints() const
 
     const scalar tZ = 0.05*(bb_.max().z() - bb_.min().z());
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(points, pointI)
     {
         if (Foam::mag(points[pointI].z() - bb_.max().z()) < tZ)
@@ -256,9 +248,7 @@ void Foam::Module::polyMeshGen2DEngine::findZMaxOffsetPoints() const
     zMaxToZMinPtr_ = new labelList(zMaxPointLabels.size());
 
     const VRWGraph& pointPoints = mesh_.addressingData().pointPoints();
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(zMaxPointLabels, pI)
     {
         const label pointI = zMaxPointLabels[pI];
@@ -306,35 +296,23 @@ Foam::Module::polyMeshGen2DEngine::polyMeshGen2DEngine(const polyMeshGen& mesh)
     bb_.min() = point(VGREAT, VGREAT, VGREAT);
     bb_.max() = point(-VGREAT, -VGREAT, -VGREAT);
 
-    # ifdef USE_OMP
     # pragma omp parallel
-    # endif
     {
         point localMin(VGREAT, VGREAT, VGREAT);
         point localMax(-VGREAT, -VGREAT, -VGREAT);
 
-        # ifdef USE_OMP
         # pragma omp for schedule(dynamic, 50)
-        # endif
         forAll(points, pointI)
         {
             localMin = Foam::min(localMin, points[pointI]);
             localMax = Foam::max(localMax, points[pointI]);
         }
 
-        # ifdef USE_OMP
         # pragma omp critical
-        # endif
         {
             bb_.min() = Foam::min(bb_.min(), localMin);
             bb_.max() = Foam::max(bb_.max(), localMax);
         }
-    }
-
-    if (Pstream::parRun())
-    {
-        reduce(bb_.min(), minOp<point>());
-        reduce(bb_.max(), maxOp<point>());
     }
 }
 
@@ -354,9 +332,7 @@ void Foam::Module::polyMeshGen2DEngine::correctPoints()
     const labelList& zMinPointLabels = this->zMinPointLabels();
     const labelList& zMinOffset = this->zMinToZMax();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(zMinPointLabels, apI)
     {
         point& p = points[zMinPointLabels[apI]];

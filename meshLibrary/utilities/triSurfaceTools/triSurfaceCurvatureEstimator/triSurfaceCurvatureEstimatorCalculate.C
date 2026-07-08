@@ -41,177 +41,6 @@ License
 
 #include <map>
 
-//#define DEBUGCurvatureEstimator
-
-// * * * * * * * * * * * * * * * Local Functions * * * * * * * * * * * * * * //
-
-#ifdef DEBUGCurvatureEstimator
-namespace Foam
-{
-namespace Module
-{
-
-static void writeSurfaceToVTK
-(
-    OFstream& file,
-    const triSurf& surf
-)
-{
-    // write the header
-    file << "# vtk DataFile Version 3.0\n";
-    file << "vtk output\n";
-    file << "ASCII\n";
-    file << "DATASET POLYDATA\n";
-
-    // write points
-    const pointField& points = surf.points();
-    file << "POINTS " << points.size() << " float\n";
-    forAll(points, pI)
-    {
-        const point& p = points[pI];
-
-        file << p.x() << ' ' << p.y() << ' ' << p.z() << ' ';
-
-        if (pI % 5 == 0)
-            file << "\n";
-    }
-
-    // write triangles
-    file << "\n";
-    file << "\nPOLYGONS " << surf.size() << " " << 4*surf.size() << endl;
-    forAll(surf, triI)
-    {
-        const labelledTri& tri = surf[triI];
-        file << 3 << " " << tri[0] << " " << tri[1] << " " << tri[2] << endl;
-    }
-}
-
-
-static void writeSurfaceToVTK
-(
-    OFstream& file,
-    const triSurf& surf,
-    const DynList<label>& triangles,
-    const labelHashSet& labels
-)
-{
-    // write the header
-    file << "# vtk DataFile Version 3.0\n";
-    file << "vtk output\n";
-    file << "ASCII\n";
-    file << "DATASET POLYDATA\n";
-
-    // write points
-    std::map<label, label> newPointLabel;
-    forAll(triangles, tI)
-    {
-        const labelledTri& tri = surf[triangles[tI]];
-
-        for (label pI = 0; pI < 3; ++pI)
-        {
-            newPointLabel[tri[pI]];
-        }
-    }
-
-    for (const label it : labels)
-    {
-        newPointLabel[it];
-    }
-
-    const pointField& points = surf.points();
-    file << "POINTS " << label(newPointLabel.size()) << " float\n";
-    label counter(0);
-    forAllIters(newPointLabel, it)
-    {
-        it->second = counter++;
-
-        const point& p = points[it->first];
-
-        file << p.x() << ' ' << p.y() << ' ' << p.z() << ' ';
-
-        file << nl;
-    }
-
-    // write triangles
-    file << "\n";
-    file << "\nPOLYGONS " << triangles.size()
-         << " " << 4*triangles.size() << endl;
-    forAll(triangles, tI)
-    {
-        const labelledTri& tri = surf[triangles[tI]];
-
-        file << 3
-             << " " << newPointLabel[tri[0]]
-             << " " << newPointLabel[tri[1]]
-             << " " << newPointLabel[tri[2]] << endl;
-    }
-}
-
-
-static void writeSurfaceToVTK
-(
-    const word& name,
-    const triSurf& surf,
-    const List<DynList<scalar, 1>>& data
-)
-{
-    OFstream file(name+".vtk");
-
-    writeSurfaceToVTK(file, surf);
-
-    // write curvature fields
-    const pointField& points = surf.points();
-    file << "\n";
-    file << "\nPOINT_DATA " << points.size() << "\n";
-
-    file << "SCALARS Values double\n";
-    file << "LOOKUP_TABLE default\n";
-    forAll(points, pI)
-    {
-        file << data[pI][0] << " ";
-
-        if (pI && pI % 5 == 0)
-            file << endl;
-    }
-}
-
-
-static void writeSurfaceToVTK
-(
-    const word& name,
-    const triSurf& surf,
-    const List<DynList<vector, 1>>& data
-)
-{
-    OFstream file(name+".vtk");
-
-    writeSurfaceToVTK(file, surf);
-
-    // write curvature fields
-    const pointField& points = surf.points();
-    file << "\n";
-    file << "\nPOINT_DATA " << points.size() << "\n";
-
-    file << "VECTORS Values double\n";
-    file << "LOOKUP_TABLE default\n";
-    forAll(points, pI)
-    {
-        const vector& v = data[pI][0];
-
-        file << v[0] << " " << v[1] << " " << v[2] << " ";
-
-        if (pI && pI % 5 == 0)
-            file << endl;
-    }
-}
-
-
-} // End namespace Module
-} // End namespace Foam
-
-#endif // DEBUGCurvatureEstimator
-
-
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
 void Foam::Module::triSurfaceCurvatureEstimator::calculateEdgeCurvature()
@@ -224,20 +53,14 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateEdgeCurvature()
     edgePointCurvature_.setSize(points.size());
     boolList featureEdge(edges.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel
-    # endif
     {
-        # ifdef USE_OMP
         # pragma omp for schedule(static, 1)
-        # endif
         forAll(edgePointCurvature_, i)
             edgePointCurvature_[i] = 0.0;
 
         // mark feature edges
-        # ifdef USE_OMP
         # pragma omp for schedule(static, 1)
-        # endif
         forAll(edgeFaces, eI)
         {
             if (edgeFaces.sizeOfRow(eI) != 2)
@@ -259,15 +82,11 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateEdgeCurvature()
             }
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
-        # endif
 
         // loop through the points and calculate the curvature for points
         // attached to two feature edges
-        # ifdef USE_OMP
         # pragma omp for schedule(dynamic, 20)
-        # endif
         forAll(pointEdges, pI)
         {
             DynList<label> features;
@@ -316,9 +135,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
 
     List<DynList<label, 4>> pointPatches(points.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(pointTriangles, pointI)
     {
         std::map<label, DynList<label>> regionTriangles;
@@ -430,23 +247,6 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
             // fit the quadric patch to the surface
             quadricFitting qfit(points[pointI], normals[it.key()], op);
 
-            # ifdef DEBUGCurvatureEstimator
-            Info<< "Point " << pointI << " in patch " << regionI
-                << " normal " << normals[it.key()]
-                << " evalution points " << labels
-                << " has max curvature " << qfit.maxCurvature()
-                << " and min curvature " << qfit.minCurvature() << endl;
-            OFstream file
-            (
-                "point_" +
-                Foam::name(pointI) +
-                "_region_" +
-                Foam::name(regionI) +
-                "_triangles.vtk"
-            );
-            writeSurfaceToVTK(file, surface_, rTriangles, labels);
-            # endif
-
             // store curvatures
             gaussianCurvature_[pointI].append(qfit.gaussianCurvature());
             meanCurvature_[pointI].append(qfit.meanCurvature());
@@ -461,15 +261,11 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
     List<DynList<scalar, 1>> smoothMinCurv(points.size());
     List<DynList<scalar, 1>> smoothMaxCurv(points.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel
-    # endif
     {
         for (label iteration = 0; iteration < 2; ++iteration)
         {
-            # ifdef USE_OMP
             # pragma omp for schedule(static, 1)
-            # endif
             forAll(pointTriangles, pointI)
             {
                 const constRow pTriangles = pointTriangles[pointI];
@@ -546,11 +342,9 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                 }
             }
 
-            # ifdef USE_OMP
             # pragma omp barrier
 
             # pragma omp for schedule(static, 1)
-            # endif
             forAll(minCurvature_, pointI)
             {
                 forAll(minCurvature_[pointI], i)
@@ -561,14 +355,10 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
             }
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
-        # endif
 
         // update Gaussian and mean curvatures
-        # ifdef USE_OMP
         # pragma omp for schedule(static, 1)
-        # endif
         forAll(minCurvature_, pointI)
         {
             const DynList<scalar, 1>& minCurv = minCurvature_[pointI];
@@ -581,16 +371,6 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
             }
         }
     }
-
-    # ifdef DEBUGCurvatureEstimator
-    word name = "surfaceMeanCurv";
-    writeSurfaceToVTK(name, surface_, meanCurvature_);
-    writeSurfaceToVTK("surfaceGaussianCurv", surface_, gaussianCurvature_);
-    writeSurfaceToVTK("surfaceMaxCurv", surface_, maxCurvature_);
-    writeSurfaceToVTK("surfaceMinCurv", surface_, minCurvature_);
-    writeSurfaceToVTK("surfaceMaxCurvVec", surface_, maxCurvatureVector_);
-    writeSurfaceToVTK("surfaceMinCurvVec", surface_, minCurvatureVector_);
-    # endif
 }
 
 

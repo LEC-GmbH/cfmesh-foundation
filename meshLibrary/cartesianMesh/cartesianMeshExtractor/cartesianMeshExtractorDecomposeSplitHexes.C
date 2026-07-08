@@ -61,8 +61,6 @@ decomposeSplitHexesIntoTetsAndPyramids()
         }
     }
 
-    reduce(nDecomposed, sumOp<label>());
-
     Info<< "Decomposing " << nDecomposed
         << " faces with more than 4 vertices" << endl;
 
@@ -86,8 +84,6 @@ decomposeSplitHexesIntoTetsAndPyramids()
             decompose[cellI] = true;
         }
     }
-
-    reduce(nDecomposed, sumOp<label>());
 
     Info<< "Decomposing " << nDecomposed
         << " cells into tetrahedra and pyramids" << endl;

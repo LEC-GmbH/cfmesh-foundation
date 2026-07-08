@@ -36,8 +36,6 @@ License
 
 #include <map>
 
-//#define DEBUGLayer
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::boundaryLayers::createNewFacesAndCells
@@ -53,16 +51,6 @@ void Foam::Module::boundaryLayers::createNewFacesAndCells
     const VRWGraph& edgeFaces = mse.edgeFaces();
     const labelList& boundaryFacePatches = mse.boundaryFacePatches();
     const labelList& faceOwners = mse.faceOwners();
-
-    // this is used for parallel runs
-    const Map<label>* otherProcPatchPtr(nullptr);
-
-    if (Pstream::parRun())
-    {
-        createNewFacesParallel(treatPatches);
-
-        otherProcPatchPtr = &mse.otherEdgeFacePatch();
-    }
 
     // create lists for new boundary faces
     VRWGraph newBoundaryFaces;
@@ -126,27 +114,12 @@ void Foam::Module::boundaryLayers::createNewFacesAndCells
                         newBoundaryPatches.append(boundaryFacePatches[neiFace]);
                     }
                 }
-                else if (edgeFaces.sizeOfRow(edgeI) == 1)
-                {
-                    const Map<label>& otherProcPatch = *otherProcPatchPtr;
-                    if (!treatPatches[otherProcPatch[edgeI]])
-                    {
-                        newBoundaryFaces.appendList(newF);
-                        newBoundaryOwners.append(cellsToAdd.size() + nOldCells);
-                        newBoundaryPatches.append(otherProcPatch[edgeI]);
-                    }
-                }
             }
 
             cellsToAdd.appendGraph(cellFaces);
         }
         else
         {
-            # ifdef DEBUGLayer
-            Info<< "Storing original boundary face "
-                << bfI << " into patch " << boundaryFacePatches[bfI] << endl;
-            # endif
-
             newBoundaryFaces.appendList(bFaces[bfI]);
             newBoundaryOwners.append(faceOwners[bfI]);
             newBoundaryPatches.append(boundaryFacePatches[bfI]);
@@ -176,163 +149,7 @@ void Foam::Module::boundaryLayers::createNewFacesAndCells
     // delete meshSurfaceEngine
     this->clearOut();
 
-    # ifdef DEBUGLayer
-    mesh_.addressingData().checkMesh(true);
-    # endif
-
     Info<< "Finished creating layer cells" << endl;
-}
-
-
-void Foam::Module::boundaryLayers::createNewFacesParallel
-(
-    const boolList& treatPatches
-)
-{
-    const meshSurfaceEngine& mse = surfaceEngine();
-    const faceList::subList& bFaces = mse.boundaryFaces();
-    const VRWGraph& faceEdges = mse.faceEdges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
-    const labelList& boundaryFacePatches = mse.boundaryFacePatches();
-    const labelList& globalEdgeLabel = mse.globalBoundaryEdgeLabel();
-    const Map<label>& globalToLocal = mse.globalToLocalBndEdgeAddressing();
-
-    const Map<label>& otherProcPatch = mse.otherEdgeFacePatch();
-    const Map<label>& otherFaceProc = mse.otherEdgeFaceAtProc();
-
-    // the next stage is the generation of processor faces
-    // this step can be done without any communication, but only if the faces
-    // are added in the same order on both processors
-    // this will be achieved by sorting edges according to their global labes
-    // another difficulty here is that new processor patches may occur
-    // during this procedure
-    Map<label> otherProcToProcPatch;
-    forAll(mesh_.procBoundaries(), patchI)
-    {
-        const processorBoundaryPatch& wp = mesh_.procBoundaries()[patchI];
-        otherProcToProcPatch.insert(wp.neiProcNo(), patchI);
-    }
-
-    label nTreatedEdges(0);
-    boolList treatEdge(edgeFaces.size(), false);
-    forAllConstIters(globalToLocal, iter)
-    {
-        const label beI = iter();
-
-        if (edgeFaces.sizeOfRow(beI) != 1)
-        {
-            continue;
-        }
-
-        if
-        (
-            treatPatches[boundaryFacePatches[edgeFaces(beI, 0)]] &&
-            treatPatches[otherProcPatch[beI]]
-        )
-        {
-            ++nTreatedEdges;
-            treatEdge[beI] = true;
-        }
-    }
-
-    // create a list of treated edges and sort the list
-    labelList treatedEdgeLabels(nTreatedEdges);
-    nTreatedEdges = 0;
-    forAll(treatEdge, beI)
-    {
-        if (treatEdge[beI])
-        {
-            treatedEdgeLabels[nTreatedEdges++] = globalEdgeLabel[beI];
-        }
-    }
-    treatedEdgeLabels.setSize(nTreatedEdges);
-
-    sort(treatedEdgeLabels);
-
-    // create additional processor patches if needed
-    forAll(treatedEdgeLabels, eI)
-    {
-        const label beI = globalToLocal[treatedEdgeLabels[eI]];
-
-        if (!otherProcToProcPatch.found(otherFaceProc[beI]))
-        {
-            otherProcToProcPatch.insert
-            (
-                otherFaceProc[beI],
-                polyMeshGenModifier(mesh_).addProcessorPatch
-                (
-                    otherFaceProc[beI]
-                )
-            );
-        }
-    }
-
-    // create new processor faces
-    VRWGraph newProcFaces;
-    labelLongList faceProcPatch;
-    FixedList<label, 4> newF;
-    forAll(treatedEdgeLabels, geI)
-    {
-        const label beI = globalToLocal[treatedEdgeLabels[geI]];
-
-        if (edgeFaces.sizeOfRow(beI) == 0)
-        {
-            continue;
-        }
-
-        const label bfI = edgeFaces(beI, 0);
-        const label pos = faceEdges.find(bfI, beI);
-        const edge e = bFaces[bfI].faceEdge(pos);
-
-        if (otherFaceProc[beI] > Pstream::myProcNo())
-        {
-            newF[0] = e.start();
-            newF[1] = e.end();
-            if (patchKey_.size() != 0)
-            {
-                newF[2] =
-                    findNewNodeLabel(e.end(), patchKey_[otherProcPatch[beI]]);
-                newF[3] =
-                    findNewNodeLabel(e.start(), patchKey_[otherProcPatch[beI]]);
-            }
-            else
-            {
-                newF[2] = newLabelForVertex_[e.end()];
-                newF[3] = newLabelForVertex_[e.start()];
-            }
-        }
-        else
-        {
-            newF[0] = e.end();
-            if (patchKey_.size() != 0)
-            {
-                newF[1] =
-                    findNewNodeLabel
-                    (
-                        e.end(),
-                        patchKey_[boundaryFacePatches[bfI]]
-                    );
-                newF[2] =
-                    findNewNodeLabel
-                    (
-                        e.start(),
-                        patchKey_[boundaryFacePatches[bfI]]
-                    );
-            }
-            else
-            {
-                newF[1] = newLabelForVertex_[e.end()];
-                newF[2] = newLabelForVertex_[e.start()];
-            }
-            newF[3] = e.start();
-        }
-
-        newProcFaces.appendList(newF);
-        faceProcPatch.append(otherProcToProcPatch[otherFaceProc[beI]]);
-    }
-
-    // add faces into the mesh
-    polyMeshGenModifier(mesh_).addProcessorFaces(newProcFaces, faceProcPatch);
 }
 
 

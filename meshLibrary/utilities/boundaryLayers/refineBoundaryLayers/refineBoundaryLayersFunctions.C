@@ -31,24 +31,12 @@ License
 #include "refineBoundaryLayers.H"
 #include "meshSurfaceEngine.H"
 #include "helperFunctions.H"
-#include "polyMeshGenAddressing.H"
 #include "polyMeshGen2DEngine.H"
 #include "VRWGraphList.H"
 #include "meshSurfacePartitioner.H"
 #include "detectBoundaryLayers.H"
 
-#include "labelledPair.H"
-#include "labelledScalar.H"
-
-# ifdef USE_OMP
 #include <omp.h>
-# endif
-
-//#define DEBUGLayer
-
-# ifdef DEBUGLayer
-#include "OFstream.H"
-# endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -67,47 +55,12 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
     // get the hair edges
     splitEdges_ = dbl.hairEdges();
 
-    # ifdef DEBUGLayer
-    OFstream file("hairEdges.vtk");
-
-    // write the header
-    file << "# vtk DataFile Version 3.0\n";
-    file << "vtk output\n";
-    file << "ASCII\n";
-    file << "DATASET POLYDATA\n";
-
-    // write points
-    file << "POINTS " << 2*splitEdges_.size() << " float\n";
-    forAll(splitEdges_, seI)
-    {
-        const point& p = mse.mesh().points()[splitEdges_[seI].start()];
-
-        file << p.x() << ' ' << p.y() << ' ' << p.z() << nl;
-
-        const point op = mse.mesh().points()[splitEdges_[seI].end()];
-
-        file << op.x() << ' ' << op.y() << ' ' << op.z() << nl;
-    }
-
-    // write lines
-    file << "\nLINES " << splitEdges_.size()
-         << " " << 3*splitEdges_.size() << nl;
-    forAll(splitEdges_, eI)
-    {
-        file << 2 << " " << 2*eI << " " << (2*eI + 1) << nl;
-    }
-
-    file << "\n";
-    # endif
-
     // create point to split edges addressing
     splitEdgesAtPoint_.reverseAddressing(splitEdges_);
 
     // check if the layer is valid
     bool validLayer(true);
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(faceInLayer, bfI)
     {
         if (faceInLayer[bfI] < 0)
@@ -125,11 +78,6 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
             }
         }
     }
-
-    # ifdef DEBUGLayer
-    Info<< "Number of independent layers in the mesh is " << nGroups << endl;
-    Info<< "Is valid layer " << validLayer << endl;
-    # endif
 
     const PtrList<boundaryPatch>& boundaries = mesh_.boundaries();
 
@@ -171,10 +119,6 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
         }
     }
 
-    # ifdef DEBUGLayer
-    Info<< "Layer at patch " << layerAtPatch_ << endl;
-    # endif
-
     // set the information which patches are a single boundary layer face
     patchesInLayer_.setSize(nGroups);
     forAll(layerAtPatch_, patchI)
@@ -189,10 +133,6 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
             );
         }
     }
-
-    # ifdef DEBUGLayer
-    Info<< "Patches in layer " << patchesInLayer_ << endl;
-    # endif
 
     // set the number of boundary layers for each patch
     labelList nLayersAtPatch(layerAtPatch_.size(), -1);
@@ -265,9 +205,7 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
         boolList allZMax(mesh_.boundaries().size(), true);
         boolList allZMin(mesh_.boundaries().size(), true);
 
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 50)
-        # endif
         forAll(bFaces, bfI)
         {
             const face& bf = bFaces[bfI];
@@ -296,21 +234,12 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
         }
     }
 
-    // perform reduction over all processors
-    reduce(nLayersAtPatch, maxOp<labelList>());
-
-    # ifdef DEBUGLayer
-    Pout << "nLayersAtPatch " << nLayersAtPatch << endl;
-    # endif
-
     // set the number of boundary layers which shall be generated above
     // each boundary face
     nLayersAtBndFace_.setSize(facePatch.size());
     nLayersAtBndFace_ = globalNumLayers_;
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(nLayersAtBndFace_, bfI)
     {
         const label patchI = facePatch[bfI];
@@ -329,13 +258,6 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
             }
         }
     }
-
-    # ifdef DEBUGLayer
-    forAll(nLayersAtBndFace_, bfI)
-    Pout<< "Boundary face " << bfI << " in patch "
-        << facePatch[bfI] << " num layers " << nLayersAtBndFace_[bfI] << endl;
-    //::exit(1);
-    # endif
 
     return validLayer;
 }
@@ -359,20 +281,12 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
     labelLongList nLayersAtEdge(splitEdges_.size());
 
     // count the number of vertices for each split edge
-    # ifdef USE_OMP
     const label nThreads = 3*omp_get_num_procs();
-    # else
-    const label nThreads = 1;
-    # endif
 
-    # ifdef USE_OMP
     # pragma omp parallel num_threads(nThreads)
-    # endif
     {
         // start counting vertices at each thread
-        # ifdef USE_OMP
         # pragma omp for schedule(static, 1)
-        # endif
         forAll(splitEdges_, seI)
         {
             const edge& e = splitEdges_[seI];
@@ -442,201 +356,16 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
         }
     }
 
-    if (Pstream::parRun())
-    {
-        // transfer the information over all processor for edges
-        // at inter-processor boundaries
-        const labelLongList& globalEdgeLabel =
-            mesh_.addressingData().globalEdgeLabel();
-        const VRWGraph& edgeAtProcs = mesh_.addressingData().edgeAtProcs();
-        const Map<label>& globalToLocal =
-            mesh_.addressingData().globalToLocalEdgeAddressing();
-        const DynList<label>& neiProcs = mesh_.addressingData().edgeNeiProcs();
-        const edgeList& edges = mesh_.addressingData().edges();
-        const VRWGraph& pointEdges = mesh_.addressingData().pointEdges();
-
-        // exchange point number of layers
-        std::map<label, LongList<labelPair>> exchangeNumLayers;
-        std::map<label, LongList<labelPair>> exchangeNumNodesAtEdge;
-        std::map<label, LongList<labelledScalar>> exchangeThickness;
-        std::map<label, LongList<labelledScalar>> exchangeRatio;
-        forAll(neiProcs, i)
-        {
-            exchangeNumNodesAtEdge.insert
-            (
-                std::make_pair(neiProcs[i], LongList<labelPair>())
-            );
-            exchangeNumLayers.insert
-            (
-                std::make_pair(neiProcs[i], LongList<labelPair>())
-            );
-            exchangeThickness.insert
-            (
-                std::make_pair(neiProcs[i], LongList<labelledScalar>())
-            );
-            exchangeRatio.insert
-            (
-                std::make_pair(neiProcs[i], LongList<labelledScalar>())
-            );
-        }
-
-        // exchange the number of layers
-        forAll(splitEdges_, seI)
-        {
-            const edge& se = splitEdges_[seI];
-
-            const label s = se.start();
-            label edgeI(-1);
-            forAllRow(pointEdges, s, peI)
-            {
-                const label eI = pointEdges(s, peI);
-
-                if (edges[eI] == se)
-                {
-                    edgeI = eI;
-                    break;
-                }
-            }
-
-            const label geI = globalEdgeLabel[edgeI];
-
-            if (globalToLocal.found(geI))
-            {
-                forAllRow(edgeAtProcs, edgeI, i)
-                {
-                    const label neiProc = edgeAtProcs(edgeI, i);
-
-                    if (neiProc == Pstream::myProcNo())
-                    {
-                        continue;
-                    }
-
-                    exchangeNumNodesAtEdge[neiProc].append
-                    (
-                        labelPair(geI, nNodesAtEdge[seI])
-                    );
-                    exchangeNumLayers[neiProc].append
-                    (
-                        labelPair(geI, nLayersAtEdge[seI])
-                    );
-                    exchangeThickness[neiProc].append
-                    (
-                        labelledScalar(geI, firstLayerThickness[seI])
-                    );
-                    exchangeRatio[neiProc].append
-                    (
-                        labelledScalar(geI, thicknessRatio[seI])
-                    );
-                }
-            }
-        }
-
-        // exchange number of nodes at split edge
-        LongList<labelPair> receivedNumLayers;
-        help::exchangeMap(exchangeNumNodesAtEdge, receivedNumLayers);
-
-        forAll(receivedNumLayers, i)
-        {
-            const labelPair& lp = receivedNumLayers[i];
-            const label eI = globalToLocal[lp.first()];
-            const edge& e = edges[eI];
-            label seI(-1);
-            forAllRow(splitEdgesAtPoint_, e.start(), i)
-            {
-                const label seJ = splitEdgesAtPoint_(e.start(), i);
-                if (splitEdges_[seJ] == e)
-                {
-                    seI = seJ;
-                    break;
-                }
-            }
-            nNodesAtEdge[seI] = std::max(nNodesAtEdge[seI], lp.second());
-        }
-
-        // exchange number of layers
-        receivedNumLayers.clear();
-        help::exchangeMap(exchangeNumLayers, receivedNumLayers);
-
-        forAll(receivedNumLayers, i)
-        {
-            const labelPair& lp = receivedNumLayers[i];
-            const label eI = globalToLocal[lp.first()];
-            const edge& e = edges[eI];
-            label seI(-1);
-            forAllRow(splitEdgesAtPoint_, e.start(), i)
-            {
-                const label seJ = splitEdgesAtPoint_(e.start(), i);
-                if (splitEdges_[seJ] == e)
-                {
-                    seI = seJ;
-                    break;
-                }
-            }
-            nLayersAtEdge[seI] = std::max(nLayersAtEdge[seI], lp.second());
-        }
-
-        // exchange thickness ratio
-        LongList<labelledScalar> receivedScalar;
-        help::exchangeMap(exchangeRatio, receivedScalar);
-
-        forAll(receivedScalar, i)
-        {
-            const labelledScalar& ls = receivedScalar[i];
-            const label eI = globalToLocal[ls.scalarLabel()];
-            const edge& e = edges[eI];
-            label seI(-1);
-            forAllRow(splitEdgesAtPoint_, e.start(), i)
-            {
-                const label seJ = splitEdgesAtPoint_(e.start(), i);
-                if (splitEdges_[seJ] == e)
-                {
-                    seI = seJ;
-                    break;
-                }
-            }
-            thicknessRatio[seI] = std::max(thicknessRatio[seI], ls.value());
-        }
-
-        // exchange maximum thickness of the first layer
-        receivedScalar.clear();
-        help::exchangeMap(exchangeThickness, receivedScalar);
-
-        forAll(receivedScalar, i)
-        {
-            const labelledScalar& ls = receivedScalar[i];
-            const label eI = globalToLocal[ls.scalarLabel()];
-            const edge& e = edges[eI];
-            label seI(-1);
-            forAllRow(splitEdgesAtPoint_, e.start(), i)
-            {
-                const label seJ = splitEdgesAtPoint_(e.start(), i);
-                if (splitEdges_[seJ] == e)
-                {
-                    seI = seJ;
-                    break;
-                }
-            }
-            firstLayerThickness[seI] =
-                std::min(firstLayerThickness[seI], ls.value());
-        }
-    }
-
     // calculate the number of additional vertices which will be generated
     // on edges of the mesh
     DynList<label> numPointsAtThread;
     numPointsAtThread.setSize(nThreads);
     numPointsAtThread = 0;
 
-    # ifdef USE_OMP
     # pragma omp parallel for num_threads(nThreads) schedule(static, 1)
-    # endif
     forAll(nNodesAtEdge, seI)
     {
-        # ifdef USE_OMP
         const label threadI = omp_get_thread_num();
-        # else
-        const label threadI(0);
-        # endif
 
         numPointsAtThread[threadI] += nNodesAtEdge[seI] - 2;
     }
@@ -656,26 +385,14 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
 
     points.setSize(numPoints);
 
-    # ifdef DEBUGLayer
-    Info<< "Generating split vertices" << endl;
-    # endif
-
     // generate vertices on split edges
-    # ifdef USE_OMP
     # pragma omp parallel num_threads(nThreads)
-    # endif
     {
-        # ifdef USE_OMP
         const label threadI = omp_get_thread_num();
-        # else
-        const label threadI(0);
-        # endif
 
         label& nPoints = numPointsAtThread[threadI];
 
-        # ifdef USE_OMP
         # pragma omp for schedule(static, 1)
-        # endif
         forAll(splitEdges_, seI)
         {
             const edge& e = splitEdges_[seI];
@@ -695,15 +412,6 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
                         /(1.0 - thicknessRatio[seI])
                     );
 
-                # ifdef DEBUGLayer
-                Pout << "Thread " << threadI << endl;
-                Pout << "Generating vertices at split edge "
-                     << " start point " << points[e.start()]
-                     << " end point " << points[e.end()] << endl;
-                Pout << "Edge length " << magv << endl;
-                Pout << "Thickness of the first layer "
-                     << firstThickness << endl;
-                # endif
             }
 
             firstThickness =
@@ -736,15 +444,6 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
                 // generate the new vertex
                 const point newP = points[e.start()] + param*vec;
 
-                # ifdef DEBUGLayer
-                Pout<< "Split edge " << seI << " edge points " << e
-                    << " start point " << points[e.start()]
-                    << " end point " << points[e.end()]
-                    << " param " << param
-                    << " new point " << nPoints
-                    << " has coordinates " << newP << endl;
-                # endif
-
                 param += firstThickness*Foam::pow(thicknessRatio[seI], pI);
 
                 newVerticesForSplitEdge_(seI, pI) = nPoints;
@@ -766,34 +465,6 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
             }
         }
     }
-
-    # ifdef DEBUGLayer
-    for (label procI = 0; procI < Pstream::nProcs(); ++procI)
-    {
-        if (procI == Pstream::myProcNo())
-        {
-            forAll(splitEdges_, seI)
-            {
-                Pout << "\nSplit edge " << seI << " nodes " << splitEdges_[seI]
-                    << " coordinates " << points[splitEdges_[seI][0]]
-                    << " " << points[splitEdges_[seI][1]]
-                    << " has new points "
-                    << newVerticesForSplitEdge_[seI] << endl;
-
-                forAllRow(newVerticesForSplitEdge_, seI, i)
-                {
-                    Pout<< "Point " << i << " on edge ha coordinates "
-                        << points[newVerticesForSplitEdge_(seI, i)] << endl;
-                }
-            }
-        }
-
-        returnReduce(1, sumOp<label>());
-    }
-
-    Info<< "Finished generating vertices at split edges" << endl;
-    //::exit(1);
-    # endif
 
 }
 

@@ -110,13 +110,6 @@ private:
         void refineInsideAndUnknownBoxes();
 
 
-    // Private member functions for parallel runs
-
-        //- move octree cubes from one processor to another until
-        //- each processor contains the same number of leaves
-        //- of the required type
-        void loadDistribution(const bool distributeUsed = false);
-
         // information about octree refinement
         //- ref level to achieve max cell size
         direction globalRefLevel_;

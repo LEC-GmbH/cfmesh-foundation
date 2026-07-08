@@ -68,9 +68,6 @@ class meshOctreeCubeBasic
         //- cube type
         direction cubeType_;
 
-        //- processor to which the cube belongs to
-        short procNo_;
-
 
 public:
 
@@ -89,8 +86,7 @@ public:
         inline meshOctreeCubeBasic
         (
             const meshOctreeCubeCoordinates& cc,
-            const direction cubeType,
-            const short procNo = ALLPROCS
+            const direction cubeType
         );
 
 
@@ -105,9 +101,7 @@ public:
             UNKNOWN = 1,
             OUTSIDE = 2,
             DATA = 4,
-            INSIDE = 8,
-            ALLPROCS = -2,
-            OTHERPROC = -3
+            INSIDE = 8
         };
 
 
@@ -118,12 +112,6 @@ public:
 
         //- set cube type
         inline void setCubeType(const direction);
-
-        //- return processor number
-        inline short procNo() const;
-
-        //- set processor number
-        inline void setProcNo(const short);
 
         //- return coordinates in the octree
         inline const meshOctreeCubeCoordinates& coordinates() const;

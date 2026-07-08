@@ -43,7 +43,6 @@ SourceFiles
 #include "labelList.H"
 #include "pointField.H"
 #include "labelLongList.H"
-#include "parMapperHelper.H"
 
 #include <map>
 
@@ -122,16 +121,6 @@ class meshSurfaceMapper
 
         //- calculate face metric
         scalar faceMetricInPatch(const label bfI, const label patchI) const;
-
-
-    // Private member functions needed for parallel execution
-
-        //- check if nodes at parallel boundaries are selected at all processors
-        void selectNodesAtParallelBnd(const labelLongList&);
-
-        //- map to the smallest distance
-        //- makes sense for parallel calculations, only
-        void mapToSmallestDistance(LongList<parMapperHelper>&);
 
         //- Disallow default bitwise copy construct
         meshSurfaceMapper(const meshSurfaceMapper&);

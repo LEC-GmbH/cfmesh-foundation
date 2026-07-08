@@ -192,51 +192,6 @@ int main(int argc, char *argv[])
 
     refLayers.refineLayers();
 */
-/*
-    // check bad quality cells in the layer
-    boolList activeFace(pmg.faces().size(), false);
-    if (blCellsId > -1)
-    {
-        labelLongList cellsInLayer;
-        pmg.cellsInSubset(blCellsId, cellsInLayer);
-
-        forAll(cellsInLayer, i)
-        {
-            const cell& c = cells[cellsInLayer[i]];
-
-            forAll(c, fI)
-                activeFace[c[fI]] = true;
-        }
-    }
-
-    labelHashSet badFaces;
-    polyMeshGenChecks::findBadFaces(pmg, badFaces, true, &activeFace);
-
-    if (returnReduce(badFaces.size(), sumOp<label>()))
-    {
-        const labelList& own = pmg.owner();
-        const labelList& nei = pmg.neighbour();
-
-        label badCellId(-1);
-        for (const label facei : badFaces)
-        {
-            if (badCellId < 0)
-                badCellId = pmg.addCellSubset("badBlCells");
-            pmg.addCellToSubset(badCellId, own[facei]);
-
-            if (nei[facei] >= 0)
-                pmg.addCellToSubset(badCellId, nei[facei]);
-        }
-
-        if (returnReduce(pmg.cellSubsetIndex("badBlCells")>=0, maxOp<bool>()))
-        {
-            Info<< "Found bad quality bl cells" << endl;
-            pmg.write();
-            returnReduce(1, sumOp<label>());
-            ::exit(0);
-        }
-    }
-*/
     Info<< "Extruding layer of cells" << endl;
     extrudeLayer(pmg, front);
     pmg.clearAddressingData();

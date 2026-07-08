@@ -84,44 +84,10 @@ class partTriMesh
         LongList<direction> pointType_;
 
 
-    // Private data for parallel runs
-
-        //- global point label
-        mutable labelLongList* globalPointLabelPtr_;
-
-        //- processor for containing points
-        mutable VRWGraph* pAtProcsPtr_;
-
-        //- mapping between global and local point labels
-        mutable Map<label>* globalToLocalPointAddressingPtr_;
-
-        //- processors which should communicate with the current one
-        mutable DynList<label>* neiProcsPtr_;
-
-        //- labels of points at parallel boundaries
-        mutable labelLongList* pAtParallelBoundariesPtr_;
-
-        //- labels of points serving as buffer layers on other processors
-        mutable labelLongList* pAtBufferLayersPtr_;
-
-
     // Private Member Functions
 
         //- create surface triangulation
         void createPointsAndTrias(const List<direction>&);
-
-        //- create parallel addressing
-        void createParallelAddressing
-        (
-            const labelList& nodeLabelForPoint,
-            const labelList& nodeLabelForFace
-        );
-
-        //- create buffer layers
-        void createBufferLayers();
-
-        //- update buffer layer points
-        void updateBufferLayers();
 
 
         //- No copy construct
@@ -155,7 +121,6 @@ public:
             NONE = 0,
             SMOOTH = 1,
             FACECENTRE = 2,
-            PARALLELBOUNDARY = 8,
             BOUNDARY = 16,
             FEATUREEDGE = 32,
             CORNER = 64
@@ -199,69 +164,6 @@ public:
         inline const labelList& meshSurfacePointLabelInTriMesh() const
         {
             return meshSurfacePointLabelInTriMesh_;
-        }
-
-
-    // Access to parallel data
-
-        inline const labelLongList& globalPointLabel() const
-        {
-            if (!Pstream::parRun())
-            {
-                FatalError << "This is a serial run" << abort(FatalError);
-            }
-
-            return *globalPointLabelPtr_;
-        }
-
-        inline const VRWGraph& pointAtProcs() const
-        {
-            if (!Pstream::parRun())
-            {
-                FatalError << "This is a serial run" << abort(FatalError);
-            }
-
-            return *pAtProcsPtr_;
-        }
-
-        inline const Map<label>& globalToLocalPointAddressing() const
-        {
-            if (!Pstream::parRun())
-            {
-                FatalError << "This is a serial run" << abort(FatalError);
-            }
-
-            return *globalToLocalPointAddressingPtr_;
-        }
-
-        inline const DynList<label>& neiProcs() const
-        {
-            if (!Pstream::parRun())
-            {
-                FatalError << "This is a serial run" << abort(FatalError);
-            }
-
-            return *neiProcsPtr_;
-        }
-
-        inline const labelLongList& pointsAtProcessorBoundaries() const
-        {
-            if (!Pstream::parRun())
-            {
-                FatalError << "This is a serial run" << abort(FatalError);
-            }
-
-            return *pAtParallelBoundariesPtr_;
-        }
-
-        inline const labelLongList& bufferLayerPoints() const
-        {
-            if (!Pstream::parRun())
-            {
-                FatalError << "This is a serial run" << abort(FatalError);
-            }
-
-            return *pAtBufferLayersPtr_;
         }
 
 

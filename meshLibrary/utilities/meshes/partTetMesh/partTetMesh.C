@@ -37,9 +37,7 @@ License
 
 #include <map>
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -56,13 +54,7 @@ Foam::Module::partTetMesh::partTetMesh
     smoothVertex_(),
     pointTets_(),
     internalPointsOrderPtr_(nullptr),
-    boundaryPointsOrderPtr_(nullptr),
-    globalPointLabelPtr_(nullptr),
-    pAtProcsPtr_(nullptr),
-    globalToLocalPointAddressingPtr_(nullptr),
-    neiProcsPtr_(nullptr),
-    pAtParallelBoundariesPtr_(nullptr),
-    pAtBufferLayersPtr_(nullptr)
+    boundaryPointsOrderPtr_(nullptr)
 {
     List<direction> useCell(mesh.cells().size(), direction(1));
 
@@ -90,13 +82,7 @@ Foam::Module::partTetMesh::partTetMesh
     smoothVertex_(),
     pointTets_(),
     internalPointsOrderPtr_(nullptr),
-    boundaryPointsOrderPtr_(nullptr),
-    globalPointLabelPtr_(nullptr),
-    pAtProcsPtr_(nullptr),
-    globalToLocalPointAddressingPtr_(nullptr),
-    neiProcsPtr_(nullptr),
-    pAtParallelBoundariesPtr_(nullptr),
-    pAtBufferLayersPtr_(nullptr)
+    boundaryPointsOrderPtr_(nullptr)
 {
     const faceListPMG& faces = mesh.faces();
     const cellListPMG& cells = mesh.cells();
@@ -145,63 +131,6 @@ Foam::Module::partTetMesh::partTetMesh
                 }
             }
         }
-
-        if (Pstream::parRun())
-        {
-            const labelLongList& globalPointLabel =
-                mesh.addressingData().globalPointLabel();
-            const VRWGraph& pProcs = mesh.addressingData().pointAtProcs();
-            const Map<label>& globalToLocal =
-                mesh.addressingData().globalToLocalPointAddressing();
-
-            std::map<label, LongList<label>> eData;
-            forAllConstIters(globalToLocal, iter)
-            {
-                const label pointI = iter();
-
-                forAllRow(pProcs, pointI, procI)
-                {
-                    const label neiProc = pProcs(pointI, procI);
-                    if (neiProc == Pstream::myProcNo())
-                        continue;
-
-                    if (eData.find(neiProc) == eData.end())
-                    {
-                        eData.insert
-                        (
-                            std::make_pair(neiProc, LongList<label>())
-                        );
-                    }
-
-                    forAllRow(pointCells, pointI, pcI)
-                    {
-                        if (useCell[pointCells(pointI, pcI)] == layerI)
-                        {
-                            eData[neiProc].append(globalPointLabel[pointI]);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // exchange data with other processors
-            labelLongList receivedData;
-            help::exchangeMap(eData, receivedData);
-
-            forAll(receivedData, i)
-            {
-                const label pointI = globalToLocal[receivedData[i]];
-
-                forAllRow(pointCells, pointI, pcI)
-                {
-                    const label cLabel = pointCells(pointI, pcI);
-                    if (!useCell[cLabel])
-                    {
-                        useCell[cLabel] = layerI + 1;
-                    }
-                }
-            }
-        }
     }
 
     boolList lockedPoint(mesh.points().size(), false);
@@ -229,13 +158,7 @@ Foam::Module::partTetMesh::partTetMesh
     smoothVertex_(),
     pointTets_(),
     internalPointsOrderPtr_(nullptr),
-    boundaryPointsOrderPtr_(nullptr),
-    globalPointLabelPtr_(nullptr),
-    pAtProcsPtr_(nullptr),
-    globalToLocalPointAddressingPtr_(nullptr),
-    neiProcsPtr_(nullptr),
-    pAtParallelBoundariesPtr_(nullptr),
-    pAtBufferLayersPtr_(nullptr)
+    boundaryPointsOrderPtr_(nullptr)
 {
     const faceListPMG& faces = mesh.faces();
     const cellListPMG& cells = mesh.cells();
@@ -287,65 +210,6 @@ Foam::Module::partTetMesh::partTetMesh
                 }
             }
         }
-
-        if (Pstream::parRun())
-        {
-            const labelLongList& globalPointLabel =
-                mesh.addressingData().globalPointLabel();
-            const VRWGraph& pProcs = mesh.addressingData().pointAtProcs();
-            const Map<label>& globalToLocal =
-                mesh.addressingData().globalToLocalPointAddressing();
-
-            std::map<label, LongList<label>> eData;
-            forAllConstIters(globalToLocal, iter)
-            {
-                const label pointI = iter();
-
-                forAllRow(pProcs, pointI, procI)
-                {
-                    const label neiProc = pProcs(pointI, procI);
-                    if (neiProc == Pstream::myProcNo())
-                    {
-                        continue;
-                    }
-
-                    if (eData.find(neiProc) == eData.end())
-                    {
-                        eData.insert
-                        (
-                            std::make_pair(neiProc, LongList<label>())
-                        );
-                    }
-
-                    forAllRow(pointCells, pointI, pcI)
-                    {
-                        if (useCell[pointCells(pointI, pcI)] == layerI)
-                        {
-                            eData[neiProc].append(globalPointLabel[pointI]);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // exchange data with other processors
-            labelLongList receivedData;
-            help::exchangeMap(eData, receivedData);
-
-            forAll(receivedData, i)
-            {
-                const label pointI = globalToLocal[receivedData[i]];
-
-                forAllRow(pointCells, pointI, pcI)
-                {
-                    const label cLabel = pointCells(pointI, pcI);
-                    if (!useCell[cLabel])
-                    {
-                        useCell[cLabel] = layerI + 1;
-                    }
-                }
-            }
-        }
     }
 
     boolList lockedPoint(mesh.points().size(), false);
@@ -362,12 +226,6 @@ Foam::Module::partTetMesh::~partTetMesh()
 {
     deleteDemandDrivenData(internalPointsOrderPtr_);
     deleteDemandDrivenData(boundaryPointsOrderPtr_);
-    deleteDemandDrivenData(globalPointLabelPtr_);
-    deleteDemandDrivenData(pAtProcsPtr_);
-    deleteDemandDrivenData(globalToLocalPointAddressingPtr_);
-    deleteDemandDrivenData(neiProcsPtr_);
-    deleteDemandDrivenData(pAtParallelBoundariesPtr_);
-    deleteDemandDrivenData(pAtBufferLayersPtr_);
 }
 
 
@@ -376,14 +234,12 @@ Foam::Module::partTetMesh::~partTetMesh()
 const Foam::Module::VRWGraph&
 Foam::Module::partTetMesh::internalPointOrdering() const
 {
-    # ifdef USE_OMP
     if (omp_in_parallel())
     {
         FatalErrorInFunction
             << "Calculating addressing inside a parallel region."
             << " This is not thread safe" << exit(FatalError);
     }
-    # endif
 
     if (!internalPointsOrderPtr_)
     {
@@ -397,14 +253,12 @@ Foam::Module::partTetMesh::internalPointOrdering() const
 const Foam::Module::VRWGraph& 
 Foam::Module::partTetMesh::boundaryPointOrdering() const
 {
-    # ifdef USE_OMP
     if (omp_in_parallel())
     {
         FatalErrorInFunction
             << "Calculating addressing inside a parallel region."
             << " This is not thread safe" << exit(FatalError);
     }
-    # endif
 
     if (!boundaryPointsOrderPtr_)
     {
@@ -506,15 +360,9 @@ void Foam::Module::partTetMesh::updateVerticesSMP
 {
     List<direction> updateType(points_.size(), direction(0));
 
-    # ifdef USE_OMP
     # pragma omp parallel num_threads(np.size())
-    # endif
     {
-        # ifdef USE_OMP
         const LongList<labelledPoint>& newPoints = np[omp_get_thread_num()];
-        # else
-        const LongList<labelledPoint>& newPoints = np[0];
-        # endif
 
         forAll(newPoints, i)
         {
@@ -538,14 +386,12 @@ void Foam::Module::partTetMesh::updateVerticesSMP
             }
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
 
         # pragma omp flush(updateType)
 
         // update coordinates of CELLCENTRE and FACECENTRE vertices
         # pragma omp for schedule(dynamic, 20)
-        # endif
         forAll(updateType, pI)
         {
             if (updateType[pI] & CELLCENTRE)
@@ -596,10 +442,8 @@ void Foam::Module::partTetMesh::updateOrigMesh(boolList* changedFacePtr)
 
     boolList changedNode(pts.size(), false);
 
-    # ifdef USE_OMP
     # pragma omp parallel for if (pts.size() > 1000) \
     schedule(guided, 10)
-    # endif
     forAll(nodeLabelInOrigMesh_, pI)
     {
         if (nodeLabelInOrigMesh_[pI] != -1)
@@ -617,10 +461,8 @@ void Foam::Module::partTetMesh::updateOrigMesh(boolList* changedFacePtr)
         const cellListPMG& cells = origMesh_.cells();
         const VRWGraph& pointCells = origMesh_.addressingData().pointCells();
 
-        # ifdef USE_OMP
         # pragma omp parallel for if (pointCells.size() > 100) \
         schedule(dynamic, 20)
-        # endif
         forAll(pointCells, pointI)
         {
             if (changedNode[pointI])
@@ -634,51 +476,6 @@ void Foam::Module::partTetMesh::updateOrigMesh(boolList* changedFacePtr)
                         chF[c[fI]] = true;
                     }
                 }
-            }
-        }
-
-        // make sure that neighbouring processors get the same information
-        const PtrList<processorBoundaryPatch>& pBnd = origMesh_.procBoundaries();
-        forAll(pBnd, patchI)
-        {
-            const label start = pBnd[patchI].patchStart();
-            const label size = pBnd[patchI].patchSize();
-
-            labelLongList sendData;
-            for (label faceI = 0; faceI < size; ++faceI)
-            {
-                if (chF[start + faceI])
-                {
-                    sendData.append(faceI);
-                }
-            }
-
-            OPstream toOtherProc
-            (
-                Pstream::commsTypes::blocking,
-                pBnd[patchI].neiProcNo(),
-                sendData.byteSize()
-            );
-
-            toOtherProc << sendData;
-        }
-
-        forAll(pBnd, patchI)
-        {
-            labelList receivedData;
-
-            IPstream fromOtherProc
-            (
-                Pstream::commsTypes::blocking,
-                pBnd[patchI].neiProcNo()
-            );
-
-            fromOtherProc >> receivedData;
-
-            const label start = pBnd[patchI].patchStart();
-            forAll(receivedData, i)
-            {
-                chF[start + receivedData[i]] = true;
             }
         }
 

@@ -32,8 +32,6 @@ License
 #include "topologicalCleaner.H"
 #include "decomposeFaces.H"
 
-//#define DEBUGCleaner
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::topologicalCleaner::checkNonConsecutiveBoundaryVertices()
@@ -57,24 +55,14 @@ void Foam::Module::topologicalCleaner::checkNonConsecutiveBoundaryVertices()
 
         for (label faceI = start; faceI < end; ++faceI)
         {
-            # ifdef USE_OMP
             # pragma omp task shared(decomposeFace, faces, cells, owner, faceI)
-            # endif
             {
                 const face& bf = faces[faceI];
-
-                # ifdef DEBUGCleaner
-                Info<< "Checking boundary face " << faceI << " with vertices "
-                    << bf << endl;
-                # endif
 
                 const cell& c = cells[owner[faceI]];
 
                 forAll(c, fI)
-                    if (
-                        (c[fI] < nIntFaces) ||
-                        (mesh_.faceIsInProcPatch(c[fI]) != -1)
-                    )
+                    if (c[fI] < nIntFaces)
                     {
                         const face& f = faces[c[fI]];
 
@@ -87,17 +75,8 @@ void Foam::Module::topologicalCleaner::checkNonConsecutiveBoundaryVertices()
                                     shN.append(pI);
                                 }
 
-                        # ifdef DEBUGCleaner
-                        Info<< "Shared vertices with internal face " << f
-                            << " are " << shN << endl;
-                        # endif
-
                         if (shN.size() > 2)
                         {
-                            # ifdef DEBUGCleaner
-                            Info<< "1. Face has to be split" << endl;
-                            # endif
-
                             decomposeFace[faceI] = true;
                             decomposeCell_[owner[faceI]] = true;
                             changed = true;
@@ -110,10 +89,6 @@ void Foam::Module::topologicalCleaner::checkNonConsecutiveBoundaryVertices()
                                 )
                             )
                             {
-                                # ifdef DEBUGCleaner
-                                Info<< "2. Face has to be split" << endl;
-                                # endif
-
                                 decomposeFace[faceI] = true;
                                 decomposeCell_[owner[faceI]] = true;
                                 changed = true;
@@ -123,9 +98,6 @@ void Foam::Module::topologicalCleaner::checkNonConsecutiveBoundaryVertices()
             }
         }
     }
-
-    if (Pstream::parRun())
-        reduce(changed, maxOp<bool>());
 
     if (changed)
     {

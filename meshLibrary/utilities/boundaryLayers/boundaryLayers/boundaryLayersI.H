@@ -95,22 +95,6 @@ inline void Foam::Module::boundaryLayers::createNewCellFromEdge
     const std::map<std::pair<label, label>, label>& me =
         otherVrts_.find(e.end())->second;
 
-    # ifdef DEBUGLayer
-    Info<< "Creating cell for edge with nodes " << e << endl;
-    Info<< "pKeyI " << pKeyI << endl;
-    Info<< "pKeyJ " << pKeyJ << endl;
-    forAllConstIters(ms, iter)
-    {
-        Info<< "1. Pair(" << iter->first.first << ", "
-            << iter->first.second << ") has value " << iter->second << endl;
-    }
-    forAllConstIters(me, iter)
-    {
-        Info<< "2. Pair(" << iter->first.first << ", "
-            << iter->first.second << ") has value " << iter->second << endl;
-    }
-    # endif
-
     label p0s(-1), p1s(-1), ns(-1), p0e(-1), p1e(-1), ne(-1);
 
     if (ms.size() == 2)
@@ -221,25 +205,6 @@ inline void Foam::Module::boundaryLayers::createNewCellFromEdge
     cellFaces[5][1] = p0s;
     cellFaces[5][2] = ns;
     cellFaces[5][3] = p1s;
-
-    # ifdef DEBUGLayer
-    forAll(cellFaces, fI)
-    {
-        forAll(cellFaces[fI], pI)
-        {
-            if
-            (
-                cellFaces[fI][pI] < 0 ||
-                cellFaces[fI][pI] >= mesh_.points().size()
-            )
-            {
-                FatalError << "Invalid point indices found!"
-                           << abort(FatalError);
-            }
-        }
-    }
-    # endif
-
 }
 
 

@@ -65,40 +65,6 @@ void Foam::Module::meshSurfaceMapper2D::findActiveBoundaryEdges()
                 activeBoundaryEdges_.append(edgeI);
         }
     }
-
-    if (Pstream::parRun())
-    {
-        const Map<label>& globalToLocal =
-            surfaceEngine_.globalToLocalBndEdgeAddressing();
-        const Map<label>& otherProc = surfaceEngine_.otherEdgeFaceAtProc();
-
-        const DynList<label>& neiProcs = surfaceEngine_.beNeiProcs();
-
-        std::map<label, labelLongList> exchangeData;
-        forAll(neiProcs, i)
-                exchangeData[neiProcs[i]].clear();
-
-        forAllConstIters(globalToLocal, it)
-        {
-            const label beI = it();
-
-            if (activeFace[startFace + edgeFaces(beI, 0)])
-            {
-                exchangeData[otherProc[beI]].append(it.key());
-            }
-        }
-
-        labelLongList receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            const label beI = globalToLocal[receivedData[i]];
-
-            if (activeFace[startFace + edgeFaces(beI, 0)])
-                activeBoundaryEdges_.append(beI);
-        }
-    }
 }
 
 
@@ -143,13 +109,6 @@ Foam::Module::meshSurfaceMapper2D::meshSurfaceMapper2D
     surfPartitionerPtr_(nullptr),
     meshPartitionerPtr_(nullptr)
 {
-    if (Pstream::parRun())
-    {
-        // allocate bpAtProcs and other addressing
-        // this is done here to prevent possible deadlocks
-        surfaceEngine_.bpAtProcs();
-    }
-
     findActiveBoundaryEdges();
 
     createMeshSurfacePartitioner();

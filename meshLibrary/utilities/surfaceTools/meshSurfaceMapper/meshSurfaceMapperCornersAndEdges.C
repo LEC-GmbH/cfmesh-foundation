@@ -54,9 +54,7 @@ void Foam::Module::meshSurfaceMapper::findMappingDistance
 
     // generate search distance for corner nodes
     mappingDistance.setSize(nodesToMap.size());
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(nodesToMap, i)
     {
         const label bpI = nodesToMap[i];
@@ -72,61 +70,6 @@ void Foam::Module::meshSurfaceMapper::findMappingDistance
 
         // safety factor
         mappingDistance[i] *= 4.0;
-    }
-
-    if (Pstream::parRun())
-    {
-        // make sure that corner nodesd at parallel boundaries
-        // have the same range in which they accept the corners
-        const VRWGraph& bpAtProcs = surfaceEngine_.bpAtProcs();
-        const labelList& globalPointLabel =
-            surfaceEngine_.globalBoundaryPointLabel();
-
-        // create the map for exchanging data
-        std::map<label, DynList<labelledScalar>> exchangeData;
-        const DynList<label>& neiProcs = surfaceEngine_.bpNeiProcs();
-        forAll(neiProcs, i)
-            exchangeData.insert
-            (
-                std::make_pair(neiProcs[i], DynList<labelledScalar>())
-            );
-
-        Map<label> globalToLocal;
-
-        forAll(nodesToMap, nI)
-        {
-            const label bpI = nodesToMap[nI];
-
-            if (bpAtProcs.sizeOfRow(bpI) != 0)
-                globalToLocal.insert(globalPointLabel[bpI], nI);
-
-            forAllRow(bpAtProcs, bpI, i)
-            {
-                const label neiProc = bpAtProcs(bpI, i);
-                if (neiProc == Pstream::myProcNo())
-                    continue;
-
-                exchangeData[neiProc].append
-                (
-                    labelledScalar(globalPointLabel[bpI], mappingDistance[nI])
-                );
-            }
-        }
-
-        // exchange data between processors
-        LongList<labelledScalar> receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        // select the maximum mapping distance for processor points
-        forAll(receivedData, i)
-        {
-            const labelledScalar& ls = receivedData[i];
-
-            const label nI = globalToLocal[ls.scalarLabel()];
-
-            // choose the maximum value for the mapping distance
-            mappingDistance[nI] = Foam::max(mappingDistance[nI], ls.value());
-        }
     }
 }
 
@@ -213,9 +156,7 @@ void Foam::Module::meshSurfaceMapper::mapCorners
     // triSurface
     meshSurfaceEngineModifier sMod(surfaceEngine_);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(nodesToMap, cornerI)
     {
         const label bpI = nodesToMap[cornerI];
@@ -322,18 +263,10 @@ void Foam::Module::meshSurfaceMapper::mapEdgeNodes
     scalarList mappingDistance;
     findMappingDistance(nodesToMap, mappingDistance);
 
-    const VRWGraph* bpAtProcsPtr(nullptr);
-    if (Pstream::parRun())
-        bpAtProcsPtr = &surfaceEngine_.bpAtProcs();
-
-    LongList<parMapperHelper> parallelBndNodes;
-
     meshSurfaceEngineModifier sMod(surfaceEngine_);
 
     // map point to the nearest vertex on the surface mesh
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(nodesToMap, i)
     {
         const label bpI = nodesToMap[i];
@@ -402,30 +335,9 @@ void Foam::Module::meshSurfaceMapper::mapEdgeNodes
 
         // move the point to the nearest edge vertex
         sMod.moveBoundaryVertexNoUpdate(bpI, mapPoint);
-
-        if (bpAtProcsPtr && bpAtProcsPtr->sizeOfRow(bpI))
-        {
-            # ifdef USE_OMP
-            # pragma omp critical
-            # endif
-            {
-                parallelBndNodes.append
-                (
-                    parMapperHelper
-                    (
-                        mapPoint,
-                        distSq,
-                        bpI,
-                        -1
-                    )
-                );
-            }
-        }
     }
 
     sMod.updateGeometry(nodesToMap);
-
-    mapToSmallestDistance(parallelBndNodes);
 }
 
 

@@ -165,17 +165,13 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
     groupVotes.setSize(nGroups);
     groupVotes = labelPair(0, 0);
 
-    # ifdef USE_OMP
     # pragma omp parallel if (surf.size() > 1000) private(helper)
-    # endif
     {
         DynList<labelPair> localVotes;
         localVotes.setSize(nGroups);
         localVotes = labelPair(0, 0);
 
-        # ifdef USE_OMP
         # pragma omp for schedule(dynamic, 40)
-        # endif
         forAll(orientationGroup, triI)
         {
             const labelledTri& tri = surf[triI];
@@ -231,9 +227,7 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
             }
         }
 
-        # ifdef USE_OMP
         # pragma omp critical(grouping)
-        # endif
         {
             forAll(localVotes, groupI)
             {
@@ -281,9 +275,7 @@ void Foam::Module::triSurfaceClassifyEdges::classifyEdgesTypes()
     edgeTypes_ = NONE;
 
     // set feature edge types
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 20)
-    # endif
     forAll(featureEdges, feI)
     {
         const edge& e = featureEdges[feI];
@@ -296,9 +288,7 @@ void Foam::Module::triSurfaceClassifyEdges::classifyEdgesTypes()
     }
 
     // Finally, check the edges and assign flags
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(edgeFacets, edgeI)
     {
         if (edgeFacets.sizeOfRow(edgeI) != 2)

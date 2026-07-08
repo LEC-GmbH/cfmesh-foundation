@@ -62,14 +62,12 @@ Foam::Module::polyMeshGenAddressing::pointCells() const
 {
     if (!pcPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calcPointCells();
     }

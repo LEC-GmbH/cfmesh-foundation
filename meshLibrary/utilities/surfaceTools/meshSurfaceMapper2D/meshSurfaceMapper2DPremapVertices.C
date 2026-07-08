@@ -33,8 +33,7 @@ License
 #include "meshSurfaceMapper2D.H"
 #include "polyMeshGen2DEngine.H"
 #include "meshOctree.H"
-#include "refLabelledPoint.H"
-#include "helperFunctionsPar.H"
+#include "labelledPoint.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -55,9 +54,7 @@ void Foam::Module::meshSurfaceMapper2D::preMapVertices(const label nIterations)
         labelLongList parBndEdges;
 
         // use the shrinking laplace first
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 40)
-        # endif
         forAll(activeBoundaryEdges_, eI)
         {
             const label beI = activeBoundaryEdges_[eI];
@@ -78,9 +75,7 @@ void Foam::Module::meshSurfaceMapper2D::preMapVertices(const label nIterations)
                 ++lp.pointLabel();
                 lp.coordinates() += faceCentres[edgeFaces(beI, 0)];
 
-                #ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 parBndEdges.append(eI);
             }
 
@@ -88,73 +83,8 @@ void Foam::Module::meshSurfaceMapper2D::preMapVertices(const label nIterations)
             preMapPositions[eI] = lp;
         }
 
-        if (Pstream::parRun())
-        {
-            const VRWGraph& beAtProcs = surfaceEngine_.beAtProcs();
-            const labelList& globalEdgeLabel =
-                surfaceEngine_.globalBoundaryEdgeLabel();
-            const Map<label>& globalToLocal =
-                surfaceEngine_.globalToLocalBndEdgeAddressing();
-
-            // collect data to be sent to other processors
-            std::map<label, LongList<refLabelledPoint>> exchangeData;
-            forAll(surfaceEngine_.beNeiProcs(), i)
-                exchangeData.insert
-                (
-                    std::make_pair
-                    (
-                        surfaceEngine_.beNeiProcs()[i],
-                        LongList<refLabelledPoint>()
-                    )
-                );
-
-            Map<label> edgeToActiveAddressing;
-            forAll(parBndEdges, i)
-            {
-                const label beI = activeBoundaryEdges_[parBndEdges[i]];
-                edgeToActiveAddressing.insert(beI, parBndEdges[i]);
-
-                forAllRow(beAtProcs, beI, procI)
-                {
-                    const label neiProc = beAtProcs(beI, procI);
-
-                    if (neiProc == Pstream::myProcNo())
-                        continue;
-
-                    exchangeData[neiProc].append
-                    (
-                        refLabelledPoint
-                        (
-                            globalEdgeLabel[beI],
-                            preMapPositions[beI]
-                        )
-                    );
-                }
-            }
-
-            // exchange data with other processors
-            LongList<refLabelledPoint> receivedData;
-            help::exchangeMap(exchangeData, receivedData);
-
-            // combine collected data with the available data
-            forAll(receivedData, i)
-            {
-                const refLabelledPoint& rlp = receivedData[i];
-                const labelledPoint& lps = rlp.lPoint();
-
-                const label beI = globalToLocal[rlp.objectLabel()];
-                const label eI = edgeToActiveAddressing[beI];
-
-                labelledPoint& lp = preMapPositions[eI];
-                lp.pointLabel() += lps.pointLabel();
-                lp.coordinates() += lps.coordinates();
-            }
-        }
-
         // calculate coordinates of points for searching
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 50)
-        # endif
         forAll(activeBoundaryEdges_, eI)
         {
             labelledPoint& lp = preMapPositions[eI];
@@ -172,9 +102,7 @@ void Foam::Module::meshSurfaceMapper2D::preMapVertices(const label nIterations)
         // create the surface modifier and move the surface points
         meshSurfaceEngineModifier surfaceModifier(surfaceEngine_);
 
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 50)
-        # endif
         forAll(activeBoundaryEdges_, eI)
         {
             const label beI = activeBoundaryEdges_[eI];
@@ -204,7 +132,6 @@ void Foam::Module::meshSurfaceMapper2D::preMapVertices(const label nIterations)
         }
 
         surfaceModifier.updateGeometry();
-        surfaceModifier.syncVerticesAtParallelBoundaries();
 
         Info<< "." << flush;
     }

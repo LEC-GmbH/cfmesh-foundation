@@ -96,9 +96,7 @@ Foam::Module::surfaceMeshGeometryModification::modifyGeometry() const
 
     pointField newPts(pts.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(pts, pointI)
     {
         newPts[pointI] = coordinateModifierPtr_->modifiedPoint(pts[pointI]);
@@ -184,9 +182,7 @@ const
 
     pointField newPts(pts.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(pts, pointI)
     {
         newPts[pointI] =

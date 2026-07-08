@@ -32,8 +32,6 @@ License
 #include "surfaceOptimizer.H"
 #include "matrix2D.H"
 
-//#define DEBUGSmooth
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 
@@ -67,10 +65,6 @@ Foam::scalar Foam::Module::surfaceOptimizer::evaluateStabilisationFactor() const
                 (p2.x() - p0.x())*(p1.y() - p0.y())
             );
 
-        # ifdef DEBUGSmooth
-        Info<< "Triangle " << triI << " area " << Atri << endl;
-        # endif
-
         const scalar LSqrTri
         (
             magSqr(p0 - p1) +
@@ -80,11 +74,6 @@ Foam::scalar Foam::Module::surfaceOptimizer::evaluateStabilisationFactor() const
         Amin = Foam::min(Amin, Atri);
         LsqMax = Foam::max(LsqMax, LSqrTri);
     }
-
-    # ifdef DEBUGSmooth
-    Info<< "Amin " << Amin << endl;
-    Info<< "LsqMax " << LsqMax << endl;
-    # endif
 
     // K is greater than zero in case the stabilisation is needed
     scalar K = 0.0;
@@ -115,10 +104,6 @@ Foam::scalar Foam::Module::surfaceOptimizer::evaluateFunc(const scalar K) const
             );
 
         const scalar stab = sqrt(sqr(Atri) + K);
-
-        # ifdef DEBUGSmooth
-        Info<< "Triangle " << triI << " area " << Atri << endl;
-        # endif
 
         const scalar LSqrTri
         (
@@ -262,13 +247,6 @@ Foam::scalar Foam::Module::surfaceOptimizer::optimiseDivideAndConquer
         // calculate the tolerence
         const scalar t = mag(funcAfter - funcBefore) / funcAfter;
 
-        # ifdef DEBUGSmooth
-        Info<< "Point position " << pOpt << endl;
-        Info<< "Func before " << funcBefore << endl;
-        Info<< "Func after " << funcAfter << endl;
-        Info<< "Normalised difference " << t << endl;
-        # endif
-
         if (t < tol)
             break;
     } while (++iter < 100);
@@ -334,13 +312,6 @@ Foam::scalar Foam::Module::surfaceOptimizer::optimiseSteepestDescent
             }
         }
 
-        # ifdef DEBUGSmooth
-        Info<< "Second gradient " << gradGradF << endl;
-        Info<< "Gradient " << gradF << endl;
-        Info<< "Displacement " << disp << endl;
-        Info<< "K = " << K << endl;
-        # endif
-
         pOpt -= disp;
 
         K = evaluateStabilisationFactor();
@@ -348,10 +319,6 @@ Foam::scalar Foam::Module::surfaceOptimizer::optimiseSteepestDescent
 
         if (mag(funcAfter - funcBefore) / funcBefore < tol)
             break;
-
-        #ifdef DEBUGSmooth
-        Info<< "New coordinates " << pOpt << endl;
-        # endif
 
     } while (++nIterations < 100);
 

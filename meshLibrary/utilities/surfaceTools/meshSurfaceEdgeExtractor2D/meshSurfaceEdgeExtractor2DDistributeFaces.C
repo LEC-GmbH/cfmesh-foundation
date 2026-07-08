@@ -93,9 +93,7 @@ void Foam::Module::meshSurfaceEdgeExtractor2D::distributeBoundaryFaces()
     labelLongList bndFaceOwner(bndFaces.size());
     labelLongList bndFacePatch(bndFaces.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(bndFaces, bfI)
     {
         const label faceI = origFaceLabel[bfI];

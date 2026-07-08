@@ -35,10 +35,7 @@ License
 #include "polyMeshGen2DEngine.H"
 #include "VRWGraphList.H"
 
-#include "labelledPair.H"
 #include "labelledScalar.H"
-
-//#define DEBUGLayer
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -129,141 +126,6 @@ public:
                     neighbourFaces.append(nei);
                 }
             }
-        }
-    }
-
-    template<class labelListType>
-    void collectGroups
-    (
-        std::map<label, DynList<label>>& neiGroups,
-        const labelListType& elementInGroup,
-        const DynList<label>& localGroupLabel
-    ) const
-    {
-        const polyMeshGen& mesh = mse_.mesh();
-        const faceListPMG& faces = mesh.faces();
-        const cellListPMG& cells = mesh.cells();
-
-        const edgeList& edges = mse_.edges();
-        const labelList& faceOwner = mse_.faceOwners();
-        const VRWGraph& edgeFaces = mse_.edgeFaces();
-        const Map<label>& otherProc = mse_.otherEdgeFaceAtProc();
-        const Map<label>& globalToLocal =
-            mse_.globalToLocalBndEdgeAddressing();
-
-        std::map<label, LongList<labelPair>> exchangeData;
-        forAll(mse_.beNeiProcs(), procI)
-        {
-            exchangeData[mse_.beNeiProcs()[procI]].clear();
-        }
-
-        forAllConstIters(globalToLocal, it)
-        {
-            const label beI = it();
-
-            // combine data if the cell attached to this face has a face
-            // attached to the inter-processor boundary
-            // this must hold for boundary layer cells
-            const cell& c = cells[faceOwner[edgeFaces(beI, 0)]];
-
-            bool validCell(false);
-            forAll(c, fI)
-            {
-                const face& f = faces[c[fI]];
-
-                forAll(f, eI)
-                {
-                    const edge fe = f.faceEdge(eI);
-
-                    if
-                    (
-                        (fe == edges[beI]) &&
-                        (mesh.faceIsInProcPatch(c[fI]) >= 0)
-                    )
-                    {
-                        validCell = true;
-                        break;
-                    }
-                }
-
-                if (validCell)
-                {
-                    break;
-                }
-            }
-
-            if (!validCell)
-            {
-                continue;
-            }
-
-            const label groupI = elementInGroup[edgeFaces(beI, 0)];
-
-            if (groupI < 0)
-            {
-                continue;
-            }
-
-            const label lgI = localGroupLabel[groupI];
-            exchangeData[otherProc[beI]].append(labelPair(it.key(), lgI));
-        }
-
-        LongList<labelPair> receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            const labelPair& lp = receivedData[i];
-
-            const label beI = globalToLocal[lp.first()];
-
-            const cell& c = cells[faceOwner[edgeFaces(beI, 0)]];
-
-            // combine data if the cell attached to this face has a face
-            // attached to the inter-processor boundary
-            // this must hold for boundary layer cells
-            bool validCell(false);
-            forAll(c, fI)
-            {
-                const face& f = faces[c[fI]];
-
-                forAll(f, eI)
-                {
-                    const edge fe = f.faceEdge(eI);
-
-                    if
-                    (
-                        (fe == edges[beI]) &&
-                        (mesh.faceIsInProcPatch(c[fI]) >= 0)
-                    )
-                    {
-                        validCell = true;
-                        break;
-                    }
-                }
-
-                if (validCell)
-                {
-                    break;
-                }
-            }
-
-            if (!validCell)
-            {
-                continue;
-            }
-
-            const label groupI = elementInGroup[edgeFaces(beI, 0)];
-
-            if (groupI < 0)
-            {
-                continue;
-            }
-
-            DynList<label>& ng = neiGroups[localGroupLabel[groupI]];
-
-            // store the connection over the inter-processor boundary
-            ng.appendUniq(lp.second());
         }
     }
 };
@@ -396,29 +258,6 @@ void Foam::Module::detectBoundaryLayers::analyseLayers()
             bndLayerOps::meshBndLayerSelectorOperator(mse)
         );
 
-    # ifdef DEBUGLayer
-    labelList layerSubsetId(nFirstLayers_);
-    polyMeshGen& pmg = const_cast<polyMeshGen&>(mesh);
-    forAll(layerSubsetId, i)
-    {
-        layerSubsetId[i] = pmg.addCellSubset("bndLayer" + Foam::name(i));
-    }
-
-    forAll(layerAtBndFace_, bfI)
-    {
-        if (layerAtBndFace_[bfI] < 0)
-        {
-            continue;
-        }
-
-        pmg.addCellToSubset
-        (
-            layerSubsetId[layerAtBndFace_[bfI]],
-            mse.faceOwners()[bfI]
-        );
-    }
-    # endif
-
     if (is2DMesh_)
     {
         polyMeshGen2DEngine mesh2DEngine(mse.mesh());
@@ -427,9 +266,7 @@ void Foam::Module::detectBoundaryLayers::analyseLayers()
 
         const faceList::subList& bFaces = mse.boundaryFaces();
 
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 50)
-        # endif
         forAll(bFaces, bfI)
         {
             const face& bf = bFaces[bfI];
@@ -499,16 +336,6 @@ void Foam::Module::detectBoundaryLayers::analyseLayers()
         }
     }
 
-    # ifdef DEBUGLayer
-    Info<< "Layer at patch " << layerAtPatch_ << endl;
-    forAll(layerAtBndFace_, bfI)
-    {
-        if (layerAtBndFace_[bfI] < 0)
-        {
-            Info<< "0.2 No layer at boundary face " << bfI << endl;
-        }
-    }
-    # endif
 }
 
 
@@ -646,15 +473,11 @@ void Foam::Module::detectBoundaryLayers::generateHairEdges()
     const VRWGraph& pFaces = mse.pointFaces();
     const labelList& bp = mse.bp();
 
-    # ifdef USE_OMP
     # pragma omp parallel if (bFaces.size() > 1000)
-    # endif
     {
         edgeLongList localEdges;
 
-        # ifdef USE_OMP
         # pragma omp for schedule(dynamic, 100)
-        # endif
         forAll(bFaces, bfI)
         {
             if (layerAtBndFace_[bfI] < 0)
@@ -686,7 +509,6 @@ void Foam::Module::detectBoundaryLayers::generateHairEdges()
             }
         }
 
-        # ifdef USE_OMP
         // find the starting element for this thread
         label startEl;
         # pragma omp critical
@@ -703,10 +525,6 @@ void Foam::Module::detectBoundaryLayers::generateHairEdges()
         {
             hairEdges_[startEl++] = localEdges[i];
         }
-        # else
-        // just transfer the data to splitEdges_
-        hairEdges_.transfer(localEdges);
-        # endif
     }
 
     // filter out duplicate edges
@@ -714,9 +532,7 @@ void Foam::Module::detectBoundaryLayers::generateHairEdges()
     pHairEdges.reverseAddressing(hairEdges_);
 
     boolList duplicateEdge(hairEdges_.size(), false);
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(pHairEdges, pointI)
     {
         forAllRow(pHairEdges, pointI, pheI)

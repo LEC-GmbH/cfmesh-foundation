@@ -53,67 +53,7 @@ void Foam::Module::polyMeshGenModifier::replaceBoundary
         newFaceLabel[faceI] = faceI;
     }
 
-    if (Pstream::parRun())
-    {
-        // shift processor faces
-        PtrList<processorBoundaryPatch>& procBoundaries =
-            mesh_.procBoundaries_;
-
-        label nProcFaces(0);
-        forAll(procBoundaries, patchI)
-        {
-            nProcFaces += procBoundaries[patchI].patchSize();
-        }
-
-        const label procStart = nIntFaces + boundaryFaces.size();
-        const label shift = procStart - procBoundaries[0].patchStart();
-
-        if (shift > 0)
-        {
-            faces.setSize(procStart + nProcFaces);
-            forAllReverse(procBoundaries, patchI)
-            {
-                const label start = procBoundaries[patchI].patchStart();
-                const label end = procBoundaries[patchI].patchSize() + start;
-                for (label faceI = end - 1; faceI >= start; --faceI)
-                {
-                    faces[faceI + shift].transfer(faces[faceI]);
-                    newFaceLabel[faceI] = faceI + shift;
-                }
-
-                procBoundaries[patchI].patchStart() += shift;
-            }
-        }
-        else if (shift < 0)
-        {
-            forAll(procBoundaries, patchI)
-            {
-                const label start = procBoundaries[patchI].patchStart();
-                const label end = procBoundaries[patchI].patchSize() + start;
-                for (label faceI = start; faceI < end; ++faceI)
-                {
-                    faces[faceI + shift].transfer(faces[faceI]);
-                    newFaceLabel[faceI] = faceI + shift;
-                }
-
-                procBoundaries[patchI].patchStart() += shift;
-            }
-
-            faces.setSize(procStart + nProcFaces);
-        }
-        else
-        {
-            // processor faces are not moved
-            for (label fI = 0; fI < nProcFaces; ++fI)
-            {
-                newFaceLabel[procStart + fI] = procStart + fI;
-            }
-        }
-    }
-    else
-    {
-        faces.setSize(nIntFaces + boundaryFaces.size());
-    }
+    faces.setSize(nIntFaces + boundaryFaces.size());
 
     // change cells according to the new face ordering
     List<direction> nFacesInCell(cells.size(), direction(0));

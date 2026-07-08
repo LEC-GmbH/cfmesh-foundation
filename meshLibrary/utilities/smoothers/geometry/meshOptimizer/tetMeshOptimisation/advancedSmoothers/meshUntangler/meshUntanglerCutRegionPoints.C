@@ -35,13 +35,6 @@ License
 #include "polyMeshGenModifier.H"
 #include "helperFunctions.H"
 
-//#define DEBUGSmooth
-
-#ifdef DEBUGSmooth
-#include "Time.H"
-#include "objectRegistry.H"
-#endif
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 bool Foam::Module::meshUntangler::cutRegion::findNewVertices
@@ -49,10 +42,6 @@ bool Foam::Module::meshUntangler::cutRegion::findNewVertices
     const plane& plane
 )
 {
-    #ifdef DEBUGSmooth
-    Info<< "Finding new vertices" << endl;
-    #endif
-
     const DynList<point, 64>& points = *pointsPtr_;
 
     newVertexLabel_.setSize(points.size());
@@ -89,15 +78,6 @@ bool Foam::Module::meshUntangler::cutRegion::findNewVertices
         }
     }
 
-    #ifdef DEBUGSmooth
-    Info<< "tolerance " << tol_ << endl;
-    Info<< "New number of vertices is " << origNumVertices_ << endl;
-    forAll(points, pI)
-        Info<< "Original vertex " << pI << " is " << points[pI]
-            << ". Vertex distance from plane is " << vertexDistance_[pI]
-            << " and its new label is " << newVertexLabel_[pI] << endl;
-    #endif
-
     if (origNumVertices_ < points.size())
     {
         return true;
@@ -126,11 +106,6 @@ void Foam::Module::meshUntangler::cutRegion::removeCoincidentVertices()
         for (label pJ = pI + 1; pJ < points.size(); ++pJ)
             if (mag(points[pJ] - points[pI]) < tol_)
             {
-                # ifdef DEBUGSmooth
-                Info<< "Vertices " << pI << " and " << pJ
-                    << " are too close" << endl;
-                # endif
-
                 newLabelForPoint[pJ] = pI;
                 found = true;
             }

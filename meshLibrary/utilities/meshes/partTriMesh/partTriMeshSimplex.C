@@ -31,8 +31,6 @@ License
 #include "Map.H"
 #include "partTriMeshSimplex.H"
 
-//#define DEBUGSmooth
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::Module::partTriMeshSimplex::partTriMeshSimplex
@@ -67,10 +65,6 @@ Foam::Module::partTriMeshSimplex::partTriMeshSimplex
                 ++counter;
             }
         }
-
-        # ifdef DEBUGSmooth
-        Info<< "Tet " << tetI << " is " << tet << endl;
-        # endif
 
         label pos(-1);
         for (label i = 0; i < 3; ++i)
@@ -119,11 +113,6 @@ Foam::Module::partTriMeshSimplex::partTriMeshSimplex
             }
         }
     }
-
-    # ifdef DEBUGSmooth
-    Info<< "Simplex at point " << pI << " points " << pts_ << endl;
-    Info<< "Simplex at point " << pI << " triangles " << trias_ << endl;
-    # endif
 
     if (pts_.size() == 0 || trias_.size() == 0)
     {

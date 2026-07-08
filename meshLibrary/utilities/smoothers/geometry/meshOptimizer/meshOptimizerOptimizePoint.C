@@ -46,21 +46,12 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacian
 
     for (label iterationI = 0; iterationI < nIterations; ++iterationI)
     {
-        labelLongList procPoints;
-
         forAll(smoothPoints, i)
         {
             const label pointI = smoothPoints[i];
 
             if (vertexLocation_[pointI] & LOCKED)
                 continue;
-
-            if (vertexLocation_[pointI] & PARALLELBOUNDARY)
-            {
-                procPoints.append(pointI);
-
-                continue;
-            }
 
             vector newP(vector::zero);
 
@@ -75,8 +66,6 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacian
             newP /= pPoints.sizeOfRow(pointI);
             points[pointI] = newP;
         }
-
-        laplacianParallel(procPoints, false);
     }
 
     updateMeshGeometry(smoothPoints);
@@ -94,21 +83,12 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianSurface
 
     for (label iterationI = 0; iterationI < nIterations; ++iterationI)
     {
-        labelLongList procPoints;
-
         forAll(smoothPoints, i)
         {
             const label pointI = smoothPoints[i];
 
             if (vertexLocation_[pointI] & LOCKED)
                 continue;
-
-            if (vertexLocation_[pointI] & PARALLELBOUNDARY)
-            {
-                procPoints.append(pointI);
-
-                continue;
-            }
 
             vector newP(vector::zero);
 
@@ -129,8 +109,6 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianSurface
                 points[pointI] = newP;
             }
         }
-
-        laplacianParallel(smoothPoints, true);
     }
 
     updateMeshGeometry(smoothPoints);
@@ -149,11 +127,7 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianPC
 
     for (label iterationI = 0; iterationI < nIterations; ++iterationI)
     {
-        labelLongList procPoints;
-
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 20)
-        # endif
         forAll(smoothPoints, i)
         {
             const label pointI = smoothPoints[i];
@@ -164,16 +138,6 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianPC
             if (pointCells.sizeOfRow(pointI) == 0)
                 continue;
 
-            if (vertexLocation_[pointI] & PARALLELBOUNDARY)
-            {
-                # ifdef USE_OMP
-                # pragma omp critical
-                # endif
-                procPoints.append(pointI);
-
-                continue;
-            }
-
             point newP(vector::zero);
             forAllRow(pointCells, pointI, pcI)
                 newP += centres[pointCells(pointI, pcI)];
@@ -182,8 +146,6 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianPC
 
             points[pointI] = newP;
         }
-
-        laplacianPCParallel(procPoints);
 
         updateMeshGeometry(smoothPoints);
     }
@@ -204,11 +166,7 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianWPC
 
     for (label iterationI = 0; iterationI < nIterations; ++iterationI)
     {
-        labelLongList procPoints;
-
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 20)
-        # endif
         forAll(smoothPoints, i)
         {
             const label pointI = smoothPoints[i];
@@ -218,16 +176,6 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianWPC
 
             if (pointCells.sizeOfRow(pointI) == 0)
                 continue;
-
-            if (vertexLocation_[pointI] & PARALLELBOUNDARY)
-            {
-                # ifdef USE_OMP
-                # pragma omp critical
-                # endif
-                procPoints.append(pointI);
-
-                continue;
-            }
 
             point newP(vector::zero);
             scalar sumWeights(0.0);
@@ -242,8 +190,6 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianWPC
             newP /= sumWeights;
             points[pointI] = newP;
         }
-
-        laplacianWPCParallel(procPoints);
 
         updateMeshGeometry(smoothPoints);
     }
@@ -260,10 +206,8 @@ void Foam::Module::meshOptimizer::laplaceSmoother::updateMeshGeometry
 
     boolList chF(mesh_.faces().size(), false);
 
-    # ifdef USE_OMP
     # pragma omp parallel for if (smoothPoints.size() > 100) \
     schedule(dynamic, 20)
-    # endif
     forAll(smoothPoints, i)
     {
         const label pointI = smoothPoints[i];
@@ -278,47 +222,6 @@ void Foam::Module::meshOptimizer::laplaceSmoother::updateMeshGeometry
             forAll(c, fI)
                 chF[c[fI]] = true;
         }
-    }
-
-    // make sure that neighbouring processors get the same information
-    const PtrList<processorBoundaryPatch>& pBnd = mesh_.procBoundaries();
-    forAll(pBnd, patchI)
-    {
-        const label start = pBnd[patchI].patchStart();
-        const label size = pBnd[patchI].patchSize();
-
-        labelLongList sendData;
-        for (label faceI = 0; faceI < size; ++faceI)
-        {
-            if (chF[start + faceI])
-                sendData.append(faceI);
-        }
-
-        OPstream toOtherProc
-        (
-            Pstream::commsTypes::blocking,
-            pBnd[patchI].neiProcNo(),
-            sendData.byteSize()
-        );
-
-        toOtherProc << sendData;
-    }
-
-    forAll(pBnd, patchI)
-    {
-        labelList receivedData;
-
-        IPstream fromOtherProc
-        (
-            Pstream::commsTypes::blocking,
-            pBnd[patchI].neiProcNo()
-        );
-
-        fromOtherProc >> receivedData;
-
-        const label start = pBnd[patchI].patchStart();
-        forAll(receivedData, i)
-            chF[start + receivedData[i]] = true;
     }
 
     // update geometry information

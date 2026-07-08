@@ -31,8 +31,6 @@ License
 #include "meshOctree.H"
 #include "boundBox.H"
 
-//#define OCTREE_DEBUG
-
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
 Foam::label Foam::Module::meshOctree::findLeafContainingVertex
@@ -40,18 +38,10 @@ Foam::label Foam::Module::meshOctree::findLeafContainingVertex
     const point& p
 ) const
 {
-    # ifdef OCTREE_DEBUG
-    Info<< "Finding leaf for vertex " << p << endl;
-    # endif
-
     const meshOctreeCube* ocPtr = initialCubePtr_;
 
     if (!ocPtr->isVertexInside(rootBox_, p))
     {
-        # ifdef OCTREE_DEBUG
-        Info<< "Vertex " << p << " is not in the initial cube" << endl;
-        # endif
-
         FatalErrorInFunction
             << "Point " << p << " is not inside the initial cube" << endl;
 
@@ -91,7 +81,7 @@ Foam::label Foam::Module::meshOctree::findLeafContainingVertex
         return ocPtr->cubeLabel();
     }
 
-    return meshOctreeCubeBasic::OTHERPROC;
+    return -1;
 }
 
 
@@ -134,20 +124,11 @@ Foam::label Foam::Module::meshOctree::findNeighbourOverNode
         {
             return -1;
         }
-        else if (Pstream::parRun())
-        {
-            return meshOctreeCubeBasic::OTHERPROC;
-        }
 
         return -1;
     }
     else if (neiPtr->isLeaf())
     {
-        # ifdef OCTREE_DEBUG
-        if (leaves_[neiPtr->cubeLabel()] != neiPtr)
-            FatalError << "Cube does not correspond to itself"
-                << abort(FatalError);
-        # endif
         return neiPtr->cubeLabel();
     }
     else
@@ -159,10 +140,6 @@ Foam::label Foam::Module::meshOctree::findNeighbourOverNode
             if (scPtr)
             {
                 sc[scI] = scPtr->cubeLabel();
-            }
-            else if (Pstream::parRun())
-            {
-                sc[scI] = meshOctreeCubeBasic::OTHERPROC;
             }
         }
 
@@ -206,18 +183,9 @@ void Foam::Module::meshOctree::findNeighboursOverEdge
         {
             neighbourLeaves.append(-1);
         }
-        else if (Pstream::parRun())
-        {
-            neighbourLeaves.append(meshOctreeCubeBasic::OTHERPROC);
-        }
     }
     else if (neiPtr->isLeaf())
     {
-        # ifdef OCTREE_DEBUG
-        if (leaves_[neiPtr->cubeLabel()] != neiPtr)
-            FatalError << "Cube does not correspond to itself"
-                << abort(FatalError);
-        # endif
         neighbourLeaves.append(neiPtr->cubeLabel());
     }
     else
@@ -230,10 +198,6 @@ void Foam::Module::meshOctree::findNeighboursOverEdge
             if (scPtr)
             {
                 sc[scI] = scPtr->cubeLabel();
-            }
-            else if (Pstream::parRun())
-            {
-                sc[scI] = meshOctreeCubeBasic::OTHERPROC;
             }
         }
 
@@ -324,18 +288,9 @@ void Foam::Module::meshOctree::findNeighboursInDirection
         {
             neighbourLeaves.append(-1);
         }
-        else if (Pstream::parRun())
-        {
-            neighbourLeaves.append(meshOctreeCubeBasic::OTHERPROC);
-        }
     }
     else if (neiPtr->isLeaf())
     {
-        # ifdef OCTREE_DEBUG
-        if (leaves_[neiPtr->cubeLabel()] != neiPtr)
-            FatalError << "Cube does not correspond to itself"
-                << abort(FatalError);
-        # endif
         neighbourLeaves.append(neiPtr->cubeLabel());
     }
     else
@@ -348,10 +303,6 @@ void Foam::Module::meshOctree::findNeighboursInDirection
             if (scPtr)
             {
                 sc[scI] = scPtr->cubeLabel();
-            }
-            else if (Pstream::parRun())
-            {
-                sc[scI] = meshOctreeCubeBasic::OTHERPROC;
             }
         }
 
@@ -446,15 +397,6 @@ void Foam::Module::meshOctree::findLeavesForCubeVertex
             neighbours[posI] = nei;
     }
 
-    # ifdef OCTREE_DEBUG
-    Info<< "Cube " << *oc << endl;
-    Info<< "Vertex " << short(vrtI) << endl;
-    Info<< "Neighbours " << endl;
-    forAll(neighbours, nI)
-        if (neighbours[nI])
-            Info<< *neighbours[nI] << endl;
-    # endif
-
 }
 
 
@@ -464,10 +406,6 @@ Foam::Module::meshOctree::findCubeForPosition
     const meshOctreeCubeCoordinates& cc
 ) const
 {
-    # ifdef OCTREE_DEBUG
-    Info<< "Finding position " << cc << endl;
-    # endif
-
     const label cpx = cc.posX();
     const label cpy = cc.posY();
     const label cpz = cc.posZ();
@@ -510,10 +448,6 @@ Foam::Module::meshOctree::findCubeForPosition
         }
     }
 
-    # ifdef OCTREE_DEBUG
-    Info<< "Found position is " << *neiPtr << endl;
-    # endif
-
     return neiPtr;
 }
 
@@ -528,20 +462,6 @@ Foam::label Foam::Module::meshOctree::findLeafLabelForPosition
     if (ocPtr && ocPtr->isLeaf())
     {
         return ocPtr->cubeLabel();
-    }
-    else if (!ocPtr && (neiProcs_.size() != 0))
-    {
-        const label levelLimiter = (1 << cc.level());
-        if
-        (
-            (cc.posX() < levelLimiter) && (cc.posX() >= 0) &&
-            (cc.posY() < levelLimiter) && (cc.posY() >= 0) &&
-            ((!isQuadtree_ && (cc.posZ() < levelLimiter && cc.posZ() >= 0)) ||
-            (isQuadtree_ && (cc.posZ() == initialCubePtr_->posZ())))
-        )
-        {
-            return meshOctreeCubeBasic::OTHERPROC;
-        }
     }
 
     return -1;

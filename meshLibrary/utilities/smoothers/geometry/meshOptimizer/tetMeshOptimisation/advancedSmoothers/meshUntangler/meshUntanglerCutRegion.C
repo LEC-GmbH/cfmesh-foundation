@@ -35,13 +35,6 @@ License
 #include "polyMeshGenModifier.H"
 #include "sortEdgesIntoChains.H"
 
-//#define DEBUGSmooth
-
-#ifdef DEBUGSmooth
-#include "Time.H"
-#include "objectRegistry.H"
-#endif
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::meshUntangler::cutRegion::createInitialConfiguration
@@ -149,13 +142,6 @@ void Foam::Module::meshUntangler::cutRegion::createInitialConfiguration
     f[2] = 2;
     f[3] = 6;
     bFaces.append(f);
-
-    # ifdef DEBUGSmooth
-    Info<< "Original vertices " << *pointsPtr_ << endl;
-    Info<< "Original edges " << *edgesPtr_ << endl;
-    Info<< "Original faces " << *facesPtr_ << endl;
-    # endif
-
 }
 
 
@@ -198,24 +184,6 @@ void Foam::Module::meshUntangler::cutRegion::planeCut(const plane& plane)
 {
     if (!valid_)
         return;
-
-    # ifdef DEBUGSmooth
-    if (cFacesPtr_ || cPtsPtr_ || cEdgesPtr_)
-    {
-        FatalErrorInFunction
-            << "Pointers should not be allocated!" << abort(FatalError);
-    }
-
-    Foam::Time runTime
-    (
-        Foam::Time::controlDictName,
-        "../.",
-        "testSmoothing"
-    );
-
-    polyMeshGen pmg(runTime);
-    this->createPolyMeshFromRegion(pmg);
-    # endif
 
     if (findNewVertices(plane))
     {

@@ -50,8 +50,6 @@ License
 #include "edgeExtractor.H"
 #include "meshSurfaceEdgeExtractorFUN.H"
 
-//#define DEBUG
-
 // * * * * * * * * * * * * Private member functions  * * * * * * * * * * * * //
 
 void Foam::Module::voronoiMeshGenerator::createVoronoiMesh()
@@ -61,10 +59,6 @@ void Foam::Module::voronoiMeshGenerator::createVoronoiMesh()
 
     vme.createMesh();
 
-    # ifdef DEBUG
-    mesh_.write();
-    //::exit(EXIT_FAILURE);
-    # endif
 }
 
 
@@ -77,10 +71,6 @@ void Foam::Module::voronoiMeshGenerator::surfacePreparation()
     cmPtr->morphMesh();
     deleteDemandDrivenData(cmPtr);
 
-    # ifdef DEBUG
-    mesh_.write();
-    //::exit(EXIT_FAILURE);
-    # endif
 }
 
 
@@ -94,18 +84,8 @@ void Foam::Module::voronoiMeshGenerator::mapMeshToSurface()
     mapper.preMapVertices();
     mapper.mapVerticesOntoSurface();
 
-    # ifdef DEBUG
-    mesh_.write();
-    //::exit(EXIT_FAILURE);
-    # endif
-
     // untangle surface faces
     meshSurfaceOptimizer(*msePtr, *octreePtr_).untangleSurface();
-
-    # ifdef DEBUG
-    mesh_.write();
-    ::exit(EXIT_FAILURE);
-    # endif
 
     deleteDemandDrivenData(msePtr);
 }
@@ -126,10 +106,6 @@ void Foam::Module::voronoiMeshGenerator::mapEdgesAndCorners()
 {
     meshSurfaceEdgeExtractorFUN(mesh_, *octreePtr_, false);
 
-    # ifdef DEBUG
-    mesh_.write();
-    //::exit(EXIT_FAILURE);
-    # endif
 }
 
 
@@ -140,10 +116,6 @@ void Foam::Module::voronoiMeshGenerator::optimiseMeshSurface()
     surfOptimiser.optimizeSurface();
     surfOptimiser.untangleSurface();
 
-    # ifdef DEBUG
-    mesh_.write();
-    //::exit(EXIT_FAILURE);
-    # endif
 }
 
 
@@ -177,10 +149,6 @@ void Foam::Module::voronoiMeshGenerator::generateBoudaryLayers()
         }
     }
 
-    # ifdef DEBUG
-    mesh_.write();
-    //::exit(EXIT_FAILURE);
-    # endif
 }
 
 
@@ -250,10 +218,6 @@ void Foam::Module::voronoiMeshGenerator::optimiseFinalMesh()
         deleteDemandDrivenData(modSurfacePtr_);
     }
 
-    # ifdef DEBUG
-    mesh_.write();
-    //::exit(0);
-    # endif
 }
 
 
@@ -288,10 +252,6 @@ void Foam::Module::voronoiMeshGenerator::replaceBoundaries()
 {
     renameBoundaryPatches rbp(mesh_, meshDict_);
 
-    # ifdef DEBUG
-    mesh_.write();
-    //::exit(0);
-    # endif
 }
 
 
@@ -299,10 +259,6 @@ void Foam::Module::voronoiMeshGenerator::renumberMesh()
 {
     polyMeshGenModifier(mesh_).renumberMesh();
 
-    # ifdef DEBUG
-    mesh_.write();
-    //::exit(0);
-    # endif
 }
 
 

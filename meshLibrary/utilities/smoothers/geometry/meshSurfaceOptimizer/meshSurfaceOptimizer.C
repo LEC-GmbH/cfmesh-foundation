@@ -59,19 +59,6 @@ void Foam::Module::meshSurfaceOptimizer::classifySurfaceVertices()
         vertexType_[edgei] = EDGE;
     }
 
-    if (Pstream::parRun())
-    {
-        // mark nodes at parallel boundaries
-        const Map<label>& globalToLocal =
-            surfaceEngine_.globalToLocalBndPointAddressing();
-
-        forAllConstIters(globalToLocal, iter)
-        {
-            const label bpI = iter();
-
-            vertexType_[bpI] |= PROCBND;
-        }
-    }
 }
 
 
@@ -166,9 +153,7 @@ Foam::Module::meshSurfaceOptimizer::~meshSurfaceOptimizer()
 
 void Foam::Module::meshSurfaceOptimizer::removeUserConstraints()
 {
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(vertexType_, bpI)
         if (vertexType_[bpI] & LOCKED)
             vertexType_[bpI] ^= LOCKED;

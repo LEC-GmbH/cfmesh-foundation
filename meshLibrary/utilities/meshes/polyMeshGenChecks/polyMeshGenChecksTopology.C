@@ -81,8 +81,6 @@ bool Foam::Module::polyMeshGenChecks::checkPoints
         }
     }
 
-    reduce(nFaceErrors, sumOp<label>());
-    reduce(nCellErrors, sumOp<label>());
 
     if (nFaceErrors > 0 || nCellErrors > 0)
     {
@@ -221,7 +219,6 @@ bool Foam::Module::polyMeshGenChecks::checkUpperTriangular
         }
     }
 
-    reduce(error, orOp<bool>());
 
     if (error)
     {
@@ -255,9 +252,7 @@ bool Foam::Module::polyMeshGenChecks::checkCellsZipUp
     const faceListPMG& faces = mesh.faces();
     const cellListPMG& cells = mesh.cells();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(guided) reduction(+ : nOpenCells)
-    # endif
     forAll(cells, cellI)
     {
         const labelList& c = cells[cellI];
@@ -305,9 +300,7 @@ bool Foam::Module::polyMeshGenChecks::checkCellsZipUp
 
                 if (setPtr)
                 {
-                    # ifdef USE_OMP
                     # pragma omp critical
-                    # endif
                     setPtr->insert(cellI);
                 }
             }
@@ -324,9 +317,7 @@ bool Foam::Module::polyMeshGenChecks::checkCellsZipUp
 
             if (setPtr)
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 setPtr->insert(cellI);
             }
 
@@ -334,7 +325,6 @@ bool Foam::Module::polyMeshGenChecks::checkCellsZipUp
         }
     }
 
-    reduce(nOpenCells, sumOp<label>());
 
     if (nOpenCells > 0)
     {
@@ -411,7 +401,6 @@ bool Foam::Module::polyMeshGenChecks::checkFaceVertices
         }
     }
 
-    reduce(nErrorFaces, sumOp<label>());
 
     if (nErrorFaces > 0)
     {

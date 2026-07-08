@@ -45,7 +45,6 @@ void Foam::Module::meshOctreeAddressing::clearOut()
     clearBoxTypes();
     clearOctreeFaces();
     clearAddressing();
-    clearParallelAddressing();
 }
 
 
@@ -88,20 +87,6 @@ void Foam::Module::meshOctreeAddressing::clearAddressing()
 }
 
 
-void Foam::Module::meshOctreeAddressing::clearParallelAddressing()
-{
-    deleteDemandDrivenData(globalPointLabelPtr_);
-    deleteDemandDrivenData(globalPointToLocalPtr_);
-    deleteDemandDrivenData(pointProcsPtr_);
-    deleteDemandDrivenData(globalFaceLabelPtr_);
-    deleteDemandDrivenData(globalFaceToLocalPtr_);
-    deleteDemandDrivenData(faceProcsPtr_);
-    deleteDemandDrivenData(globalLeafLabelPtr_);
-    deleteDemandDrivenData(globalLeafToLocalPtr_);
-    deleteDemandDrivenData(leafAtProcsPtr_);
-}
-
-
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::Module::meshOctreeAddressing::meshOctreeAddressing
@@ -131,16 +116,7 @@ Foam::Module::meshOctreeAddressing::meshOctreeAddressing
     leafEdgesPtr_(nullptr),
     nodeEdgesPtr_(nullptr),
     faceEdgesPtr_(nullptr),
-    edgeFacesPtr_(nullptr),
-    globalPointLabelPtr_(nullptr),
-    globalPointToLocalPtr_(nullptr),
-    pointProcsPtr_(nullptr),
-    globalFaceLabelPtr_(nullptr),
-    globalFaceToLocalPtr_(nullptr),
-    faceProcsPtr_(nullptr),
-    globalLeafLabelPtr_(nullptr),
-    globalLeafToLocalPtr_(nullptr),
-    leafAtProcsPtr_(nullptr)
+    edgeFacesPtr_(nullptr)
 {
     if (!useDATABoxes_)
     {
@@ -150,12 +126,6 @@ Foam::Module::meshOctreeAddressing::meshOctreeAddressing
     if (dict.getOrDefault<bool>("nonManifoldMeshing", false))
     {
         useDATABoxes_ = true;
-    }
-
-    if (Pstream::parRun())
-    {
-        meshOctreeModifier om(const_cast<meshOctree&>(octree_));
-        om.addLayerFromNeighbouringProcessors();
     }
 
     // check for glued regions

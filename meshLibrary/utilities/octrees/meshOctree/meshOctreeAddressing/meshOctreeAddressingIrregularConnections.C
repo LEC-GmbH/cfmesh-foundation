@@ -31,7 +31,6 @@ License
 #include "meshOctreeAddressing.H"
 #include "meshOctree.H"
 #include "demandDrivenData.H"
-#include "helperFunctionsPar.H"
 
 #include <map>
 
@@ -200,36 +199,7 @@ void Foam::Module::meshOctreeAddressing::checkAndFixIrregularConnections()
             }
         }
 
-        reduce(nIrregular, sumOp<label>());
         Info<< nIrregular << " surface connections found!" << endl;
-
-        if (Pstream::parRun() && (nIrregular != 0))
-        {
-            LongList<meshOctreeCubeCoordinates> exchangeData;
-            for (const label it : changedBoxType)
-            {
-                exchangeData.append(octree_.returnLeaf(it).coordinates());
-            }
-
-            LongList<meshOctreeCubeCoordinates> receivedData;
-            octree_.exchangeRequestsWithNeighbourProcessors
-            (
-                exchangeData,
-                receivedData
-            );
-
-            forAll(receivedData, i)
-            {
-                const label leafI =
-                    octree_.findLeafLabelForPosition(receivedData[i]);
-                if (leafI < 0)
-                {
-                    continue;
-                }
-
-                boxType[leafI] = BOUNDARY;
-            }
-        }
 
     } while (nIrregular != 0);
 

@@ -98,8 +98,6 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
         const VRWGraph& faceEdges = mse.faceEdges();
         const VRWGraph& edgeFaces = mse.edgeFaces();
 
-        const Map<label>& otherProcPatch = mse.otherEdgeFacePatch();
-
         VRWGraph newBoundaryFaces;
         labelLongList newBoundaryOwners;
         labelLongList newBoundaryPatches;
@@ -128,11 +126,6 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
                     }
 
                     neiPatches[eI] = facePatches[neiFace];
-                }
-                else if (edgeFaces.sizeOfRow(beI) == 1)
-                {
-                    // edge is at a parallel boundary
-                    neiPatches[eI] = otherProcPatch[beI];
                 }
             }
 
@@ -253,8 +246,6 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
         }
 
         // Finally, replace the boundary faces
-        reduce(changed, maxOp<bool>());
-
         if (changed)
         {
             polyMeshGenModifier meshModifier(mesh_);
@@ -279,8 +270,6 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
     } while (changed);
 
     // decompose owner cells adjacent to the decomposed faces
-    reduce(nDecomposed, sumOp<label>());
-
     if (nDecomposed != 0)
     {
         FatalError << "Critical. Not tested" << exit(FatalError);

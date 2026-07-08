@@ -35,15 +35,7 @@ License
 
 #include "addToRunTimeSelectionTable.H"
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
-
-//#define DEBUGSheets
-
-# ifdef DEBUGSheets
-#include "helperFunctions.H"
-# endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -94,8 +86,6 @@ bool Foam::Module::createFundamentalSheetsJFS::isTopologyOk() const
         }
     }
 
-    reduce(isOkTopo, minOp<bool>());
-
     return isOkTopo;
 }
 
@@ -126,9 +116,7 @@ void Foam::Module::createFundamentalSheetsJFS::createInitialSheet()
 
     LongList<labelPair> extrudeFaces(end - start);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(guided, 100)
-    # endif
     for (label faceI = start; faceI < end; ++faceI)
         extrudeFaces[faceI - start] = labelPair(faceI, owner[faceI]);
 
@@ -144,7 +132,7 @@ void Foam::Module::createFundamentalSheetsJFS::createSheetsAtFeatureEdges()
 
     const PtrList<boundaryPatch>& boundaries = mesh_.boundaries();
 
-    if (returnReduce(boundaries.size(), maxOp<label>()) < 2 )
+    if (boundaries.size() < 2 )
     {
         Info<< "Skipping creating sheets at feature edges" << endl;
         return;
@@ -177,36 +165,15 @@ void Foam::Module::createFundamentalSheetsJFS::createSheetsAtFeatureEdges()
     forAll(facePatch, bfI)
         patchCell[owner[start + bfI]] = facePatch[bfI];
 
-    # ifdef DEBUGSheets
-    labelList patchSheetId(boundaries.size());
-    forAll(patchSheetId, patchI)
-    {
-        patchSheetId[patchI] =
-            mesh_.addCellSubset("sheetPatch_" + Foam::name(patchI));
-    }
-
-    forAll(patchCell, cellI)
-    {
-        if (patchCell[cellI] < 0)
-            continue;
-
-        mesh_.addCellToSubset(patchSheetId[patchCell[cellI]], cellI);
-    }
-    # endif
-
     LongList<labelPair> front;
 
-    # ifdef USE_OMP
     const label nThreads = 3*omp_get_num_procs();
     # pragma omp parallel num_threads(nThreads)
-    # endif
     {
         // create the front faces
         LongList<labelPair> localFront;
 
-        # ifdef USE_OMP
         # pragma omp for
-        # endif
         forAll(facePatch, bfI)
         {
             const label faceI = start + bfI;
@@ -230,35 +197,18 @@ void Foam::Module::createFundamentalSheetsJFS::createSheetsAtFeatureEdges()
         }
 
         label frontStart(-1);
-        # ifdef USE_OMP
         # pragma omp critical
-        # endif
         {
             frontStart = front.size();
             front.setSize(front.size()+localFront.size());
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
-        # endif
 
         // copy the local front into the global front
         forAll(localFront, lfI)
             front[frontStart + lfI] = localFront[lfI];
     }
-
-    # ifdef DEBUGSheets
-    const label fId = mesh_.addFaceSubset("facesForFundamentalSheets");
-    const label cId = mesh_.addCellSubset("cellsForFundamentalSheets");
-
-    forAll(front, fI)
-    {
-        mesh_.addFaceToSubset(fId, front[fI].first());
-        mesh_.addCellToSubset(cId, front[fI].second());
-    }
-
-    mesh_.write();
-    # endif
 
     // extrude the layer
     extrudeLayer(mesh_, front);

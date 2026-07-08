@@ -31,9 +31,7 @@ License
 #include "meshSurfaceEngine.H"
 #include "demandDrivenData.H"
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -70,12 +68,10 @@ Foam::Module::meshSurfaceEngine::bp() const
 {
     if (!bppPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateBoundaryFaces();
         calculateBoundaryNodes();
@@ -90,12 +86,10 @@ Foam::Module::meshSurfaceEngine::boundaryPoints() const
 {
     if (!boundaryPointsPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateBoundaryNodes();
     }
@@ -109,12 +103,10 @@ Foam::Module::meshSurfaceEngine::boundaryFaces() const
 {
     if (!boundaryFacesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateBoundaryFaces();
     }
@@ -128,12 +120,10 @@ Foam::Module::meshSurfaceEngine::boundaryFacePatches() const
 {
     if (!boundaryFacePatchPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateBoundaryFacePatches();
     }
@@ -147,12 +137,10 @@ Foam::Module::meshSurfaceEngine::faceOwners() const
 {
     if (!boundaryFaceOwnersPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateBoundaryOwners();
     }
@@ -166,12 +154,10 @@ Foam::Module::meshSurfaceEngine::pointFaces() const
 {
     if (!pointFacesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculatePointFaces();
     }
@@ -185,12 +171,10 @@ Foam::Module::meshSurfaceEngine::pointInFaces() const
 {
     if (!pointInFacePtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculatePointFaces();
     }
@@ -205,12 +189,10 @@ Foam::Module::meshSurfaceEngine::pointPatches() const
 {
     if(!pointPatchesPtr_)
     {
-        # ifdef USE_OMP
         if(omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculatePointPatches();
     }
@@ -224,12 +206,10 @@ Foam::Module::meshSurfaceEngine::pointPoints() const
 {
     if (!pointPointsPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculatePointPoints();
     }
@@ -243,12 +223,10 @@ Foam::Module::meshSurfaceEngine::pointNormals() const
 {
     if (!pointNormalsPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculatePointNormals();
     }
@@ -262,12 +240,10 @@ Foam::Module::meshSurfaceEngine::faceNormals() const
 {
     if (!faceNormalsPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateFaceNormals();
     }
@@ -281,12 +257,10 @@ Foam::Module::meshSurfaceEngine::faceCentres() const
 {
     if (!faceCentresPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateFaceCentres();
     }
@@ -300,12 +274,10 @@ Foam::Module::meshSurfaceEngine::edges() const
 {
     if (!edgesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateEdgesAndAddressing();
     }
@@ -319,12 +291,10 @@ Foam::Module::meshSurfaceEngine::boundaryPointEdges() const
 {
     if (!bpEdgesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateEdgesAndAddressing();
     }
@@ -338,12 +308,10 @@ Foam::Module::meshSurfaceEngine::edgeFaces() const
 {
     if (!edgeFacesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateEdgeFacesAddressing();
     }
@@ -357,12 +325,10 @@ Foam::Module::meshSurfaceEngine::faceEdges() const
 {
     if (!faceEdgesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateFaceEdgesAddressing();
     }
@@ -376,12 +342,10 @@ Foam::Module::meshSurfaceEngine::edgePatches() const
 {
     if (!edgePatchesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateEdgePatchesAddressing();
     }
@@ -395,227 +359,15 @@ Foam::Module::meshSurfaceEngine::faceFaces() const
 {
     if (!faceFacesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
-        # endif
 
         calculateFaceFacesAddressing();
     }
 
     return *faceFacesPtr_;
 }
-
-
-inline const Foam::labelList&
-Foam::Module::meshSurfaceEngine::globalBoundaryPointLabel() const
-{
-    if (!globalBoundaryPointLabelPtr_)
-    {
-        # ifdef USE_OMP
-        if (omp_in_parallel())
-            FatalErrorInFunction
-                << "Calculating addressing inside a parallel region."
-                << " This is not thread safe" << exit(FatalError);
-        # endif
-
-        calcGlobalBoundaryPointLabels();
-    }
-
-    return *globalBoundaryPointLabelPtr_;
-}
-
-
-inline const Foam::Map<Foam::label>&
-Foam::Module::meshSurfaceEngine::globalToLocalBndPointAddressing() const
-{
-    if (!globalBoundaryPointToLocalPtr_)
-    {
-        # ifdef USE_OMP
-        if (omp_in_parallel())
-            FatalErrorInFunction
-                << "Calculating addressing inside a parallel region."
-                << " This is not thread safe" << exit(FatalError);
-        # endif
-
-        calcGlobalBoundaryPointLabels();
-    }
-
-    return *globalBoundaryPointToLocalPtr_;
-}
-
-
-inline const Foam::Module::VRWGraph&
-Foam::Module::meshSurfaceEngine::bpAtProcs() const
-{
-    if (!globalBoundaryPointLabelPtr_)
-    {
-        # ifdef USE_OMP
-        if (omp_in_parallel())
-            FatalErrorInFunction
-                << "Calculating addressing inside a parallel region."
-                << " This is not thread safe" << exit(FatalError);
-        # endif
-
-        calcGlobalBoundaryPointLabels();
-    }
-
-    return *bpProcsPtr_;
-}
-
-
-inline const Foam::Module::DynList<Foam::label>&
-Foam::Module::meshSurfaceEngine::bpNeiProcs() const
-{
-    if (!bpNeiProcsPtr_)
-    {
-        # ifdef USE_OMP
-        if (omp_in_parallel())
-            FatalErrorInFunction
-                << "Calculating addressing inside a parallel region."
-                << " This is not thread safe" << exit(FatalError);
-        # endif
-
-        calcGlobalBoundaryPointLabels();
-    }
-
-    return *bpNeiProcsPtr_;
-}
-
-
-inline const Foam::labelList&
-Foam::Module::meshSurfaceEngine::globalBoundaryEdgeLabel() const
-{
-    if (!globalBoundaryEdgeLabelPtr_)
-    {
-        # ifdef USE_OMP
-        if (omp_in_parallel())
-            FatalErrorInFunction
-                << "Calculating addressing inside a parallel region."
-                << " This is not thread safe" << exit(FatalError);
-        # endif
-
-        calcGlobalBoundaryEdgeLabels();
-    }
-
-    return *globalBoundaryEdgeLabelPtr_;
-}
-
-
-inline const Foam::Map<Foam::label>&
-Foam::Module::meshSurfaceEngine::globalToLocalBndEdgeAddressing() const
-{
-    if (!globalBoundaryEdgeToLocalPtr_)
-    {
-        # ifdef USE_OMP
-        if (omp_in_parallel())
-            FatalErrorInFunction
-                << "Calculating addressing inside a parallel region."
-                << " This is not thread safe" << exit(FatalError);
-        # endif
-
-        calcGlobalBoundaryEdgeLabels();
-    }
-
-    return *globalBoundaryEdgeToLocalPtr_;
-}
-
-
-inline const Foam::Module::VRWGraph&
-Foam::Module::meshSurfaceEngine::beAtProcs() const
-{
-    if (!globalBoundaryEdgeLabelPtr_)
-    {
-        # ifdef USE_OMP
-        if (omp_in_parallel())
-            FatalErrorInFunction
-                << "Calculating addressing inside a parallel region."
-                << " This is not thread safe" << exit(FatalError);
-        # endif
-
-        calcGlobalBoundaryEdgeLabels();
-    }
-
-    return *beProcsPtr_;
-}
-
-
-inline const Foam::Module::DynList<Foam::label>&
-Foam::Module::meshSurfaceEngine::beNeiProcs() const
-{
-    if (!beNeiProcsPtr_)
-    {
-        # ifdef USE_OMP
-        if (omp_in_parallel())
-            FatalErrorInFunction
-                << "Calculating addressing inside a parallel region."
-                << " This is not thread safe" << exit(FatalError);
-        # endif
-
-        calcGlobalBoundaryEdgeLabels();
-    }
-
-    return *beNeiProcsPtr_;
-}
-
-
-inline const Foam::Map<Foam::label>&
-Foam::Module::meshSurfaceEngine::otherEdgeFaceAtProc() const
-{
-    if (!otherEdgeFaceAtProcPtr_)
-    {
-        # ifdef USE_OMP
-        if (omp_in_parallel())
-            FatalErrorInFunction
-                << "Calculating addressing inside a parallel region."
-                << " This is not thread safe" << exit(FatalError);
-        # endif
-
-        calcAddressingForProcEdges();
-    }
-
-    return *otherEdgeFaceAtProcPtr_;
-}
-
-
-inline const Foam::Map<Foam::label>&
-Foam::Module::meshSurfaceEngine::otherEdgeFacePatch() const
-{
-    if (!otherEdgeFacePatchPtr_)
-    {
-        # ifdef USE_OMP
-        if (omp_in_parallel())
-            FatalErrorInFunction
-                << "Calculating addressing inside a parallel region."
-                << " This is not thread safe" << exit(FatalError);
-        # endif
-
-        calcAddressingForProcEdges();
-    }
-
-    return *otherEdgeFacePatchPtr_;
-}
-
-
-inline const Foam::labelList&
-Foam::Module::meshSurfaceEngine::globalBoundaryFaceLabel() const
-{
-    if (!globalBoundaryFaceLabelPtr_)
-    {
-        # ifdef USE_OMP
-        if (omp_in_parallel())
-            FatalErrorInFunction
-                << "Calculating addressing inside a parallel region."
-                << " This is not thread safe" << exit(FatalError);
-        # endif
-
-        calcGlobalBoundaryFaceLabels();
-    }
-
-    return *globalBoundaryFaceLabelPtr_;
-}
-
 
 // ************************************************************************* //

@@ -63,14 +63,12 @@ Foam::Module::polyMeshGenAddressing::pointFaces() const
 {
     if (!pfPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calcPointFaces();
     }

@@ -40,7 +40,6 @@ SourceFiles
 #define partTetMeshSimplex_H
 
 #include "partTetMesh.H"
-#include "parPartTet.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -73,13 +72,6 @@ public:
 
         //- Construct from partTetMeshSimplex and point label
         partTetMeshSimplex(const partTetMesh& tm, const label pI);
-
-        //- Construct from the list of parPartTet and point label
-        partTetMeshSimplex
-        (
-            const DynList<parPartTet>& pt,
-            const label gpI
-        );
 
         //- contruct from a list of points and a list of partTets
         //- ad a point label

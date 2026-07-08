@@ -62,9 +62,6 @@ void Foam::Module::topologicalCleaner::checkNonMappableCells()
             decomposeCell_[cI] = true;
         }
 
-    if (Pstream::parRun())
-        reduce(nBadCells, sumOp<label>());
-
     if (nBadCells != 0)
         changed_ = true;
 
@@ -134,79 +131,6 @@ void Foam::Module::topologicalCleaner::checkNonMappableFaces()
             decomposeCell_[owner[faceI]] = true;
             decomposeCell_[neighbour[faceI]] = true;
         }
-    }
-
-    if (Pstream::parRun())
-    {
-        // check processor faces
-        const PtrList<processorBoundaryPatch>& procBoundaries =
-            mesh_.procBoundaries();
-
-        forAll(procBoundaries, patchI)
-        {
-            const label start = procBoundaries[patchI].patchStart();
-            const label end = start + procBoundaries[patchI].patchSize();
-
-            boolList decProcFace(procBoundaries[patchI].patchSize(), false);
-
-            for (label faceI = start; faceI < end; ++faceI)
-            {
-                const face& f = faces[faceI];
-
-                DynList<label> bPos;
-                forAll(f, pI)
-                    if (boundaryVertex[f[pI]])
-                        bPos.append(pI);
-
-                if
-                (
-                    (bPos.size() > 2)
-                 || (
-                        (bPos.size() == 2)
-                     && (
-                            (bPos[1] != (bPos[0] + 1))
-                         && !((bPos[0] == 0) && (bPos[1] == (f.size() - 1)))
-                        )
-                    )
-                )
-                {
-                    ++nBadFaces;
-                    decProcFace[faceI - start] = true;
-                    decomposeFace[faceI] = true;
-                    decomposeCell_[owner[faceI]] = true;
-                }
-            }
-
-            // send information about decomposed faces to other processor
-            OPstream toOtherProc
-            (
-                Pstream::commsTypes::blocking,
-                procBoundaries[patchI].neiProcNo(),
-                decProcFace.byteSize()
-            );
-            toOtherProc << decProcFace;
-        }
-
-        forAll(procBoundaries, patchI)
-        {
-            boolList decOtherProc;
-            IPstream fromOtherProc
-            (
-                Pstream::commsTypes::blocking,
-                procBoundaries[patchI].neiProcNo()
-            );
-            fromOtherProc >> decOtherProc;
-
-            const label start = procBoundaries[patchI].patchStart();
-            forAll(decOtherProc, faceI)
-                if (decOtherProc[faceI])
-                {
-                    decomposeFace[start + faceI] = true;
-                    decomposeCell_[owner[start + faceI]] = true;
-                }
-        }
-
-        reduce(nBadFaces, sumOp<label>());
     }
 
     Info<< "Found " << nBadFaces << " non - mappable faces" << endl;

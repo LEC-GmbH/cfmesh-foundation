@@ -94,9 +94,6 @@ public:
         //- return octree
         inline const meshOctree& octree() const;
 
-        //- return neighbour processors
-        inline labelList& neiProcsAccess();
-
         //- return rootBox
         inline boundBox& rootBoxAccess();
 
@@ -105,9 +102,6 @@ public:
 
         //- return search range
         inline scalar& searchRangeAccess();
-
-        //- return the range of leaves at each processor
-        inline List<Pair<meshOctreeCubeCoordinates>>& neiRangeAccess();
 
         //- return initial cube
         inline meshOctreeCube& initialCubeAccess();
@@ -173,41 +167,6 @@ public:
             labelList& refineBox,
             const scalarList& refThickness
         );
-
-    // functions for parallel runs
-        //- distribute leaves of the initial octree to processors
-        //- each processor creates a list of neighbouring processors
-        void distributeLeavesToProcessors();
-
-        //- move octree cubes from one processor to another
-        void loadDistribution(const direction usedType = 0);
-
-        //- refine the tree to add cubes transferred from other processors
-        void refineTreeForCoordinates
-        (
-            const meshOctreeCubeCoordinates&,
-            const short procNo = Pstream::myProcNo(),
-            const direction cubeType = meshOctreeCubeBasic::UNKNOWN
-        );
-
-        void refineTreeForCoordinates
-        (
-            const meshOctreeCubeCoordinates&,
-            const labelList& containedTriangles,
-            const labelList& containedEdges,
-            const short procNo = Pstream::myProcNo(),
-            const direction cubeType = meshOctreeCubeBasic::UNKNOWN
-
-        );
-
-        //- update the communication pattern between the processors
-        //- this function is used for load balancing
-        void updateCommunicationPattern();
-
-        //- add an additional layer of boxes which belongs to the neighbouring
-        //- processors. This simplifies the process of extracting the mesh
-        //- template from the octree in a parallel run
-        void addLayerFromNeighbouringProcessors();
 
         //- reduce memory consumption by deleting unnecessary data
         void reduceMemoryConsumption();

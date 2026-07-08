@@ -55,8 +55,6 @@ class polyMeshGen;
 
 void writeMeshFPMA(const polyMeshGen& mesh, const word& fName);
 
-void createFIRESelections(polyMeshGen& mesh);
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 } // End namespace Module

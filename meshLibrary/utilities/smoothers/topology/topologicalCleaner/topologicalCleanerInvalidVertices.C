@@ -35,8 +35,6 @@ License
 
 #include <map>
 
-//#define DEBUGCheck
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
@@ -44,14 +42,6 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
     labelHashSet* irregularNodesPtr
 )
 {
-    if (Pstream::parRun())
-    {
-        return;
-
-        FatalErrorInFunction
-            << "This does not run in parallel!" << exit(FatalError);
-    }
-
     polyMeshGenModifier meshModifier(mesh_);
 
     label nPoints = mesh_.points().size();
@@ -70,10 +60,6 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
     forAll(bPoints, bpI)
     {
         const label pointI = bPoints[bpI];
-
-        # ifdef DEBUGCheck
-        Info<< "Checking point " << pointI << endl;
-        # endif
 
         label material(1);
 
@@ -122,10 +108,6 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
 
             ++material;
         }
-
-        # ifdef DEBUGCheck
-        Info<< "Number of materials for vertex is " << material << endl;
-        # endif
 
         if (material > 2)
         {
@@ -186,9 +168,7 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesFaces
     boolList removeCell(mesh_.cells().size(), false);
     bool changed(false);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(static, 1)
-    # endif
     forAll(edgeFaces, edgeI)
         if (edgeFaces.sizeOfRow(edgeI) > 2)
         {
@@ -197,100 +177,6 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesFaces
 
             changed = true;
         }
-
-    if (Pstream::parRun())
-    {
-        // boundary edges at processor boundaries
-        Map<label> numFacesAtEdge;
-        const labelList& globalEdgeLabel = mse.globalBoundaryEdgeLabel();
-        const Map<label>& globalToLocal = mse.globalToLocalBndEdgeAddressing();
-        const VRWGraph& edgesAtProcs = mse.beAtProcs();
-
-        DynList<label> neiProcs;
-        std::map<label, labelLongList> exchangeData;
-        std::map<label, labelLongList>::iterator eIter;
-
-        forAll(edgeFaces, eI)
-        {
-            if (edgesAtProcs.sizeOfRow(eI) > 0)
-            {
-                numFacesAtEdge.insert
-                (
-                    globalEdgeLabel[eI],
-                    edgeFaces.sizeOfRow(eI)
-                );
-
-                forAllRow(edgesAtProcs, eI, procI)
-                {
-                    const label neiProc = edgesAtProcs(eI, procI);
-
-                    if (neiProc == Pstream::myProcNo())
-                        continue;
-
-                    eIter = exchangeData.find(neiProc);
-                    if (eIter == exchangeData.end())
-                    {
-                        neiProcs.append(neiProc);
-                        exchangeData.insert
-                        (
-                            std::pair<label, labelLongList>
-                            (
-                                neiProc,
-                                labelLongList()
-                            )
-                        );
-
-                        eIter = exchangeData.find(neiProc);
-                    }
-
-                    eIter->second.append(globalEdgeLabel[eI]);
-                    eIter->second.append(edgeFaces.sizeOfRow(eI));
-                }
-            }
-        }
-
-        // send data to other processors
-        forAll(neiProcs, procI)
-        {
-            eIter = exchangeData.find(neiProcs[procI]);
-            const labelLongList& dataToSend = eIter->second;
-
-            OPstream toOtherProc
-            (
-                Pstream::commsTypes::blocking,
-                neiProcs[procI],
-                dataToSend.byteSize()
-            );
-            toOtherProc << dataToSend;
-        }
-
-        forAll(neiProcs, procI)
-        {
-            labelList receivedData;
-            IPstream fromOtherProc(Pstream::commsTypes::blocking, neiProcs[procI]);
-                fromOtherProc >> receivedData;
-
-            label counter(0);
-            while (counter < receivedData.size())
-            {
-                const label geI = receivedData[counter++];
-                const label nFaces = receivedData[counter++];
-
-                numFacesAtEdge[geI] += nFaces;
-
-                if (numFacesAtEdge[geI] > 2)
-                {
-                    const label edgeI = globalToLocal[geI];
-                    forAllRow(edgeFaces, edgeI, fI)
-                        removeCell[faceOwner[edgeFaces(edgeI, fI)]] = true;
-
-                    changed = true;
-                }
-            }
-        }
-    }
-
-    reduce(changed, maxOp<bool>());
 
     if (changed)
     {

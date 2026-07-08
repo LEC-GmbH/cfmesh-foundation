@@ -124,40 +124,6 @@ class meshSurfaceEngine
         mutable vectorField* faceCentresPtr_;
 
 
-    // Private data for parallel execution
-
-        //- global boundary point label
-        mutable labelList* globalBoundaryPointLabelPtr_;
-
-        //- global boundary point to local addressing
-        mutable Map<label>* globalBoundaryPointToLocalPtr_;
-
-        //- boundary point-processors addressing
-        mutable VRWGraph* bpProcsPtr_;
-
-        //- neighbour processors for communication when sending point data
-        mutable DynList<label>* bpNeiProcsPtr_;
-
-        //- global boundary edge label
-        mutable labelList* globalBoundaryEdgeLabelPtr_;
-
-        //- global boundary edge to local addressing
-        mutable Map<label>* globalBoundaryEdgeToLocalPtr_;
-
-        //- boundary edge-processors addressing
-        mutable VRWGraph* beProcsPtr_;
-
-        //- neighbour processors for communication when sending edge data
-        mutable DynList<label>* beNeiProcsPtr_;
-
-        //- processor containing other face and face-patch addressing
-        mutable Map<label>* otherEdgeFaceAtProcPtr_;
-        mutable Map<label>* otherEdgeFacePatchPtr_;
-
-        //- global label for boundary faces
-        mutable labelList* globalBoundaryFaceLabelPtr_;
-
-
     // Private member functions
 
         //- calculate boundary nodes, faces and addressing
@@ -177,24 +143,11 @@ class meshSurfaceEngine
         void calculateFaceNormals() const;
         void calculateFaceCentres() const;
 
-        void updatePointNormalsAtProcBoundaries() const;
-
         void calculateEdgesAndAddressing() const;
         void calculateFaceEdgesAddressing() const;
         void calculateEdgeFacesAddressing() const;
         void calculateEdgePatchesAddressing() const;
         void calculateFaceFacesAddressing() const;
-
-
-    // Private member functions for parallel runs
-
-        void calcGlobalBoundaryPointLabels() const;
-        void calcGlobalBoundaryEdgeLabels() const;
-        void calcAddressingForProcEdges() const;
-        void calcGlobalBoundaryFaceLabels() const;
-
-
-    // Private member functions
 
         void clearOut();
 
@@ -264,41 +217,6 @@ public:
         inline const VRWGraph& edgePatches() const;
 
         inline const VRWGraph& faceFaces() const;
-
-
-    // Functions for parallel runs
-
-        //- global boundary point label
-        inline const labelList& globalBoundaryPointLabel() const;
-
-        //- global point label to local label. Only for processors points
-        inline const Map<label>& globalToLocalBndPointAddressing() const;
-
-        //- processors which contain the vertex
-        inline const VRWGraph& bpAtProcs() const;
-
-        //- communication matrix for sending point data
-        inline const DynList<label>& bpNeiProcs() const;
-
-        //- global boundary edge label
-        inline const labelList& globalBoundaryEdgeLabel() const;
-
-        //- global boundary edge label to local label. Only for processor edges
-        inline const Map<label>& globalToLocalBndEdgeAddressing() const;
-
-        //- processors which contain the edges
-        inline const VRWGraph& beAtProcs() const;
-
-        //- communication matrix for sending edge data
-        inline const DynList<label>& beNeiProcs() const;
-
-        //- patch label and processor label at which the other surface face
-        //- sharing processor edge is located. Only for processor edges
-        inline const Map<label>& otherEdgeFaceAtProc() const;
-        inline const Map<label>& otherEdgeFacePatch() const;
-
-        //- global boundary face label
-        inline const labelList& globalBoundaryFaceLabel() const;
 };
 
 

@@ -100,9 +100,6 @@ class extrudeLayer
         //- create layer cells
         void createLayerCells();
 
-        //- create new faces at parallel boundaries
-        void createNewFacesParallel();
-
         //- update boundary patches
         void updateBoundary();
 
@@ -190,8 +187,7 @@ class extrudeLayer
         enum extrudeLayerTypes_
         {
             NONE = 0,
-            FRONTVERTEX = 1,
-            FRONTVERTEXPROCBND = 2
+            FRONTVERTEX = 1
         };
 
         //- Disallow bitwise copy construct

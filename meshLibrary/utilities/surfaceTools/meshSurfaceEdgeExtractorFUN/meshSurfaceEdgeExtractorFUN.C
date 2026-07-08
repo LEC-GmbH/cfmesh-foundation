@@ -32,21 +32,17 @@ License
 #include "meshSurfaceEngine.H"
 #include "demandDrivenData.H"
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::Module::meshSurfaceEngine&
 Foam::Module::meshSurfaceEdgeExtractorFUN::surfaceEngine()
 {
-    # ifdef USE_OMP
     if (omp_in_parallel())
         FatalErrorInFunction
             << "Cannot create surface engine with a parallel region"
             << exit(FatalError);
-    # endif
 
     if (!surfaceEnginePtr_)
         surfaceEnginePtr_ = new meshSurfaceEngine(mesh_);
@@ -75,10 +71,6 @@ Foam::Module::meshSurfaceEdgeExtractorFUN::meshSurfaceEdgeExtractorFUN
     surfaceEnginePtr_(nullptr),
     createWrapperSheet_(createWrapperSheet)
 {
-    if (Pstream::parRun())
-        FatalErrorInFunction
-            << "Cannot run in parallel!" << exit(FatalError);
-
     createBasicFundamentalSheets();
 
     smoothMeshSurface();

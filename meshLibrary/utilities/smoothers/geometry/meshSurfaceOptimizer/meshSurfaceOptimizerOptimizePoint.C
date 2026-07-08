@@ -36,8 +36,6 @@ License
 #include "plane.H"
 #include "surfaceOptimizer.H"
 
-//#define DEBUGSmooth
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::meshSurfaceOptimizer::nodeDisplacementLaplacian
@@ -84,12 +82,6 @@ void Foam::Module::meshSurfaceOptimizer::nodeDisplacementSurfaceOptimizer
     const pointFieldPMG& points = surfaceEngine_.points();
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
 
-    # ifdef DEBUGSmooth
-    Info<< "Smoothing boundary node " << bpI << endl;
-    Info<< "Node label in the mesh is " << bPoints[bpI] << endl;
-    Info<< "Point coordinates " << points[bPoints[bpI]] << endl;
-    # endif
-
     // project vertices onto the plane
     const vector& pNormal = surfaceEngine_.pointNormals()[bpI];
     if (magSqr(pNormal) < VSMALL)
@@ -134,10 +126,6 @@ void Foam::Module::meshSurfaceOptimizer::edgeNodeDisplacement
 
     const point pos = newEdgePositionLaplacian(bpI);
     const point newP = 0.5*(pos + points[bPoints[bpI]]);
-
-    # ifdef DEBUGSearch
-    Info<< "New position for point is " << newP << endl;
-    # endif
 
     meshSurfaceEngineModifier(surfaceEngine_).moveBoundaryVertex(bpI, newP);
 }

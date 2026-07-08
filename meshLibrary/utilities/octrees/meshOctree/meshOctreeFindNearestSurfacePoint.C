@@ -34,8 +34,6 @@ License
 #include "helperFunctions.H"
 #include "HashSet.H"
 
-// #define DEBUGSearch
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::meshOctree::findNearestSurfacePoint
@@ -107,18 +105,7 @@ void Foam::Module::meshOctree::findNearestSurfacePoint
 
     } while (!found && (iterationI++< 100));
 
-    # ifdef DEBUGSearch
-    forAll(surface_, triI)
-    {
-        const point pp = help::nearestPointOnTheTriangle(triI, surface_, p);
-
-        if (distSq - magSqr(pp - p) > SMALL)
-            Pout<< "Point " << p << " current nearest " << nearest
-                << " closer point " << pp << endl;
-    }
-    # endif
-
-    if ((!found || (region < 0)) && !Pstream::parRun())
+    if (!found || (region < 0))
     {
         Warning << "Could not find a boundary region for vertex " << p << endl;
         Warning << "Found " << found << " and region " << region << endl;
@@ -203,7 +190,7 @@ void Foam::Module::meshOctree::findNearestSurfacePointInRegion
 
     } while (!found && (iterationI++< 5));
 
-    if ((!found || (region < 0)) && !Pstream::parRun())
+    if (!found || (region < 0))
         Warning << "Could not find a boundary region for vertex " << p << endl;
 }
 

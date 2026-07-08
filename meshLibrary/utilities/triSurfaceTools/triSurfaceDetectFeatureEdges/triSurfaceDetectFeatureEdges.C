@@ -45,10 +45,6 @@ Foam::Module::triSurfaceDetectFeatureEdges::triSurfaceDetectFeatureEdges
     featureEdges_(surf_.edges().size(), direction(0)),
     angleTolerance_(angleDeviation)
 {
-    if (Pstream::parRun())
-        FatalError << "Feature edges detection does not run in parallel"
-            << exit(FatalError);
-
     detectFeatureEdgesAngleCriterion();
 }
 

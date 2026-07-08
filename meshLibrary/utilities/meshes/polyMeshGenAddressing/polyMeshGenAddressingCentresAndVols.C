@@ -37,9 +37,7 @@ Description
 
 #include "polyMeshGenAddressing.H"
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
@@ -79,9 +77,7 @@ void Foam::Module::polyMeshGenAddressing::makeCellCentresAndVols
     const cellListPMG& cells = mesh_.cells();
     const label nCells = cells.size();
 
-    # ifdef USE_OMP
     # pragma omp parallel for if (nCells > 1000)
-    # endif
     for (label cellI = 0; cellI < nCells; ++cellI)
     {
         const cell& c = cells[cellI];
@@ -134,14 +130,12 @@ Foam::Module::polyMeshGenAddressing::cellCentres() const
 {
     if (!cellCentresPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calcCellCentresAndVols();
     }
@@ -155,14 +149,12 @@ Foam::Module::polyMeshGenAddressing::cellVolumes() const
 {
     if (!cellVolumesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calcCellCentresAndVols();
     }

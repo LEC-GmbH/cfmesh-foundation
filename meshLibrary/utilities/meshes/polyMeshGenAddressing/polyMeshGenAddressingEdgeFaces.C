@@ -52,25 +52,17 @@ void Foam::Module::polyMeshGenAddressing::calcEdgeFaces() const
 
         labelList nef(edges.size());
 
-        # ifdef USE_OMP
         const label nThreads = 3*omp_get_num_procs();
-        # endif
 
-        # ifdef USE_OMP
         # pragma omp parallel num_threads(nThreads) if (edges.size() > 10000)
-        # endif
         {
-            # ifdef USE_OMP
             # pragma omp for schedule(static)
-            # endif
             forAll(nef, edgeI)
             {
                 nef[edgeI] = 0;
             }
 
-            # ifdef USE_OMP
             # pragma omp for schedule(static)
-            # endif
             forAll(edges, edgeI)
             {
                 const edge& ee = edges[edgeI];
@@ -93,18 +85,14 @@ void Foam::Module::polyMeshGenAddressing::calcEdgeFaces() const
                 }
             }
 
-            # ifdef USE_OMP
             # pragma omp barrier
 
             # pragma omp master
-            # endif
             VRWGraphSMPModifier(edgeFaceAddr).setSizeAndRowSize(nef);
 
-            # ifdef USE_OMP
             # pragma omp barrier
 
             # pragma omp for schedule(static)
-            # endif
             forAll(edges, edgeI)
             {
                 const edge& ee = edges[edgeI];
@@ -141,14 +129,12 @@ Foam::Module::polyMeshGenAddressing::edgeFaces() const
 {
     if (!efPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calcEdgeFaces();
     }

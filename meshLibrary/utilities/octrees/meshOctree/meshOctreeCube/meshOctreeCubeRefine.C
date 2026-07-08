@@ -32,8 +32,6 @@ License
 #include "VRWGraph.H"
 #include "triSurf.H"
 
-//#define DEBUGSearch
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::meshOctreeCube::findContainedEdges
@@ -103,10 +101,6 @@ void Foam::Module::meshOctreeCube::refineCube2D
     if (!slotPtr)
         slotPtr = activeSlotPtr_;
 
-    # ifdef DEBUGSearch
-    Info<< "Refining the cube " << *this << endl;
-    # endif
-
     // set the cube label to -1
     cubeLabel_ = -1;
 
@@ -126,7 +120,6 @@ void Foam::Module::meshOctreeCube::refineCube2D
         subCubes[scI] = &slotPtr->cubes_[cubeI];
         subCubes[scI]->activeSlotPtr_ = slotPtr;
         subCubes[scI]->setCubeType(this->cubeType());
-        subCubes[scI]->setProcNo(this->procNo());
     }
 
     const label subCubesLabel = slotPtr->childCubes_.size();
@@ -137,11 +130,6 @@ void Foam::Module::meshOctreeCube::refineCube2D
     {
         const VRWGraph& containedElements =
             activeSlotPtr_->containedTriangles_;
-
-        # ifdef DEBUGSearch
-        Info<< "Distributing contained elements "
-            << containedElements[containedElementsLabel_] << endl;
-        # endif
 
         // check if the subCube contain the element
         FixedList<DynList<label, 512>, 4> elementsInSubCubes;
@@ -183,12 +171,6 @@ void Foam::Module::meshOctreeCube::refineCube2D
                 subCubes[scI]->containedElementsLabel_ = ct.size();
                 ct.appendList(elmts);
 
-
-                # ifdef DEBUGSearch
-                Info<< "Elements in leaf " << scI << " are "
-                    << ct[subCubes[scI]->containedElements()]
-                    << endl;
-                # endif
             }
         }
 
@@ -208,12 +190,6 @@ void Foam::Module::meshOctreeCube::refineCube2D
             }
     }
 
-    # ifdef DEBUGSearch
-    for (label scI = 0; scI < 4; ++scI)
-        Info<< "Refined cube " << scI << " is "
-            << *subCubes[scI] << endl;
-    # endif
-
 }
 
 
@@ -226,10 +202,6 @@ void Foam::Module::meshOctreeCube::refineCube
 {
     if (!slotPtr)
         slotPtr = activeSlotPtr_;
-
-    # ifdef DEBUGSearch
-    Info<< "Refining the cube " << *this << endl;
-    # endif
 
     // set the cube label to -1
     cubeLabel_ = -1;
@@ -246,7 +218,6 @@ void Foam::Module::meshOctreeCube::refineCube
         subCubes[scI] = &slotPtr->cubes_[cubeI];
         subCubes[scI]->activeSlotPtr_ = slotPtr;
         subCubes[scI]->setCubeType(this->cubeType());
-        subCubes[scI]->setProcNo(this->procNo());
     }
 
     const label subCubesLabel = slotPtr->childCubes_.size();
@@ -257,11 +228,6 @@ void Foam::Module::meshOctreeCube::refineCube
     {
         const VRWGraph& containedElements =
             activeSlotPtr_->containedTriangles_;
-
-        # ifdef DEBUGSearch
-        Info<< "Distributing contained elements "
-            << containedElements[containedElementsLabel_] << endl;
-        # endif
 
         // check if the subCube contain the element
         FixedList<DynList<label, 512>, 8> elementsInSubCubes;
@@ -302,12 +268,6 @@ void Foam::Module::meshOctreeCube::refineCube
                 subCubes[scI]->containedElementsLabel_ = ct.size();
                 ct.appendList(elmts);
 
-
-                # ifdef DEBUGSearch
-                Info<< "Elements in leaf " << scI << " are "
-                    << ct[subCubes[scI]->containedElements()]
-                    << endl;
-                # endif
             }
         }
 
@@ -326,12 +286,6 @@ void Foam::Module::meshOctreeCube::refineCube
                 subCubes[scI]->setCubeType(UNKNOWN);
             }
     }
-
-    # ifdef DEBUGSearch
-    for (label scI = 0; scI < 8; ++scI)
-        Info<< "Refined cube " << scI << " is "
-            << *subCubes[scI] << endl;
-    # endif
 
 }
 
@@ -369,7 +323,6 @@ void Foam::Module::meshOctreeCube::refineMissingCube
 
     subCubesPtr_[scI]->activeSlotPtr_ = slotPtr;
     subCubesPtr_[scI]->setCubeType(this->cubeType());
-    subCubesPtr_[scI]->setProcNo(this->procNo());
 
     if (hasContainedElements())
     {
@@ -442,7 +395,6 @@ void Foam::Module::meshOctreeCube::refineMissingCube
 
     subCubesPtr_[scI]->activeSlotPtr_ = slotPtr;
     subCubesPtr_[scI]->setCubeType(this->cubeType());
-    subCubesPtr_[scI]->setProcNo(this->procNo());
 
     // set the contained elements and edges
     subCubesPtr_[scI]->containedElementsLabel_ = elementsRowI;

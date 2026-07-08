@@ -31,12 +31,6 @@ License
 #include "triSurfaceCurvatureEstimator.H"
 #include "demandDrivenData.H"
 
-//#define DEBUGMorph
-
-# ifdef DEBUGMorph
-#include <sstream>
-# endif
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::Module::triSurfaceCurvatureEstimator::triSurfaceCurvatureEstimator

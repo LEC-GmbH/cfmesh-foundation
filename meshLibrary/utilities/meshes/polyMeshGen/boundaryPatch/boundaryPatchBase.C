@@ -63,14 +63,8 @@ Foam::Module::boundaryPatchBase::New
     const dictionary& dict
 )
 {
-    word type(dict.get<word>("type"));
-
-    // Check patch type - allowed types are processor and patch
-    // Other patch types are treated as ordinary patches
-    if (type != "processor")
-    {
-        type = "patch";
-    }
+    // all patch types are treated as ordinary patches
+    const word type("patch");
 
     auto cstrIter = dictionaryConstructorTablePtr_->cfind(type);
 

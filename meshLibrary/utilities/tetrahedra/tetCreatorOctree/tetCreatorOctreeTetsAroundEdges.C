@@ -32,8 +32,6 @@ License
 #include "demandDrivenData.H"
 #include "meshOctree.H"
 
-//#define DEBUGTets
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
@@ -86,12 +84,6 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
             const meshOctreeCubeCoordinates& cc =
                 octree.returnLeaf(curLeaf).coordinates();
 
-            # ifdef DEBUGTets
-            Info<< "Search cube " << curLeaf << " has coordinates "
-                << octree.returnLeaf(curLeaf).coordinates() << endl;
-            Info<< "Node labels for cube are " << nodeLabels[curLeaf] << endl;
-            # endif
-
             // start checking edges
             for (label eI = 0; eI < 12; ++eI)
             {
@@ -105,13 +97,6 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                         curLeaf,
                         meshOctreeCubeCoordinates::edgeNodes_[eI][1]
                     );
-
-                # ifdef DEBUGTets
-                Info<< "Creating tets around edge " << eI << endl;
-                Info<< "Edge nodes are " << start << " and " << end << endl;
-                Info<< "Coordinates start " << tetPoints_[start]
-                    << " end " << tetPoints_[end] << endl;
-                # endif
 
                 bool create(true);
 
@@ -134,19 +119,6 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                     for (label i = 0; i < 4; ++i)
                         edgeCubes[i] = pLeaves(start, fNodes[i]);
 
-                    # ifdef DEBUGTets
-                    forAll(edgeCubes, i)
-                    {
-                        Info<< "Cube " << i << " is " << edgeCubes[i] << endl;
-
-                        if (edgeCubes[i] < 0)
-                            continue;
-
-                        Info<< "Cubes has node labels "
-                             << nodeLabels[edgeCubes[i]] << endl;
-                    }
-                    # endif
-
                     DynList<label> centreNodes;
 
                     forAll(edgeCubes, i)
@@ -162,14 +134,6 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                         const meshOctreeCubeCoordinates& oc =
                             octree.returnLeaf(cLabel).coordinates();
 
-                        # ifdef DEBUGTets
-                        Info<< "Edge cube " << i << " is " << oc << endl;
-                        Info<< "Node labels ";
-                        forAllRow(nodeLabels, cLabel, k)
-                            Info<< nodeLabels(cLabel, k) << " ";
-                        Info<< endl;
-                        # endif
-
                         if (oc.level() == direction(levelI))
                         {
                             if (cLabel < curLeaf)
@@ -177,11 +141,6 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                                 create = false;
                                 break;
                             }
-
-                            # ifdef DEBUGTets
-                            Info<< "Adding centre label " << cubeLabel[cLabel]
-                                << endl;
-                            # endif
 
                             centreNodes.append(cubeLabel[cLabel]);
 
@@ -200,30 +159,13 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                                 if (fcl != -1)
                                     centreNodes.append(fcl);
                             }
-
-                            # ifdef DEBUGTets
-                            Info<< "Centre nodes after cube " << i
-                                << " are " << centreNodes << endl;
-                            # endif
                         }
                         else if (oc.level() < direction(levelI))
                         {
-                            # ifdef DEBUGTets
-                            Info<< "Edge cube " << cLabel << endl;
-                            Info<< "cc " << cc << endl;
-                            Info<< "oc " << oc << endl;
-                            Info<< "Adding pos "
-                                << vlPos[startNode][fNodes[i]] << endl;
-                            # endif
-
                             const meshOctreeCubeCoordinates sc
                             (
                                 cc + vlPos[startNode][fNodes[i]]
                             );
-
-                            # ifdef DEBUGTets
-                            Info<< "sc " << sc << endl;
-                            # endif
 
                             label pos(-1);
 
@@ -241,19 +183,7 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                                     << "Cannot find cube position"
                                     << abort(FatalError);
 
-                            # ifdef DEBUGTets
-                            Info<< "Pos " << pos << endl;
-                            # endif
-
                             centreNodes.append(subNodeLabels(cLabel, pos));
-
-                            # ifdef DEBUGTets
-                            Info<< "Centre node " << i << " is "
-                                << subNodeLabels(cLabel, pos)
-                                << " coordinates "
-                                << tetPoints_[subNodeLabels(cLabel, pos)]
-                                << endl;
-                            # endif
                         }
                     }
 
@@ -278,12 +208,6 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                             );
 
                             tets_.append(tet);
-
-                            # ifdef DEBUGTets
-                            Info<< "Last added tet "
-                                << tets_.size()-1 <<" is "
-                                << tets_[tets_.size()-1] << endl;
-                            # endif
                         }
                     }
                 }

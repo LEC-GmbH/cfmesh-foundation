@@ -45,7 +45,6 @@ SourceFiles
 #include "polyMeshGenPoints.H"
 #include "faceListPMG.H"
 #include "labelIOList.H"
-#include "processorBoundaryPatch.H"
 #include "boundaryPatch.H"
 
 namespace Foam
@@ -65,11 +64,6 @@ protected:
 
         //- list of faces
         faceListPMG faces_;
-
-        //- inter-processor boundaries. These faces are located after the other
-        //- boundary faces in the list of faces. The processor
-        //- boundaries are internal faces in the end.
-        PtrList<processorBoundaryPatch> procBoundaries_;
 
         //- boundary data
         PtrList<boundaryPatch> boundaries_;
@@ -149,12 +143,6 @@ public:
 
 
     // Boundary data
-
-        //- inter-processor boundaries
-        inline const PtrList<processorBoundaryPatch>& procBoundaries() const;
-
-        //- return processor patch label for the given face label
-        label faceIsInProcPatch(const label faceLabel) const;
 
         //- ordinary boundaries
         inline const PtrList<boundaryPatch>& boundaries() const;

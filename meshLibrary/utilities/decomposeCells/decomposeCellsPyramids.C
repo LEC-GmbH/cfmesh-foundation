@@ -33,8 +33,6 @@ License
 #include "helperFunctions.H"
 #include "triFace.H"
 
-//#define DEBUGDecompose
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::decomposeCells::findAddressingForCell
@@ -160,10 +158,6 @@ Foam::label Foam::Module::decomposeCells::findTopVertex
     topVertex = pointsAccess.size();
     pointsAccess.append(p);
 
-    # ifdef DEBUGDecompose
-    Info<< "Top vertex is " << topVertex << endl;
-    # endif
-
     return topVertex;
 }
 
@@ -175,15 +169,6 @@ void Foam::Module::decomposeCells::decomposeCellIntoPyramids(const label cellI)
     const labelList& owner = mesh_.owner();
 
     const cell& c = cells[cellI];
-
-    # ifdef DEBUGDecompose
-    Info<< "Starting decomposing cell " << cellI << endl;
-    Info<< "Cell consists of faces " << c << endl;
-    forAll(c, fI)
-    {
-        Info<< "Face " << c[fI] << " is " << faces[c[fI]] << endl;
-    }
-    # endif
 
     // calculate edges, faceEdges and edgeFaces addressing
     DynList<label, 32> vrt;
@@ -201,9 +186,6 @@ void Foam::Module::decomposeCells::decomposeCellIntoPyramids(const label cellI)
     // start generating pyramids
     forAll(c, fI)
     {
-        # ifdef DEBUGDecompose
-        Info<< "Face " << faces[c[fI]] << " is a base face" << endl;
-        #endif
         const face& f = faces[c[fI]];
         DynList<DynList<label, 8>> cellFaces;
         cellFaces.setSize(f.size() + 1);
@@ -240,43 +222,6 @@ void Foam::Module::decomposeCells::decomposeCellIntoPyramids(const label cellI)
                 cellFaces[cfI++] = rf;
             }
         }
-
-        # ifdef DEBUGDecompose
-        Info<< "Cell for face is " << cellFaces << endl;
-
-        DynList<edge, 64> cEdges;
-        DynList<DynList<label, 2>, 64> eFaces;
-        forAll(cellFaces, fI)
-        {
-            const DynList<label, 8>& f = cellFaces[fI];
-            forAll(f, eI)
-            {
-                const edge e(f[eI], f[(eI + 1)%f.size()]);
-
-                const label pos = cEdges.find(e);
-
-                if (pos < 0)
-                {
-                    cEdges.append(e);
-                    DynList<label, 2> ef;
-                    ef.append(fI);
-                    eFaces.append(ef);
-                }
-                else
-                {
-                    eFaces[pos].append(fI);
-                }
-            }
-        }
-
-        forAll(eFaces, eI)
-        {
-            if (eFaces[eI].size() != 2)
-            {
-                Pout << "This pyrmid is not topologically closed" << endl;
-            }
-        }
-        # endif
 
         facesOfNewCells_.appendGraph(cellFaces);
     }

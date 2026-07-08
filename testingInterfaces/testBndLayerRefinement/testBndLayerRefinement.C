@@ -79,8 +79,6 @@ int main(int argc, char *argv[])
     );
 
     fileName surfaceFile = meshDict.lookup("surfaceFile");
-    if (Pstream::parRun())
-        surfaceFile = ".."/surfaceFile;
 
     const triSurf* surfacePtr = new triSurf(runTime.path()/surfaceFile);
 

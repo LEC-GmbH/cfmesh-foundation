@@ -33,8 +33,6 @@ License
 #include "boolList.H"
 #include "helperFunctions.H"
 
-// #define DEBUG_faceDecomposition
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::label Foam::Module::faceDecomposition::concaveVertex() const
@@ -115,9 +113,6 @@ bool Foam::Module::faceDecomposition::isFacePlanar(const scalar tol) const
     {
         if (mag((points_[f_[pI]] - points_[f_[0]]) & nref) > tol)
         {
-            # ifdef DEBUG_faceDecomposition
-            Info<< "Face is not planar " << endl;
-            # endif
             return false;
         }
     }
@@ -234,13 +229,6 @@ Foam::faceList Foam::Module::faceDecomposition::decomposeFace() const
         storage.setSize(fI);
     }
 
-    # ifdef DEBUG_faceDecomposition
-    Info<< "Original face " << f_ << endl;
-    Info<< "Triangles " << ff << endl;
-    Info<< "Concave vertex " << concaveVertex(f_) << endl;
-    Info<< "Storage " << storage << endl;
-    # endif
-
     return storage;
 }
 
@@ -280,11 +268,6 @@ Foam::Module::faceDecomposition::decomposeFaceIntoTriangles
         }
 
         fcs.setSize(fI);
-
-        # ifdef DEBUG_faceDecomposition
-        Info<< "face " << faceNo << "  " << f_
-            << " is decomposed into " << fcs << endl;
-        # endif
 
         return fcs;
     }

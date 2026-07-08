@@ -51,20 +51,12 @@ void Foam::Module::coordinateModifier::checkForValidInverse() const
             PtrList<plane> bndPlanes;
             modifiers_[modI].boundingPlanes(bndPlanes);
 
-            # ifdef DEBUGCoordinateModifier
-            Info<< "Checking planes for object " << modifiers_[modI].name()
-                << " which are " << bndPlanes << endl;
-            # endif
 
             for (label modJ = modI + 1; modJ < modifiers_.size(); ++modJ)
             {
                 PtrList<plane> otherBndPlanes;
                 modifiers_[modJ].boundingPlanes(otherBndPlanes);
 
-                # ifdef DEBUGCoordinateModifier
-                Info<< "Bnd planes planes for " << modifiers_[modJ].name()
-                    << " are " << otherBndPlanes << endl;
-                # endif
 
                 for (label i = 0; i < bndPlanes.size(); i += 2)
                 {
@@ -108,11 +100,6 @@ void Foam::Module::coordinateModifier::checkForValidInverse() const
                                         pl.refPoint()
                                     ) & pl.normal();
 
-                                # ifdef DEBUGCoordinateModifier
-                                Info<< "tMax " << tMax << endl;
-                                Info<< "t0 " << t0 << endl;
-                                Info<< "t1 " << t1 << endl;
-                                # endif
 
                                 // check if the intervals overlap
                                 if ((t1 >= 0) && (t0 < tMax))

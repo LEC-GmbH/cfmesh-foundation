@@ -33,12 +33,6 @@ License
 #include "helperFunctions.H"
 #include "primitiveMesh.H"
 
-//#define DEBUGMorph
-
-# ifdef DEBUGMorph
-#include "HashSet.H"
-# endif
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 bool Foam::Module::surfaceMorpherCells::
@@ -108,19 +102,11 @@ removeCellsWithAllVerticesAtTheBoundary()
 
         }
 
-    if (Pstream::parRun())
-        reduce(nRemoved, sumOp<label>());
-
     if (nRemoved != 0)
     {
         Info<< "Removing " << nRemoved
             << " cells which cannot be morphed" << endl;
         polyMeshGenModifier(mesh_).removeCells(removeCells);
-    }
-
-    if (Pstream::parRun())
-    {
-        reduce(changed, maxOp<bool>());
     }
 
     return changed;
@@ -150,14 +136,6 @@ bool Foam::Module::surfaceMorpherCells::morphBoundaryFaces()
             forAll(c, fI)
                 if (mesh_.faceIsInPatch(c[fI]) != -1)
                     bFaces.append(c[fI]);
-
-            # ifdef DEBUGMorph
-            Info<< "Boundary faces in cell " << cellI
-                << " are " << bFaces << endl;
-            forAll(bFaces, bfI)
-                Info<< "Face " << bFaces[bfI] << " is "
-                    << faces[bFaces[bfI]] << endl;
-            # endif
 
             boolList mergedFaces(bFaces.size(), false);
 
@@ -208,44 +186,19 @@ bool Foam::Module::surfaceMorpherCells::morphBoundaryFaces()
             newBoundaryOwners_.append(cellI);
             newBoundaryPatches_.append(0);
 
-            # ifdef DEBUGMorph
-            Info<< "Adding merged face " << mf << endl;
-            # endif
-
             for (label i = 1; i < bFaces.size(); ++i)
                 if (!mergedFaces[i])
                 {
                     newBoundaryFaces_.appendList(faces[bFaces[i]]);
                     newBoundaryOwners_.append(cellI);
                     newBoundaryPatches_.append(0);
-
-                    # ifdef DEBUGMorph
-                    Info<< "Adding untouched boundary face "
-                        << faces[bFaces[i]] << endl;
-                    # endif
                 }
         }
-
-    if (Pstream::parRun())
-    {
-        reduce(changed, maxOp<bool>());
-    }
 
     if (changed)
     {
         replaceMeshBoundary();
     }
-
-    # ifdef DEBUGMorph
-    labelHashSet zipCells;
-    mesh_.addressingData().checkCellsZipUp(true, &zipCells);
-    if (zipCells.size())
-    {
-        Info<< "Cells " << zipCells << " are not zipped!!" << endl;
-        ::exit(EXIT_FAILURE);
-    }
-    mesh_.clearAddressingData();
-    # endif
 
     Info<< "Finished morphing boundary faces" << endl;
 

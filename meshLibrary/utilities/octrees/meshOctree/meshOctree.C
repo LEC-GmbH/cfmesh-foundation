@@ -33,19 +33,13 @@ License
 #include "boundBox.H"
 #include "demandDrivenData.H"
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
-
-//#define DEBUGSearch
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::Module::meshOctree::meshOctree(const triSurf& ts, const bool isQuadtree)
 :
     surface_(ts),
-    neiProcs_(),
-    neiRange_(),
     initialCubePtr_(nullptr),
     initialCubeRotation_(0),
     rootBox_(),
@@ -76,10 +70,6 @@ void Foam::Module::meshOctree::setOctantVectorsAndPositions()
     octantVectors_[5] = Vector<label>(1, -1, 1);
     octantVectors_[6] = Vector<label>(-1, 1, 1);
     octantVectors_[7] = Vector<label>(1, 1, 1);
-
-    # ifdef DEBUGSearch
-    Info<< "Octant vectors " << octantVectors_ << endl;
-    # endif
 
     // set regularity positions
     // neighbours over faces
@@ -119,10 +109,6 @@ void Foam::Module::meshOctree::setOctantVectorsAndPositions()
     regularityPositions_[24] = meshOctreeCubeCoordinates(-1, 1, 1, 0);
     regularityPositions_[25] = meshOctreeCubeCoordinates(1, 1, 1, 0);
 
-    # ifdef DEBUGSearch
-    Info<< "Regularity positions " << regularityPositions_ << endl;
-    # endif
-
     // set vrtLeavesPos_
     for (label vrtI = 0; vrtI < 8; ++vrtI)
     {
@@ -140,10 +126,6 @@ void Foam::Module::meshOctree::setOctantVectorsAndPositions()
         {
             vc[2] += 1;
         }
-
-        # ifdef DEBUGSearch
-        Info<< "Vert " << vrtI << " vc " << vc << endl;
-        # endif
 
         for (label i = 0; i < 8; ++i)
         {
@@ -175,10 +157,6 @@ void Foam::Module::meshOctree::setOctantVectorsAndPositions()
                 );
         }
     }
-
-    # ifdef DEBUGSearch
-    Info<< "vrtLeavesPos_ " << vrtLeavesPos_ << endl;
-    # endif
 }
 
 
@@ -203,14 +181,7 @@ void Foam::Module::meshOctree::createInitialOctreeBox()
     // create root box and initial cube
     rootBox_ = boundBox(c - point(cs, cs, cs), c + point(cs, cs, cs));
 
-    if (Pstream::parRun())
-    {
-        reduce(rootBox_.min(), minOp<point>());
-        reduce(rootBox_.max(), maxOp<point>());
-    }
-
     // allocate data slots
-    # ifdef USE_OMP
     if (omp_get_num_procs() > 0)
     {
         dataSlots_.setSize(omp_get_num_procs());
@@ -219,9 +190,6 @@ void Foam::Module::meshOctree::createInitialOctreeBox()
     {
         dataSlots_.setSize(1);
     }
-    # else
-    dataSlots_.setSize(1);
-    # endif
 
     meshOctreeSlot* slotPtr = &dataSlots_[0];
 

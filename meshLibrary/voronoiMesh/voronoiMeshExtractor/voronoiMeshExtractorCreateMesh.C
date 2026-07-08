@@ -33,8 +33,6 @@ Description
 #include "voronoiMeshExtractor.H"
 #include "demandDrivenData.H"
 
-//#define DEBUGVoronoi
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::voronoiMeshExtractor::createPoints()
@@ -45,28 +43,16 @@ void Foam::Module::voronoiMeshExtractor::createPoints()
     pointFieldPMG& points = mesh_.points();
     points.setSize(tets.size());
 
-    # ifdef DEBUGVoronoi
-    Info<< "Number of tets " << tets.size() << endl;
-    # endif
-
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(tets, tetI)
     {
         points[tetI] = tets[tetI].centroid(tetPoints);
 
-        # ifdef DEBUGVoronoi
-        Info<< "Point " << tetI << " has coordinates "
-            << points[tetI] << endl;
-        Info<< "Tet of origin " << tetI << " has nodes "
-            << tets[tetI] << endl;
-        # endif
     }
 }
 
-
 void Foam::Module::voronoiMeshExtractor::createPolyMesh()
+
 {
     const VRWGraph& pointEdges = this->pointEdges();
     const VRWGraph& edgeTets = this->edgeTets();
@@ -98,10 +84,6 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
         ++nCells;
     }
 
-    # ifdef DEBUGVoronoi
-    Info<< "Number of cells " << nCells << endl;
-    # endif
-
     // count the number of faces
     label nFaces(0);
     labelList faceLabel(edges.size(), -1);
@@ -118,10 +100,6 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
         faceLabel[edgeI] = nFaces;
         ++nFaces;
     }
-
-    # ifdef DEBUGVoronoi
-    Info<< "Number of mesh faces " << nFaces << endl;
-    # endif
 
     // create faces
     Info<< "Creating faces " << endl;
@@ -148,9 +126,6 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
 
         if (cOwn < 0 || ((cOwn > cNei) && (cNei != -1)))
         {
-            # ifdef DEBUGVoronoi
-            Info<< "Reversing face " << cOwn << " " << cNei << endl;
-            # endif
 
             f = f.reverseFace();
         }
@@ -162,9 +137,6 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
     }
 
     // create cells
-    # ifdef DEBUGVoronoi
-    Info<< "Setting cell sizes" << endl;
-    # endif
 
     cells.setSize(nCells);
     forAll(nFacesInCell, cellI)
@@ -172,10 +144,6 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
         cells[cellI].setSize(nFacesInCell[cellI]);
         nFacesInCell[cellI] = 0;
     }
-
-    # ifdef DEBUGVoronoi
-    Info<< "Filling cells" << endl;
-    # endif
 
     forAll(edges, edgeI)
     {
@@ -192,10 +160,6 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
         if (cNei >= 0)
             cells[cNei][nFacesInCell[cNei]++] = faceI;
     }
-
-    # ifdef DEBUGVoronoi
-    Info<< "Finished generating cells" << endl;
-    # endif
 
     mesh_.clearAddressingData();
 }

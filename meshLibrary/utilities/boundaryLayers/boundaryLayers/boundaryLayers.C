@@ -32,7 +32,6 @@ License
 #include "meshSurfaceEngine.H"
 #include "demandDrivenData.H"
 #include "helperFunctions.H"
-#include "helperFunctionsPar.H"
 #include "meshSurfaceCheckInvertedVertices.H"
 #include "meshSurfacePartitioner.H"
 #include "polyMeshGen2DEngine.H"
@@ -40,8 +39,6 @@ License
 #include "labelledPoint.H"
 #include <map>
 #include <set>
-
-//#define DEBUGLayer
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -124,11 +121,6 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
                 treatPatchesWithPatch_[pPatches(bpI, patchI)] = allPatches;
             }
 
-            # ifdef DEBUGLayer
-            Info<< "Corner " << bpI << " is shared by patches "
-                << pPatches[bpI] << endl;
-            Info<< "All patches " << allPatches << endl;
-            # endif
         }
     }
 
@@ -194,167 +186,6 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
         }
     }
 
-    if (Pstream::parRun())
-    {
-        const labelList& bPoints = mse.boundaryPoints();
-
-        // check faces over processor edges
-        const labelList& globalEdgeLabel = mse.globalBoundaryEdgeLabel();
-        const Map<label>& globalToLocal = mse.globalToLocalBndEdgeAddressing();
-
-        const DynList<label>& neiProcs = mse.beNeiProcs();
-        const Map<label>& otherProcPatches = mse.otherEdgeFacePatch();
-        const Map<label>& otherFaceProc = mse.otherEdgeFaceAtProc();
-
-        // send faces sharing processor edges to other processors
-        // faces are flattened into a single contiguous array
-        const labelList& bp = mse.bp();
-        const labelList& globalPointLabel = mse.globalBoundaryPointLabel();
-        const Map<label>& globalPointToLocal =
-            mse.globalToLocalBndPointAddressing();
-
-        std::map<label, LongList<labelledPoint>> exchangePoints;
-        forAll(neiProcs, procI)
-        {
-            exchangePoints.insert
-            (
-                std::make_pair(neiProcs[procI], LongList<labelledPoint>())
-            );
-        }
-
-        // store faces for sending
-        forAllConstIters(otherFaceProc, it)
-        {
-            const label beI = it.key();
-
-            if (eFaces.sizeOfRow(beI) == 0)
-            {
-                continue;
-            }
-
-            const edge& e = edges[beI];
-
-            if
-            (
-                !is2DMesh_
-             && (invertedVertices.found(e[0]) || invertedVertices.found(e[1]))
-            )
-            {
-                continue;
-            }
-
-            // do not send data if the face on other processor
-            // is in the same patch
-            if (otherProcPatches[beI] == boundaryFacePatches[eFaces(beI, 0)])
-            {
-                continue;
-            }
-
-            const face& f = bFaces[eFaces(beI, 0)];
-
-            const label neiProc = it();
-
-            // each face is sent as follows
-            // 1. global edge label
-            // 2. number of face nodes
-            // 3. faces nodes and vertex coordinates
-            LongList<labelledPoint>& dps = exchangePoints[neiProc];
-            dps.append(labelledPoint(globalEdgeLabel[beI], point()));
-            dps.append(labelledPoint(f.size(), point()));
-            forAll(f, pI)
-            {
-                dps.append
-                (
-                    labelledPoint
-                    (
-                        globalPointLabel[bp[f[pI]]],
-                        points[f[pI]]
-                    )
-                );
-            }
-        }
-
-        LongList<labelledPoint> receivedData;
-        help::exchangeMap(exchangePoints, receivedData);
-
-        // receive faces from other processors
-        Map<label> transferredPointToLocal;
-
-        label counter(0);
-        while (counter < receivedData.size())
-        {
-            const label beI =
-                globalToLocal[receivedData[counter++].pointLabel()];
-
-            DynList<label> f(receivedData[counter++].pointLabel());
-            forAll(f, pI)
-            {
-                const labelledPoint& lp = receivedData[counter++];
-
-                if (globalPointToLocal.found(lp.pointLabel()))
-                {
-                    // this point already exist on this processor
-                    f[pI] = bPoints[globalPointToLocal[lp.pointLabel()]];
-                }
-                else
-                {
-                    // this point does not exist on this processor
-                    // add it to the local list of points
-                    // it will be deleted when this procedure is finished
-                    if (!transferredPointToLocal.found(lp.pointLabel()))
-                    {
-                        // this point has not yet been received
-                        transferredPointToLocal.insert
-                        (
-                            lp.pointLabel(),
-                            points.size()
-                        );
-                        mesh_.points().append(lp.coordinates());
-                    }
-
-                    f[pI] = transferredPointToLocal[lp.pointLabel()];
-                }
-            }
-
-            const face& bf = bFaces[eFaces(beI, 0)];
-
-            const label patch0 = boundaryFacePatches[eFaces(beI, 0)];
-            const label patch1 = otherProcPatches[beI];
-
-            std::pair<label, label> pp
-            (
-                Foam::min(patch0, patch1),
-                Foam::max(patch0, patch1)
-            );
-            if (edgeClassification.find(pp) == edgeClassification.end())
-            {
-                edgeClassification.insert
-                (
-                    std::make_pair(pp, Pair<label>(0, 0))
-                );
-            }
-
-            if
-            (
-                (otherFaceProc[beI] > Pstream::myProcNo())
-             && (
-                    !help::isSharedEdgeConvex(points, bf, f) ||
-                    (help::angleBetweenFaces(points, bf, f) > 0.75*M_PI)
-                )
-            )
-            {
-                ++edgeClassification[pp].second();
-            }
-            else if (otherFaceProc[beI] > Pstream::myProcNo())
-            {
-                ++edgeClassification[pp].first();
-            }
-        }
-
-        // set the size of points back to their original number
-        mesh_.points().setSize(nPoints_);
-    }
-
     forAllConstIters(edgeClassification, it)
     {
         const std::pair<label, label>& edgePair = it->first;
@@ -375,58 +206,6 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
 
             treatPatchesWithPatch_[patch0].append(patch1);
             treatPatchesWithPatch_[patch1].append(patch0);
-        }
-    }
-
-    if (Pstream::parRun())
-    {
-        // make sure that all processors have the same graph
-        labelLongList flattenedPatches;
-        forAll(treatPatchesWithPatch_, patchI)
-        {
-            if (treatPatchesWithPatch_[patchI].size() <= 1)
-            {
-                continue;
-            }
-
-            flattenedPatches.append(patchI);
-            flattenedPatches.append(treatPatchesWithPatch_[patchI].size());
-            forAll(treatPatchesWithPatch_[patchI], itemI)
-            {
-                flattenedPatches.append(treatPatchesWithPatch_[patchI][itemI]);
-            }
-        }
-
-        labelListList procPatches(Pstream::nProcs());
-        procPatches[Pstream::myProcNo()].setSize(flattenedPatches.size());
-        forAll(flattenedPatches, i)
-        {
-            procPatches[Pstream::myProcNo()][i] = flattenedPatches[i];
-        }
-        Pstream::allGatherList(procPatches);
-
-        forAll(procPatches, procI)
-        {
-            if (procI == Pstream::myProcNo())
-            {
-                continue;
-            }
-
-            const labelList& cPatches = procPatches[procI];
-            label counter(0);
-
-            while (counter < cPatches.size())
-            {
-                const label patchI = cPatches[counter++];
-                const label size = cPatches[counter++];
-                for (label i = 0; i < size; ++i)
-                {
-                    treatPatchesWithPatch_[patchI].appendUniq
-                    (
-                        cPatches[counter++]
-                    );
-                }
-            }
         }
     }
 
@@ -487,52 +266,6 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
         }
     }
 
-    # ifdef DEBUGLayer
-    forAllConstIters(edgeClassification, it)
-    {
-        const std::pair<label, label>& edgePair = it->first;
-        const Pair<label>& nConvexAndConcave = it->second;
-        Info<< "Pair of patches " << edgePair.first << " "
-            << edgePair.second << " is " << nConvexAndConcave << endl;
-    }
-
-    Info<< "Patch names " << patchNames_ << endl;
-    Info<< "Treat patches with patch " << treatPatchesWithPatch_ << endl;
-
-    label layerI(0), subsetId;
-    boolList usedPatch(treatPatchesWithPatch_.size(), false);
-    const PtrList<boundaryPatch>& boundaries = mesh_.boundaries();
-
-    forAll(treatPatchesWithPatch_, patchI)
-    {
-        if (usedPatch[patchI] || (boundaries[patchI].patchSize() == 0))
-        {
-            continue;
-        }
-
-        Info<< "Adding layer subset " << layerI
-            << " for patch " << patchI << endl;
-        usedPatch[patchI] = true;
-        subsetId = mesh_.addFaceSubset("layer_" + Foam::name(layerI));
-        ++layerI;
-
-        forAll(treatPatchesWithPatch_[patchI], i)
-        {
-            const label cPatch = treatPatchesWithPatch_[patchI][i];
-            usedPatch[cPatch] = true;
-
-            label start = boundaries[cPatch].patchStart();
-            const label size = boundaries[cPatch].patchSize();
-            for (label i = 0; i < size; ++i)
-            {
-                mesh_.addFaceToSubset(subsetId, start++);
-            }
-        }
-    }
-
-    mesh_.write();
-    # endif
-
     geometryAnalysed_ = true;
 }
 
@@ -546,7 +279,7 @@ void Foam::Module::boundaryLayers::addLayerForPatch(const label patchLabel)
 
     const PtrList<boundaryPatch>& boundaries = mesh_.boundaries();
 
-    if (returnReduce(boundaries[patchLabel].patchSize(), sumOp<label>()) == 0 )
+    if (boundaries[patchLabel].patchSize() == 0)
     {
         return;
     }
@@ -633,11 +366,6 @@ Foam::Module::boundaryLayers::boundaryLayers
 Foam::Module::boundaryLayers::~boundaryLayers()
 {
     clearOut();
-
-    if (Pstream::parRun())
-    {
-        polyMeshGenModifier(mesh_).removeUnusedVertices();
-    }
 }
 
 
@@ -686,9 +414,7 @@ void Foam::Module::boundaryLayers::activate2DMode()
     boolList allZMax(mesh_.boundaries().size(), true);
     boolList allZMin(mesh_.boundaries().size(), true);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(bFaces, bfI)
     {
         const face& bf = bFaces[bfI];

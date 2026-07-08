@@ -71,14 +71,7 @@ Foam::Module::meshSurfaceMapper::meshSurfaceMapper
     surfaceEnginePartitionerPtr_(nullptr),
     deletePartitioner_(true),
     surfPartitionerPtr_(nullptr)
-{
-    if (Pstream::parRun())
-    {
-        // allocate bpAtProcs and other addressing
-        // this is done here to prevent possible deadlocks
-        surfaceEngine_.bpAtProcs();
-    }
-}
+{}
 
 
 Foam::Module::meshSurfaceMapper::meshSurfaceMapper
@@ -92,14 +85,7 @@ Foam::Module::meshSurfaceMapper::meshSurfaceMapper
     surfaceEnginePartitionerPtr_(&mPart),
     deletePartitioner_(false),
     surfPartitionerPtr_(nullptr)
-{
-    if (Pstream::parRun())
-    {
-        // allocate bpAtProcs and other addressing
-        // this is done here to prevent possible deadlocks
-        surfaceEngine_.bpAtProcs();
-    }
-}
+{}
 
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //

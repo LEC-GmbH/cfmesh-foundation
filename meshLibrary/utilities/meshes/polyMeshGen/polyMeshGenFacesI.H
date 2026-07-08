@@ -30,9 +30,7 @@ License
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -47,14 +45,12 @@ inline Foam::label Foam::Module::polyMeshGenFaces::nInternalFaces() const
 {
     if (!(ownerPtr_ && neighbourPtr_))
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calculateOwnersAndNeighbours();
     }
@@ -67,14 +63,12 @@ inline const Foam::labelList& Foam::Module::polyMeshGenFaces::owner() const
 {
     if (!ownerPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calculateOwnersAndNeighbours();
     }
@@ -87,26 +81,17 @@ inline const Foam::labelList& Foam::Module::polyMeshGenFaces::neighbour() const
 {
     if (!neighbourPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calculateOwnersAndNeighbours();
     }
 
     return *neighbourPtr_;
-}
-
-
-inline const Foam::PtrList<Foam::Module::processorBoundaryPatch>&
-Foam::Module::polyMeshGenFaces::procBoundaries() const
-{
-    return procBoundaries_;
 }
 
 

@@ -50,13 +50,11 @@ Foam::Module::meshOctreeAutomaticRefinement::octreeAddressing() const
 {
     if (!octreeAddressingPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Cannot calculate addressing!" << abort(FatalError);
         }
-        # endif
 
         createOctreeAddressing();
     }
@@ -77,13 +75,11 @@ Foam::Module::meshOctreeAutomaticRefinement::partitioner() const
 {
     if (!partitionerPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Cannot calculate addressing!" << abort(FatalError);
         }
-        # endif
 
         createSurfacePartitioner();
     }
@@ -104,13 +100,11 @@ Foam::Module::meshOctreeAutomaticRefinement::curvature() const
 {
     if (!curvaturePtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Cannot calculate addressing!" << abort(FatalError);
         }
-        # endif
 
         createCurvatureEstimator();
     }

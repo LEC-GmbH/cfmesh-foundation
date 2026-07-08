@@ -164,18 +164,14 @@ void Foam::Module::triSurf::topologyCheck()
     const LongList<labelledTri>& trias = this->facets();
 
     // check for inf and nan points
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(pts, pointI)
     {
         const point& p = pts[pointI];
 
         if (help::isnan(p) || help::isinf(p))
         {
-            # ifdef USE_OMP
             # pragma omp critical
-            # endif
             {
                 FatalErrorInFunction
                     << "Point " << pointI << " has invalid coordinates "
@@ -186,9 +182,7 @@ void Foam::Module::triSurf::topologyCheck()
 
     // check whether the nodes are within the scope
     // report duplicate nodes in the same triangle
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(trias, triI)
     {
         const labelledTri& ltri = trias[triI];
@@ -197,9 +191,7 @@ void Foam::Module::triSurf::topologyCheck()
         {
             if (ltri[pI] < 0 || (ltri[pI] >= pts.size()))
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 FatalErrorInFunction
                     << "Point " << ltri[pI] << " in triangle " << ltri
                     << " is out of scope 0 " << pts.size() << exit(FatalError);
@@ -207,9 +199,7 @@ void Foam::Module::triSurf::topologyCheck()
 
             if (ltri[pI] == ltri[(pI + 1)%3] || ltri[pI] == ltri[(pI + 2)%3])
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 WarningInFunction
                     << "Triangle " << ltri << " has duplicated points. "
                     << "This may cause problems in the meshing process!" << endl;
@@ -220,9 +210,7 @@ void Foam::Module::triSurf::topologyCheck()
     // check feature edges
     const edgeLongList& featureEdges = this->featureEdges();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(featureEdges, eI)
     {
         const edge& fe = featureEdges[eI];
@@ -231,9 +219,7 @@ void Foam::Module::triSurf::topologyCheck()
         {
             if (fe[pI] < 0 || (fe[pI] >= pts.size()))
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 FatalErrorInFunction
                     << "Feature edge " << fe << " point " << fe[pI]
                     << " is out of scope 0 " << pts.size() << exit(FatalError);
@@ -242,9 +228,7 @@ void Foam::Module::triSurf::topologyCheck()
 
         if (fe.start() == fe.end())
         {
-            # ifdef USE_OMP
             # pragma omp critical
-            # endif
             WarningInFunction
                 << "Feature edge " << fe << " has duplicated points. "
                 << "This may cause problems in the meshing process!" << endl;
@@ -265,9 +249,7 @@ void Foam::Module::triSurf::topologyCheck()
 
             if (elI < 0 || elI >= pts.size())
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 FatalErrorInFunction
                     << "Point " << elI << " in point subset "
                     << this->pointSubsetName(subsetIds[i])
@@ -290,9 +272,7 @@ void Foam::Module::triSurf::topologyCheck()
 
             if (elI < 0 || elI >= trias.size())
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 FatalErrorInFunction
                     << "Triangle " << elI << " in facet subset "
                     << this->facetSubsetName(subsetIds[i])
@@ -315,9 +295,7 @@ void Foam::Module::triSurf::topologyCheck()
 
             if (elI < 0 || elI >= featureEdges.size())
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 FatalErrorInFunction
                     << "Feature edge " << elI << " in edge subset "
                     << this->edgeSubsetName(subsetIds[i])

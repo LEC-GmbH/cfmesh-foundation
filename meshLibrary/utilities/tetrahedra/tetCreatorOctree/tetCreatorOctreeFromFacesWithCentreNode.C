@@ -31,7 +31,6 @@ License
 #include "tetCreatorOctree.H"
 #include "demandDrivenData.H"
 
-//#define DEBUGTets
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -93,14 +92,6 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
                 if (pl[ep] != pl[eEdge[1]])
                     continue;
 
-                # ifdef DEBUGTets
-                Info<< "Octree node " << pointI << " has leaves";
-                for (label plI = 0; plI < 8; ++plI)
-                    Info<< ' ' << pointLeaves(pointI, plI);
-                Info<< endl;
-                Info<< "Searching face " << fI << endl;
-                Info<< "Searching face edge " << feI << endl;
-                # endif
 
                 // allocate face centre labels
                 if (faceCentreLabel.sizeOfRow(pl[sp]) == 0)
@@ -126,12 +117,6 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
                 if (fe == fI)
                     fe = meshOctreeCubeCoordinates::edgeFaces_[fEdges[feI]][1];
 
-                # ifdef DEBUGTets
-                Info<< "Face for the cube at edge " << feI << " is "
-                     << fs << endl;
-                Info<< "Face for the cube at edge " << feJ << " is "
-                     << fe << endl;
-                #endif
 
                 // create face centre point
                 if (faceCentreLabel(pl[sp], fs) == -1)
@@ -174,9 +159,6 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
                 subNodes[2] = subNodeLabels(pl[ep], 7 - eEdge[0]);
                 subNodes[3] = subNodeLabels(pl[ep], 7 - eEdge[1]);
 
-                # ifdef DEBUGTets
-                Info<< "Sub nodes are " << subNodes << endl;
-                # endif
 
                 forAll(subNodes, nodeI)
                 {

@@ -72,9 +72,7 @@ void Foam::Module::findCellsIntersectingSurface::findIntersectedCells()
     const VRWGraph& pointFacets = surf.pointFacets();
     const pointField& sp = surf.points();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(cells, cellI)
     {
         bool intersected(false);
@@ -277,9 +275,7 @@ void Foam::Module::findCellsIntersectingSurface::findIntersectedCells()
         intersectedCells_[cellI] = intersected;
         if (intersected)
         {
-            # ifdef USE_OMP
             # pragma omp critical
-            # endif
             {
                 facetsIntersectingCell_.setRow(cellI, facetsInCell.toc());
             }

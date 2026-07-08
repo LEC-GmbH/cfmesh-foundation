@@ -35,9 +35,7 @@ License
 #include "labelPair.H"
 #include "HashSet.H"
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
 
@@ -190,24 +188,16 @@ Foam::label Foam::Module::help::groupMarking
 
     label nThreads(1);
 
-    # ifdef USE_OMP
     //nThreads = 3*omp_get_num_procs();
-    # endif
 
     DynList<label> nGroupsAtThread(nThreads, 0);
 
-    # ifdef USE_OMP
     # pragma omp parallel num_threads(nThreads)
-    # endif
     {
         const label chunkSize =
             Foam::max(1, neighbourCalculator.size() / nThreads);
 
-        # ifdef USE_OMP
         const label threadI = omp_get_thread_num();
-        # else
-        const label threadI(0);
-        # endif
 
         LongList<std::pair<label, label>> threadCommPairs;
 
@@ -271,7 +261,6 @@ Foam::label Foam::Module::help::groupMarking
             ++groupI;
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
 
         # pragma omp master
@@ -281,9 +270,6 @@ Foam::label Foam::Module::help::groupMarking
                 nGroups += nGroupsAtThread[i];
             }
         }
-        # else
-        nGroups = groupI;
-        # endif
 
         label startGroup(0);
         for (label i = 0; i < threadI; ++i)
@@ -296,9 +282,7 @@ Foam::label Foam::Module::help::groupMarking
             elementInGroup[elI] += startGroup;
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
-        # endif
 
         // find group to neighbouring groups addressing
         List<DynList<label>> localNeiGroups(nGroups);
@@ -322,9 +306,7 @@ Foam::label Foam::Module::help::groupMarking
             }
         }
 
-        # ifdef USE_OMP
         # pragma omp critical
-        # endif
         {
             neighbouringGroups.setSize(nGroups);
 
@@ -405,142 +387,8 @@ Foam::label Foam::Module::help::groupMarking
         ++counter;
     }
 
-    if (Pstream::parRun())
-    {
-        // reduce the groups over processors of an MPI run
-        // count the total number of groups over all processors
-        labelList nGroupsAtProc(Pstream::nProcs());
-        nGroupsAtProc[Pstream::myProcNo()] = nGroups;
-
-        Pstream::allGatherList(nGroupsAtProc);
-
-        label startGroup(0), totalNumGroups(0);
-        for (label procI = 0; procI < Pstream::nProcs(); ++procI)
-        {
-            totalNumGroups += nGroupsAtProc[procI];
-
-            if (procI < Pstream::myProcNo())
-            {
-                startGroup += nGroupsAtProc[procI];
-            }
-        }
-
-        // translate group labels
-        forAll(globalGroupLabel, groupI)
-        {
-            globalGroupLabel[groupI] += startGroup;
-        }
-
-        // find the neighbouring groups
-        // collect groups on other processors
-        // this operator implements the algorithm for exchanging data
-        // over processors and collects information which groups
-        // are connected over inter-processor boundaries
-        std::map<label, DynList<label>> neiGroups;
-
-        neighbourCalculator.collectGroups
-        (
-            neiGroups,
-            elementInGroup,
-            globalGroupLabel
-        );
-
-        // create a graph of connections
-        List<List<labelPair>> globalNeiGroups(Pstream::nProcs());
-
-        DynList<labelPair> connsAtProc;
-        forAllConstIters(neiGroups, it)
-        {
-            const DynList<label>& ng = it->second;
-
-            forAll(ng, i)
-            {
-                connsAtProc.append(labelPair(it->first, ng[i]));
-            }
-        }
-
-        // copy the connections into the global neighbour list
-        globalNeiGroups[Pstream::myProcNo()].setSize(connsAtProc.size());
-
-        forAll(connsAtProc, i)
-        {
-            globalNeiGroups[Pstream::myProcNo()][i] = connsAtProc[i];
-        }
-
-        // communicate partial graphs to the master processor
-        Pstream::gatherList(globalNeiGroups);
-
-        labelList allGroupsNewLabel;
-        if (Pstream::master())
-        {
-            // collect the graph of connections for the whole system
-            VRWGraph allGroups(totalNumGroups);
-            forAll(allGroups, i)
-            {
-                allGroups[i].append(i);
-            }
-
-            forAll(globalNeiGroups, procI)
-            {
-                const List<labelPair>& connections = globalNeiGroups[procI];
-
-                forAll(connections, i)
-                {
-                    const labelPair& lp = connections[i];
-
-                    allGroups.appendUniq(lp.first(), lp.second());
-                    allGroups.appendUniq(lp.second(), lp.first());
-                }
-            }
-
-            // assign a global label to each group
-            allGroupsNewLabel.setSize(totalNumGroups);
-            allGroupsNewLabel = -1;
-            counter = 0;
-
-            forAll(allGroups, groupI)
-            {
-                if (allGroupsNewLabel[groupI] != -1)
-                {
-                    continue;
-                }
-
-                DynList<label> connectedGroups;
-                frontalMarking
-                (
-                    connectedGroups,
-                    groupI,
-                    graphNeiOp(allGroups),
-                    graphSelectorOp(allGroups)
-                );
-
-                forAll(connectedGroups, gI)
-                {
-                    allGroupsNewLabel[connectedGroups[gI]] = counter;
-                }
-
-                ++counter;
-            }
-
-            nGroups = counter;
-        }
-
-        // broadcast group labels from the master to other processors
-        Pstream::broadcast(nGroups);
-        Pstream::broadcast(allGroupsNewLabel);
-
-        // assign correct group labels
-        forAll(globalGroupLabel, groupI)
-        {
-            const label ngI = globalGroupLabel[groupI];
-            globalGroupLabel[groupI] = allGroupsNewLabel[ngI];
-        }
-    }
-
     // set the global group label
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(elementInGroup, elI)
     {
         if (elementInGroup[elI] < 0)

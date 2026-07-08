@@ -33,8 +33,6 @@ License
 #include "helperFunctions.H"
 #include "demandDrivenData.H"
 
-//#define DEBUGLayer
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::refineBoundaryLayers::generateNewCellsPrism
@@ -47,10 +45,6 @@ void Foam::Module::refineBoundaryLayers::generateNewCellsPrism
 
     const cell& c = mesh_.cells()[cellI];
     const labelList& owner = mesh_.owner();
-
-    # ifdef DEBUGLayer
-    Pout << "New cells from cell " << cellI << endl;
-    # endif
 
     const label startBoundary = mesh_.boundaries()[0].patchStart();
 
@@ -70,30 +64,9 @@ void Foam::Module::refineBoundaryLayers::generateNewCellsPrism
             continue;
         }
 
-        # ifdef DEBUGLayer
-        Pout << "Boundary face " << bfI << endl;
-        # endif
-
         nLayers = nLayersAtBndFace_[bfI];
         baseFace = fI;
     }
-
-    # ifdef DEBUGLayer
-    Pout << "Number of layers " << nLayers << endl;
-    Pout << "Base face " << baseFace << " has points "
-         << mesh_.faces()[c[baseFace]] << endl;
-    forAll(c, fI)
-    {
-        Pout << "Faces from face " << fI << " are "
-             << facesFromFace_[c[fI]] << endl;
-
-        forAllRow(facesFromFace_, c[fI], i)
-        {
-            Pout << "Face " << facesFromFace_(c[fI], i)
-                 << " is " << newFaces_[facesFromFace_(c[fI], i)] << endl;
-        }
-    }
-    # endif
 
     // set the number of layers
     cellsFromCell.setSize(nLayers);
@@ -148,11 +121,6 @@ void Foam::Module::refineBoundaryLayers::generateNewCellsPrism
         {
             const label pointI = bf[pI];
 
-            # ifdef DEBUGLayer
-            Pout << "Split edges at point " << pointI << " are "
-                 << splitEdgesAtPoint_[pointI] << endl;
-            # endif
-
             label seI(-1);
             if (splitEdgesAtPoint_.sizeOfRow(pointI) == 1)
             {
@@ -180,55 +148,6 @@ void Foam::Module::refineBoundaryLayers::generateNewCellsPrism
         cellsFromCell[nLayers - layerI].append(cf);
         cellsFromCell[nLayers - 1 - layerI].append(cf);
     }
-
-    # ifdef DEBUGLayer
-    Pout << "New cells from cell " << cellI << " are " << cellsFromCell << endl;
-    //::exit(1);
-
-    Pout << "1. Newly generated cells " << cellsFromCell << endl;
-
-    // check if all generated cells are topologically closed
-    forAll(cellsFromCell, cI)
-    {
-        const DynList<DynList<label, 8>, 10>& cellFaces = cellsFromCell[cI];
-
-        DynList<edge, 12> edges;
-        DynList<label, 12> nAppearances;
-
-        forAll(cellFaces, fI)
-        {
-            const DynList<label, 8>& f = cellFaces[fI];
-
-            forAll(f, eI)
-            {
-                const edge e(f[eI], f.fcValue(eI));
-
-                const label pos = edges.find(e);
-
-                if (pos < 0)
-                {
-                    edges.append(e);
-                    nAppearances.append(1);
-                }
-                else
-                {
-                    ++nAppearances[pos];
-                }
-            }
-        }
-
-        forAll(nAppearances, eI)
-        {
-            if (nAppearances[eI] != 2)
-            {
-                Pout<< "Prism cell " << cI << " edge " << edges[eI]
-                    << " is present " << nAppearances[eI] << " times!" << endl;
-                abort(FatalError);
-            }
-        }
-    }
-    # endif
-
 }
 
 
@@ -251,14 +170,6 @@ void Foam::Module::refineBoundaryLayers::storeFacesIntoCells
     const label maxJ = nLayersJ - 1;
     const label maxK = nLayersK - 1;
 
-    # ifdef DEBUGLayer
-    Pout << "Storing new faces from face " << faceI
-         << " reverseOrientation = " << reverseOrientation
-         << " normal direction " << normalDirection
-         << " maxCoordinate " << maxCoordinate << endl;
-    Pout << "faceFaces " << faceFaces << endl;
-    # endif
-
     label i(-1), j(-1), k(-1);
 
     forAll(faceFaces, nI)
@@ -266,10 +177,6 @@ void Foam::Module::refineBoundaryLayers::storeFacesIntoCells
         forAll(faceFaces[nI], nJ)
         {
             const label nfI = faceFaces[nI][nJ];
-
-            # ifdef DEBUGLayer
-            Pout << "nI = " << nI << " nJ = " << nJ << endl;
-            # endif
 
             if (normalDirection == 0)
             {
@@ -301,12 +208,6 @@ void Foam::Module::refineBoundaryLayers::storeFacesIntoCells
                 i
             );
 
-            # ifdef DEBUGLayer
-            Pout << "Storing face " << newFaces_[nfI]
-                 << " i = " << i << " j = " << j << " k = " << k
-                 << "\n cell label " << cI << endl;
-            # endif
-
             cellsFromCell[cI].append(newFaces_[nfI]);
         }
     }
@@ -322,10 +223,6 @@ determineFacesInDirections()
     const polyMeshGen& mesh = bndLayers_.mesh_;
     const faceListPMG& faces = mesh.faces();
     const cell& c = mesh.cells()[cellI_];
-
-    # ifdef DEBUGLayer
-    Pout << "Generating new cells from edge cell " << cellI_ << endl;
-    # endif
 
     const PtrList<boundaryPatch>& bnd = mesh.boundaries();
     const label startBoundary = bnd[0].patchStart();
@@ -344,10 +241,6 @@ determineFacesInDirections()
         {
             continue;
         }
-
-        # ifdef DEBUGLayer
-        Pout << "Boundary face " << bfI << endl;
-        # endif
 
         if (nLayersAtBndFace[bfI] < 2)
         {
@@ -404,12 +297,6 @@ determineFacesInDirections()
         }
     }
 
-    # ifdef DEBUGLayer
-    Pout << "Common edge " << commonEdge << endl;
-    Pout << "Donor face " << dirFace[0] << endl;
-    Pout << "Donor face points " << faces[c[dirFace[0]]] << endl;
-    # endif
-
     // find the face attached to the starting point of the edge and
     // the face attached to the end point of the edge
     forAll(c, fI)
@@ -459,16 +346,6 @@ determineFacesInDirections()
     // checking face in direction i = nLayersI_
     faceOrientation_[5] = owner[c[faceInDirection_[5]]] == cellI_?false:true;
 
-    # ifdef DEBUGLayer
-    Pout << "Face at start " << faces[c[faceInDirection_[0]]] << endl;
-    Pout << "Face at end " << faces[c[faceInDirection_[1]]] << endl;
-    forAll(faceInDirection_, i)
-    {
-        Pout << "Face in direction " << i << " is "
-             << faces[c[faceInDirection_[i]]]
-             << " orientation " << faceOrientation_[i] << endl;
-    }
-    # endif
 }
 
 
@@ -532,12 +409,6 @@ populateExistingFaces()
         const label faceI = facesFromFace(c[faceInDirection_[5]], j);
         cellsFromCell_[j*nLayersI_ + maxI].append(newFaces[faceI]);
     }
-
-    # ifdef DEBUGLayer
-    Pout << "New cells after populating existing faces "
-         << cellsFromCell_ << endl;
-    # endif
-
 }
 
 
@@ -587,11 +458,6 @@ generateMissingFaces()
                 mf[2] = cellPoints[1][i][j + 1];
                 mf[3] = cellPoints[1][i][j];
 
-                # ifdef DEBUGLayer
-                Pout << "1. Adding missing face " << mf
-                     << " to cells " << own << " and " << nei << endl;
-                # endif
-
                 cellsFromCell_[own].append(mf);
                 cellsFromCell_[nei].append(help::reverseFace(mf));
             }
@@ -606,11 +472,6 @@ generateMissingFaces()
                 {
                     mf.append(cellPoints[1][i][index]);
                 }
-
-                # ifdef DEBUGLayer
-                Pout << "2. Adding missing face " << mf
-                     << " to cells " << own << " and " << nei << endl;
-                # endif
 
                 cellsFromCell_[own].append(mf);
                 cellsFromCell_[nei].append(help::reverseFace(mf));
@@ -637,11 +498,6 @@ generateMissingFaces()
                 mf[2] = cellPoints[1][i + 1][j];
                 mf[3] = cellPoints[0][i + 1][j];
 
-                # ifdef DEBUGLayer
-                Pout << "3. Adding missing face " << mf
-                     << " to cells " << own << " and " << nei << endl;
-                # endif
-
                 cellsFromCell_[own].append(mf);
                 cellsFromCell_[nei].append(help::reverseFace(mf));
             }
@@ -657,22 +513,11 @@ generateMissingFaces()
                     mf.append(cellPoints[0][index][j]);
                 }
 
-                # ifdef DEBUGLayer
-                Pout << "4. Adding missing face " << mf
-                     << " to cells " << own << " and " << nei << endl;
-                # endif
-
                 cellsFromCell_[own].append(mf);
                 cellsFromCell_[nei].append(help::reverseFace(mf));
             };
         }
     }
-
-    # ifdef DEBUGLayer
-    Pout << "Cell " << cellI_ << " new cells are " << cellsFromCell_ << endl;
-    //::exit(1);
-    # endif
-
 }
 
 
@@ -709,11 +554,6 @@ determineFacesInDirections()
     const faceListPMG& faces = mesh.faces();
     const labelList& nLayersAtBndFace = bndLayers_.nLayersAtBndFace_;
 
-    # ifdef DEBUGLayer
-    Pout << "Generating new cells from corner hex cell " << cellI_ << endl;
-    Pout << "Cell faces " << c << endl;
-    # endif
-
     const label startBoundary = mesh.boundaries()[0].patchStart();
 
     // find the number of layers for this cell
@@ -729,10 +569,6 @@ determineFacesInDirections()
         {
             continue;
         }
-
-        # ifdef DEBUGLayer
-        Pout << "Boundary face " << bfI << endl;
-        # endif
 
         if (nLayersAtBndFace[bfI] < 2)
         {
@@ -753,18 +589,6 @@ determineFacesInDirections()
     }
 
     const label commonPoint = help::sharedVertex(bndFaces);
-
-    # ifdef DEBUGLayer
-    Pout << "Used directions " << usedDirection << endl;
-    Pout << "Layers in direction " << layersInDirection << endl;
-    Pout << "dirFace " << dirFace << endl;
-    Pout << "Common point " << commonPoint << endl;
-
-    forAll(dirFace, i)
-    {
-        Pout << "bnd face " << i << " is " << faces[c[dirFace[i]]] << endl;
-    }
-    # endif
 
     // find the position of the common point in each boundary face
     const edgeLongList& splitEdges = bndLayers_.splitEdges_;
@@ -801,19 +625,6 @@ determineFacesInDirections()
                 << abort(FatalError);
         }
     }
-
-    # ifdef DEBUGLayer
-    const VRWGraph& newVerticesForSplitEdge =
-        bndLayers_.newVerticesForSplitEdge_;
-    forAll(splitEdgeInDirection_, i)
-    {
-        Pout << "Split edge in direction " << i << " has nodes "
-             << splitEdges[splitEdgeInDirection_[i]]
-             << " number of points on split edge "
-             << newVerticesForSplitEdge.sizeOfRow(splitEdgeInDirection_[i])
-             << endl;
-    }
-    # endif
 
     // find the direction of other boundary faces
     // in the local coordinate system
@@ -890,19 +701,6 @@ determineFacesInDirections()
             faceOrientation_[5] = orientation;
         }
     }
-
-    # ifdef DEBUGLayer
-    forAll(faceInDirection_, i)
-    {
-        Pout << "Face in direction " << i
-             << " is " << faces[c[faceInDirection_[i]]]
-             << " orientation " << faceOrientation_[i] << endl;
-    }
-    Pout << "nLayersI = " << nLayersI_
-         << " nLayersJ = " << nLayersJ_
-         << " nLayersK = " << nLayersK_ << endl;
-    # endif
-
 }
 
 
@@ -930,10 +728,6 @@ populateExistingFaces()
         );
     }
 
-    # ifdef DEBUGLayer
-    Pout << "cellsFromCell_ before new faces " << cellsFromCell_ << endl;
-    //::exit(1);
-    # endif
 }
 
 
@@ -965,10 +759,6 @@ generateNewPoints()
             faceOrientation_[dirI]
         );
     }
-
-    # ifdef DEBUGLayer
-    Pout << "Face points " << facePoints_ << endl;
-    # endif
 
     // fill in cellPoints at the boundary
     forAll(cellPoints_, i)
@@ -1053,11 +843,6 @@ generateNewPoints()
                     seDirK.mag(points)
                 );
 
-                # ifdef DEBUGLayer
-                Pout << "Generating point in corner cell local coordinates "
-                     << "u = " << u << " v = " << v << " w = " << w << endl;
-                # endif
-
                 // calculate coordinates of the new vertex
                 const point newP =
                     (1.0 - u)*(1.0 - v)*(1.0 - w)*v000 +
@@ -1069,11 +854,6 @@ generateNewPoints()
                     u*v*w*v111 +
                     (1.0 - u)*v*w*v011;
 
-                # ifdef DEBUGLayer
-                Pout<< "New point " << points.size() << " in corner hex "
-                    << "has coordinates " << newP << endl;
-                # endif
-
                 // add the point to the mesh
                 cellPoints_[i][j][k] = points.size();
                 points.append(newP);
@@ -1081,10 +861,6 @@ generateNewPoints()
         }
     }
 
-    # ifdef DEBUGLayer
-    Pout << "New cell points " << cellPoints_ << endl;
-    //::exit(1);
-    # endif
 }
 
 
@@ -1153,13 +929,6 @@ generateMissingFaces()
         );
 
         const label nei = own + 1;
-
-        # ifdef DEBUGLayer
-        Pout << "Additional face in direction i = " << i
-             << " j = " << (nLayersJ_ - 1)
-             << " has owner " << own
-             << " neighbour " << nei << " with nodes " << mf << endl;
-        # endif
 
         cellsFromCell_[own].append(mf);
         cellsFromCell_[nei].append(help::reverseFace(mf));
@@ -1237,13 +1006,6 @@ generateMissingFaces()
             j*nLayersI_ +
             (nLayersI_ - 1)
         );
-
-        # ifdef DEBUGLayer
-        Pout << "Additional face at i = " << (nLayersI_ - 1)
-             << " j = " << j << " k = " << (nLayersK_ - 1)
-             << " has owner " << own
-             << " neighbour " << nei << " with nodes " << mf << endl;
-        # endif
 
         cellsFromCell_[own].append(mf);
         cellsFromCell_[nei].append(help::reverseFace(mf));
@@ -1323,62 +1085,10 @@ generateMissingFaces()
             (nLayersI_ - 1)
         );
 
-        # ifdef DEBUGLayer
-        Pout << "Additional face at position i = " << (nLayersI_ - 1)
-             << " j = " << (nLayersJ_ - 1) << " k = " << k
-             << " has owner " << own
-             << " neighbour " << nei << " with nodes " << mf << endl;
-        # endif
-
         cellsFromCell_[own].append(mf);
         cellsFromCell_[nei].append(help::reverseFace(mf));
     }
 
-    # ifdef DEBUGLayer
-    Pout << "Generated cells " << cellsFromCell_ << endl;
-
-    forAll(cellsFromCell_, cI)
-    {
-        const DynList<DynList<label, 4>, 6>& cellFaces = cellsFromCell_[cI];
-
-        DynList<edge, 12> edges;
-        DynList<label, 12> nAppearances;
-
-        forAll(cellFaces, fI)
-        {
-            const DynList<label, 4>& f = cellFaces[fI];
-
-            forAll(f, eI)
-            {
-                const edge e(f[eI], f.fcValue(eI));
-
-                const label pos = edges.find(e);
-
-                if (pos < 0)
-                {
-                    edges.append(e);
-                    nAppearances.append(1);
-                }
-                else
-                {
-                    ++nAppearances[pos];
-                }
-            }
-        }
-
-        forAll(nAppearances, eI)
-        {
-            if (nAppearances[eI] != 2)
-            {
-                Pout << "Edge hex cell " << cI << " edge " << edges[eI]
-                    << " is present " << nAppearances[eI] << " times!" << endl;
-                abort(FatalError);
-            }
-        }
-    }
-
-    //::exit(1);
-    # endif
 }
 
 
@@ -1462,16 +1172,7 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
         nNewCells += (nCellsFromCell[cellI] - 1);
     }
 
-    # ifdef DEBUGLayer
-    forAll(nCellsFromCell, cellI)
-    {
-        Pout << "\nCell " << cellI << endl;
-        Pout << "nCellsFromCell " << nCellsFromCell[cellI] << endl;
-        Pout << "Ref type " << refType[cellI] << endl;
-    }
-    #  endif
-
-    const label totalNumNewCells = returnReduce(nNewCells, sumOp<label>());
+    const label totalNumNewCells = nNewCells;
     Info<< "Number of newly generated cells " << totalNumNewCells << endl;
 
     // create mesh modifier
@@ -1579,11 +1280,6 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
             {
                 const DynList<DynList<label, 4>, 6>& nc = cellsFromCell[cI];
 
-                # ifdef DEBUGLayer
-                Pout << "Adding cell " << (cI == 0?cellI:nCells)
-                     << " originating from cell " << cellI << endl;
-                # endif
-
                 const label newCellI = cI == 0?cellI:nCells++;
 
                 newCellsFromCell.append(cellI, newCellI);
@@ -1687,16 +1383,12 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
     // may require a face to be flipped
     const label nOrigInternalFaces = mesh_.nInternalFaces();
 
-    # ifdef USE_OMP
     # pragma omp parallel
-    # endif
     {
         const labelList& owner = mesh_.owner();
         const labelList& neighbour = mesh_.neighbour();
 
-        # ifdef USE_OMP
         # pragma omp for schedule(dynamic, 40)
-        # endif
         for (label fI = 0; fI < nOrigInternalFaces; ++fI)
         {
             const label own = owner[fI];
@@ -1765,10 +1457,6 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
     pointNewFaces.setSize(0);
 
     // copy newFaces to the mesh
-    # ifdef DEBUGLayer
-    Pout << "Copying internal faces " << endl;
-    Pout << "Original number of internal faces " << nOrigInternalFaces << endl;
-    # endif
 
     // store internal faces originating from existing faces
     labelLongList newFaceLabel(newFaces_.size());
@@ -1795,12 +1483,6 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
     }
 
     // store newly-generated internal faces
-    # ifdef DEBUGLayer
-    Pout << "Copying newly generated internal faces" << endl;
-    Pout << "nNewInternalFaces " << currFace << endl;
-    Pout << "numFacesBefore " << numFacesBefore << endl;
-    Pout << "Total number of faces " << newFaces_.size() << endl;
-    # endif
 
     for (label faceI = numFacesBefore; faceI < newFaces_.size(); ++faceI)
     {
@@ -1817,12 +1499,6 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
     }
 
     // store new boundary faces
-    # ifdef DEBUGLayer
-    Pout << "Copying boundary faces " << endl;
-    Pout << "currFace " << currFace << endl;
-    Pout << "Faces size " << faces.size() << endl;
-    Pout << "Initial number of faces " << facesFromFace_.size() << endl;
-    # endif
 
     PtrList<boundaryPatch>& boundaries = meshModifier.boundariesAccess();
     forAll(boundaries, patchI)
@@ -1862,67 +1538,12 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
         boundaries[patchI].patchSize() = nNewFacesInPatch;
     }
 
-    if (Pstream::parRun())
-    {
-        # ifdef DEBUGLayer
-        Pout << "Copying processor faces" << endl;
-        # endif
-
-        // copy faces at inter-processor boundaries
-        PtrList<processorBoundaryPatch>& procBoundaries =
-            meshModifier.procBoundariesAccess();
-
-        forAll(procBoundaries, patchI)
-        {
-            const label start = procBoundaries[patchI].patchStart();
-            const label size = procBoundaries[patchI].patchSize();
-
-            const label newStart = currFace;
-            label nNewFacesInPatch(0);
-            for (label fI = 0; fI < size; ++fI)
-            {
-                const label faceI = start + fI;
-                forAllRow(facesFromFace_, faceI, nfI)
-                {
-                    face& f = faces[currFace];
-
-                    // update the new label
-                    const label origFaceI = facesFromFace_(faceI, nfI);
-                    newFaceLabel[origFaceI] = currFace;
-                    facesFromFace_(faceI, nfI) = currFace;
-                    ++currFace;
-
-                    // copy the face into the mesh
-                    f.setSize(newFaces_.sizeOfRow(origFaceI));
-                    forAll(f, pI)
-                    {
-                        f[pI] = newFaces_(origFaceI, pI);
-                    }
-
-                    ++nNewFacesInPatch;
-                }
-            }
-
-            // update patch
-            procBoundaries[patchI].patchStart() = newStart;
-            procBoundaries[patchI].patchSize() = nNewFacesInPatch;
-        }
-    }
-
-    # ifdef DEBUGLayer
-    Pout << "Faces after refinement " << faces << endl;
-    Pout << "newFaceLabel " << newFaceLabel << endl;
-    # endif
-
     // update face subsets
     mesh_.updateFaceSubsets(facesFromFace_);
     facesFromFace_.setSize(0);
     newFaces_.setSize(0);
 
     // update cells to match the faces
-    # ifdef DEBUGLayer
-    Pout << "Updating cells to match new faces" << endl;
-    # endif
 
     forAll(cells, cellI)
     {
@@ -1934,110 +1555,9 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
         }
     }
 
-    # ifdef DEBUGLayer
-    Pout << "Cleaning mesh " << endl;
-    # endif
-
     // delete all adressing which is no longer up-to-date
     meshModifier.clearAll();
     deleteDemandDrivenData(msePtr_);
-
-    # ifdef DEBUGLayer
-    for (label procI = 0; procI < Pstream::nProcs(); ++procI)
-    {
-        if (procI == Pstream::myProcNo())
-        {
-            forAll(cells, cellI)
-            {
-                const cell& c = cells[cellI];
-
-                DynList<edge> edges;
-                DynList<label> nAppearances;
-                forAll(c, fI)
-                {
-                    const face& f = faces[c[fI]];
-
-                    forAll(f, eI)
-                    {
-                        const edge e = f.faceEdge(eI);
-
-                        const label pos = edges.find(e);
-
-                        if (pos < 0)
-                        {
-                            edges.append(e);
-                            nAppearances.append(1);
-                        }
-                        else
-                        {
-                            ++nAppearances[pos];
-                        }
-                    }
-                }
-
-                bool badCell(false);
-                forAll(nAppearances, i)
-                {
-                    if (nAppearances[i] != 2)
-                    {
-                        badCell = true;
-                        break;
-
-                    }
-                }
-
-                if (badCell)
-                {
-                    Pout << "Cell " << cellI
-                         << " is not topologically closed" << endl;
-
-                    forAll(c, fI)
-                    {
-                        Pout << "Face " << c[fI] << " with points "
-                             << faces[c[fI]] << endl;
-                    }
-                    Pout << "Cell edges " << edges << endl;
-                    Pout << "nAppearances " << nAppearances << endl;
-                    ::exit(1);
-                }
-            }
-        }
-
-        returnReduce(1, sumOp<label>());
-    }
-
-    const labelList& owner = mesh_.owner();
-    const labelList& neighbour = mesh_.neighbour();
-    const label nInternalFaces = mesh_.nInternalFaces();
-
-    for (label procI = 0; procI < Pstream::nProcs(); ++procI)
-    {
-        if (procI == Pstream::myProcNo())
-        {
-            forAll(faces, faceI)
-            {
-                if (faceI < nInternalFaces && neighbour[faceI] < 0)
-                {
-                    Pout << "Num interface faces " << nInternalFaces
-                         << " current face " << faceI
-                         << " face points " << faces[faceI] << endl;
-                    ::exit(1);
-                }
-                Pout << "Face " << faceI << " owner " << owner[faceI]
-                     << " neighbour " << neighbour[faceI]
-                     << " face points " << faces[faceI] << endl;
-            }
-
-            forAll(cells, cellI)
-            {
-                Pout << "Cell " << cellI << " has faces "
-                     << cells[cellI] << endl;
-            }
-        }
-
-        returnReduce(procI, maxOp<label>());
-    }
-    # endif
 
     Info<< "Finished generating new cells " << endl;
 }

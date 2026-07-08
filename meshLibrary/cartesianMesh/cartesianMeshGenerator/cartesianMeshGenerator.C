@@ -344,8 +344,6 @@ Foam::Module::cartesianMeshGenerator::cartesianMeshGenerator(const Time& time)
         }
 
         fileName surfaceFile(meshDict_.lookup("surfaceFile"));
-        if (Pstream::parRun())
-            surfaceFile = ".."/surfaceFile;
 
         surfacePtr_ = new triSurf(db_.path()/surfaceFile);
 

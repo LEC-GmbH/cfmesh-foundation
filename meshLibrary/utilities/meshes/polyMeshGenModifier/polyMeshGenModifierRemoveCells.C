@@ -59,9 +59,7 @@ void Foam::Module::polyMeshGenModifier::removeCells
     const labelList& owner = mesh_.owner();
     const labelList& neighbour = mesh_.neighbour();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(faces, faceI)
     {
         if (neighbour[faceI] == -1)
@@ -102,7 +100,6 @@ void Foam::Module::polyMeshGenModifier::removeCells
     // update cell subsets in the mesh
     mesh_.updateCellSubsets(newCellLabel);
 
-    reduce(nCells, sumOp<label>());
     Info<< "New cells size " << nCells << endl;
 
     // reorder positions of boundary faces
@@ -113,13 +110,9 @@ void Foam::Module::polyMeshGenModifier::removeCells
     // remove unused faces
     boolList removeFace(faces.size(), true);
 
-    # ifdef USE_OMP
     # pragma omp parallel if (cells.size() > 1000)
-    # endif
     {
-        # ifdef USE_OMP
         # pragma omp for schedule(dynamic, 40)
-        # endif
         forAll(cells, cellI)
         {
             const cell& c = cells[cellI];
@@ -127,20 +120,6 @@ void Foam::Module::polyMeshGenModifier::removeCells
             forAll(c, fI)
             {
                 removeFace[c[fI]] = false;
-            }
-        }
-
-        if (Pstream::parRun() && !removeProcFaces)
-        {
-            const PtrList<processorBoundaryPatch>& procBoundaries =
-                mesh_.procBoundaries_;
-
-            # ifdef USE_OMP
-            # pragma omp for
-            # endif
-            for (label fI = procBoundaries[0].patchStart(); fI < faces.size(); ++fI)
-            {
-                removeFace[fI] = false;
             }
         }
     }

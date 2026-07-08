@@ -39,12 +39,6 @@ Foam::Module::meshOctreeModifier::octree() const
 }
 
 
-inline Foam::labelList& Foam::Module::meshOctreeModifier::neiProcsAccess()
-{
-    return octree_.neiProcs_;
-}
-
-
 inline Foam::boundBox& Foam::Module::meshOctreeModifier::rootBoxAccess()
 {
     return octree_.rootBox_;
@@ -60,13 +54,6 @@ inline bool& Foam::Module::meshOctreeModifier::isRootInitialisedAccess()
 inline Foam::scalar& Foam::Module::meshOctreeModifier::searchRangeAccess()
 {
     return octree_.searchRange_;
-}
-
-
-inline Foam::List<Foam::Pair<Foam::Module::meshOctreeCubeCoordinates>>&
-Foam::Module::meshOctreeModifier::neiRangeAccess()
-{
-    return octree_.neiRange_;
 }
 
 

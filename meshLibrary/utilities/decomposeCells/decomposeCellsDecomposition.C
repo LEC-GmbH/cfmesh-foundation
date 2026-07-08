@@ -35,8 +35,6 @@ License
 #include "decomposeFaces.H"
 #include "labelLongList.H"
 
-//#define DEBUGDecompose
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::decomposeCells::decomposeMesh(const boolList& decomposeCell)
@@ -50,10 +48,6 @@ void Foam::Module::decomposeCells::decomposeMesh(const boolList& decomposeCell)
     removeDecomposedCells(decomposeCell);
 
     addNewCells();
-
-    # ifdef DEBUGDecompose
-    mesh_.addressingData().checkMesh();
-    # endif
 }
 
 
@@ -103,60 +97,6 @@ void Foam::Module::decomposeCells::checkFaceConnections
         }
     }
 
-    if (Pstream::parRun())
-    {
-        const PtrList<processorBoundaryPatch>& procBoundaries =
-            mesh_.procBoundaries();
-
-        // send information to the neighbour processor
-        forAll(procBoundaries, patchI)
-        {
-            const label start = procBoundaries[patchI].patchStart();
-            boolList decFace(procBoundaries[patchI].patchSize(), false);
-            const label size = decFace.size();
-
-            for (label i = 0; i < size; ++i)
-            {
-                if (decomposeFace[start + i])
-                {
-                    decFace[i] = true;
-                }
-            }
-
-            OPstream toOtherProc
-            (
-                Pstream::commsTypes::blocking,
-                procBoundaries[patchI].neiProcNo(),
-                decFace.byteSize()
-            );
-
-            toOtherProc << decFace;
-        }
-
-        // receive information from the neighbour processor
-        forAll(procBoundaries, patchI)
-        {
-            boolList decFace;
-
-            IPstream fromOtherProc
-            (
-                Pstream::commsTypes::blocking,
-                procBoundaries[patchI].neiProcNo()
-            );
-
-            fromOtherProc >> decFace;
-
-            const label start = procBoundaries[patchI].patchStart();
-            forAll(decFace, i)
-            {
-                if (decFace[i])
-                {
-                    decomposeFace[start + i] = true;
-                }
-            }
-        }
-    }
-
     // decompose faces which would cause invalid connections
     decomposeFaces(mesh_).decomposeMeshFaces(decomposeFace);
 }
@@ -201,16 +141,8 @@ void Foam::Module::decomposeCells::removeDecomposedCells
     const boolList& decomposeCell
 )
 {
-    # ifdef DEBUGDecompose
-    Info<< "Number of cells before removal " << mesh_.cells().size() << endl;
-    # endif
-
     polyMeshGenModifier meshModifier(mesh_);
     meshModifier.removeCells(decomposeCell, false);
-
-    # ifdef DEBUGDecompose
-    Info<< "Number of cells after removal " << mesh_.cells().size() << endl;
-    # endif
 }
 
 
@@ -237,34 +169,11 @@ void Foam::Module::decomposeCells::addNewCells()
             bf[pI] = newBoundaryFaces_(faceI, pI);
         }
 
-        # ifdef DEBUGDecompose
-        Info<< "Finding cell for boundary face " << bf << endl;
-        bool found(false);
-        forAllRow(pointFaces, bf[0], pfI)
-        {
-            if (bf == faces[pointFaces(bf[0], pfI)])
-            {
-                found = true;
-            }
-        }
-        if (!found)
-        {
-            FatalErrorInFunction
-                << "Face " << bf << " does not exist in the mesh"
-                << abort(FatalError);
-        }
-        #endif
-
         forAllRow(pointFaces, bf[0], pfI)
         {
             const label fLabel = pointFaces(bf[0], pfI);
             if ((mesh_.faceIsInPatch(fLabel) != -1) && (bf == faces[fLabel]))
             {
-                # ifdef DEBUGDecompose
-                Info<< "Boundary face " << bf << " is in cell "
-                    << owner[fLabel] << endl;
-                # endif
-
                 newBoundaryOwners.append(owner[fLabel]);
             }
         }

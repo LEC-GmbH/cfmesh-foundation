@@ -32,13 +32,6 @@ License
 #include "meshUntangler.H"
 #include "plane.H"
 
-//#define DEBUGSmooth
-
-#ifdef DEBUGSmooth
-#include "Time.H"
-#include "objectRegistry.H"
-#endif
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::Module::meshUntangler::meshUntangler
@@ -54,10 +47,6 @@ Foam::Module::meshUntangler::meshUntangler
 
 void Foam::Module::meshUntangler::optimizeNodePosition(const scalar /*tol*/)
 {
-    # ifdef DEBUGSmooth
-    Info<< "Untangling point " << pointI_ << endl;
-    # endif
-
     cutRegion cr(bb_);
 
     forAll(tets_, tetI)
@@ -73,12 +62,6 @@ void Foam::Module::meshUntangler::optimizeNodePosition(const scalar /*tol*/)
 
         plane pl(points_[tet.a()], n);
 
-        # ifdef DEBUGSmooth
-        Info<< "tet.a() " << tet.a() << endl;
-        Info<< "Cutting plane ref point " << pl.refPoint() << endl;
-        Info<< "Cutting plane normal " << pl.normal() << endl;
-        # endif
-
         cr.planeCut(pl);
     }
 
@@ -91,10 +74,6 @@ void Foam::Module::meshUntangler::optimizeNodePosition(const scalar /*tol*/)
             p += pts[pI];
 
         p /= pts.size();
-
-        # ifdef DEBUGSmooth
-        Info<< "Corners of the feasible region " << pts << endl;
-        # endif
 
         for (direction i = 0; i < vector::nComponents; ++i)
         {

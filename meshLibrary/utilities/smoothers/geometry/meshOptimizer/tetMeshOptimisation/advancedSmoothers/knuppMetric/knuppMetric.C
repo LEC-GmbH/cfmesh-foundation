@@ -32,8 +32,6 @@ License
 #include "knuppMetric.H"
 #include "partTetMeshSimplex.H"
 
-//#define DEBUGSmooth
-
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
 Foam::scalar Foam::Module::knuppMetric::evaluateMetric() const
@@ -138,17 +136,6 @@ void Foam::Module::knuppMetric::optimizeNodePosition
 
     scalar func, lastFunc;
 
-    # ifdef DEBUGSmooth
-    forAll(normals_, nI)
-    {
-        const scalar fx = normals_[nI] & (p_ - centres_[nI]);
-        Info<< "Tet " << nI << " has distance " << fx << " func "
-            << Foam::sqr(mag(fx) - fx) << endl;
-    }
-    Info<< "BoundBox size " << (bb_.max() - bb_.min()) << endl;
-    Info<< "Tolerance " << tol << endl;
-    # endif
-
     bool finished;
     do
     {
@@ -159,11 +146,6 @@ void Foam::Module::knuppMetric::optimizeNodePosition
         iterI = 0;
         do
         {
-            # ifdef DEBUGSmooth
-            Info<< "Iteration " << iterI << endl;
-            Info<< "Initial metric value " << lastFunc << endl;
-            # endif
-
             // store previous value
             const point pOrig = p_;
 
@@ -189,17 +171,6 @@ void Foam::Module::knuppMetric::optimizeNodePosition
                 p_ -= disp;
 
                 func = evaluateMetric();
-
-                # ifdef DEBUGSmooth
-                Info<< "Second grad " << gradGradF << endl;
-                Info<< "inv(gradGradF, determinant) "
-                    << inv(gradGradF, determinant) << endl;
-                Info<< "Gradient " << gradF << endl;
-                Info<< "Determinant " << determinant << endl;
-                Info<< "Displacement " << disp << endl;
-                Info<< "New metric value " << func << endl;
-                # endif
-
 
         scalar relax(0.8);
         label nLoops(0);
@@ -236,19 +207,6 @@ void Foam::Module::knuppMetric::optimizeNodePosition
         }
 
     } while (!finished && (++outerIter < 5));
-
-    # ifdef DEBUGSmooth
-    Info<< "Last value " << lastFunc << endl;
-    Info<< "Beta " << beta_ << endl;
-    Info<< "Metric with no beta " << evaluateMetricNoBeta() << endl;
-    forAll(normals_, nI)
-    {
-        const scalar fx = normals_[nI] & (p_ - centres_[nI]);
-        Info<< "Tet " << nI << " has distance " << fx << " func "
-            << Foam::sqr(mag(fx) - fx) << endl;
-    }
-    //::exit(1);
-    # endif
 
 }
 

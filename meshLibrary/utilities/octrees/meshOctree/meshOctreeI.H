@@ -65,15 +65,6 @@ Foam::Module::meshOctree::returnLeaf
 }
 
 
-inline short Foam::Module::meshOctree::leafAtProc
-(
-    const label leafI
-) const
-{
-    return leaves_[leafI]->procNo();
-}
-
-
 inline bool Foam::Module::meshOctree::hasContainedTriangles
 (
     const label leafI
@@ -169,12 +160,6 @@ inline const Foam::FixedList
 Foam::Module::meshOctree::positionsOfLeavesAtNodes() const
 {
     return vrtLeavesPos_;
-}
-
-
-inline const Foam::labelList& Foam::Module::meshOctree::neiProcs() const
-{
-    return neiProcs_;
 }
 
 

@@ -162,44 +162,10 @@ class boundaryLayers
             const labelList& patchLabels
         );
 
-        //- creates new vertices for vertices at parallel boundaries
-        void createNewPartitionVerticesParallel
-        (
-            const labelLongList& procPoints,
-            const List<direction>& pVertices,
-            const boolList& treatPatches
-        );
-
-        //- creates new vertices from vertices at parallel boundaries
-        //- which are also at the border of the treated partitions
-        void createNewEdgeVerticesParallel
-        (
-            const labelLongList& procPoints,
-            const List<direction>& pVertices,
-            const boolList& treatPatches
-        );
-
         //- create a layer of cells
         void createNewFacesAndCells
         (
             const boolList& treatPatches
-        );
-
-        //- create new faces at parallel boundaries
-        //- faces are extruded from edges
-        void createNewFacesParallel
-        (
-            const boolList& treatPatches
-        );
-
-        //- create new faces at parallel boundaries
-        //- faces are created from points at parallel boundaries
-        //- the function takes a reference to the faces which are the candidates
-        //- to create faces at parallel boundaries
-        void createNewFacesFromPointsParallel
-        (
-            const LongList<DynList<label, 4>>& faceCandidates,
-            const LongList<labelPair>& candidatePatches
         );
 
         //- create layer cells in one go
@@ -248,8 +214,7 @@ class boundaryLayers
             NONE = 0,
             PATCHNODE = 1,
             EDGENODE = 2,
-            CORNERNODE = 4,
-            PARALLELBOUNDARY = 8
+            CORNERNODE = 4
         };
 
         //- Disallow bitwise copy construct

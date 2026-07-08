@@ -30,14 +30,8 @@ License
 
 #include "extrudeLayer.H"
 #include "helperFunctions.H"
-#include "polyMeshGenAddressing.H"
 #include "meshSurfaceEngine.H"
 #include "meshSurfacePartitioner.H"
-#include "labelledPointScalar.H"
-
-#ifdef DEBUGExtrudeLayer
-#include "polyMeshGenChecks.H"
-#endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -103,9 +97,7 @@ void Foam::Module::extrudeLayer::createDuplicateFrontFaces
     extrudedFaces_.setSize(counter);
     pairOrientation_.setSize(counter);
 
-    # ifdef USE_OMP
     # pragma omp parallel for if (faceInFront.size() > 100) schedule(guided)
-    # endif
     forAll(faceInFront, faceI)
     {
         if (faceInFront[faceI] < 0)
@@ -171,9 +163,7 @@ void Foam::Module::extrudeLayer::createDuplicateFrontFaces
     }
 
     // renumber the cells
-    # ifdef USE_OMP
     # pragma omp parallel for if (faceInFront.size() > 100) schedule(guided)
-    # endif
     forAll(faceInFront, faceI)
     {
         if (faceInFront[faceI] < 0)
@@ -226,9 +216,7 @@ void Foam::Module::extrudeLayer::createNewVertices()
     // find the points in the marked front
     List<direction> frontPoints(points.size(), NONE);
 
-    # ifdef USE_OMP
     # pragma omp parallel for if (points.size() > 1000) schedule(guided)
-    # endif
     forAll(extrudedFaces_, efI)
     {
         const face& f = faces[extrudedFaces_[efI].first()];
@@ -239,422 +227,11 @@ void Foam::Module::extrudeLayer::createNewVertices()
         }
     }
 
-    // propagate this information to other processors in case of a parallel run
-    if (Pstream::parRun())
-    {
-        const polyMeshGenAddressing& addr = mesh_.addressingData();
-        const VRWGraph& pAtProcs = addr.pointAtProcs();
-        const Map<label>& globalToLocal = addr.globalToLocalPointAddressing();
-        const DynList<label>& pProcs = addr.pointNeiProcs();
-
-        // allocate the map
-        std::map<label, labelLongList> exchangeData;
-        forAll(pProcs, i)
-        {
-            exchangeData.insert(std::make_pair(pProcs[i], labelLongList()));
-        }
-
-        // collect the information about markes points at processor boundaries
-        forAllConstIters(globalToLocal, it)
-        {
-            if (frontPoints[it()] & FRONTVERTEX)
-            {
-                // mark points at processor boundaries
-                frontPoints[it()] |= FRONTVERTEXPROCBND;
-
-                forAllRow(pAtProcs, it(), i)
-                {
-                    const label neiProc = pAtProcs(it(), i);
-
-                    if (neiProc == Pstream::myProcNo())
-                    {
-                        continue;
-                    }
-
-                    exchangeData[neiProc].append(it.key());
-                }
-            }
-        }
-
-        LongList<label> receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        # ifdef USE_OMP
-        # pragma omp parallel for if (receivedData.size() > 1000) \
-        schedule(guided)
-        # endif
-        forAll(receivedData, i)
-        {
-            frontPoints[globalToLocal[receivedData[i]]] =
-                FRONTVERTEX + FRONTVERTEXPROCBND;
-        }
-    }
-
     // create a new vertex for each group of faces
     // faces are grouped such that the faces belonging to the same group
     // can be visited over cells without crossing any front faces
     VRWGraph pointFaces;
     pointFaces.reverseAddressing(points.size(), faces);
-
-    if (Pstream::parRun())
-    {
-        Pout << "Creating new points at processor boundaries" << endl;
-        for (label procI = 0; procI < Pstream::nProcs(); ++procI)
-        {
-            if (Pstream::myProcNo() == procI)
-            {
-               Pout << "Front points are " << frontPoints << endl;
-            }
-
-            returnReduce(1, sumOp<label>());
-        }
-
-        // create new vertices at processor boundaries
-        const PtrList<processorBoundaryPatch>& procBoundaries =
-            mesh_.procBoundaries();
-        const polyMeshGenAddressing& addr = mesh_.addressingData();
-        const VRWGraph& pAtProcs = addr.pointAtProcs();
-        const labelLongList& globalPointLabel = addr.globalPointLabel();
-        const Map<label>& globalToLocal = addr.globalToLocalPointAddressing();
-        const DynList<label>& pProcs = addr.pointNeiProcs();
-        const labelLongList& globalCellLabel = addr.globalCellLabel();
-
-        // create the information which faces are attached to points
-        // at parallel boundaries in dual form where each edge represents
-        // global labels of cells sharing a face
-        typedef std::map<label, DynList<edge>> dualEdgesMap;
-        dualEdgesMap procPointsDual;
-
-        // fill in local data
-        forAllConstIters(globalToLocal, it)
-        {
-            if (frontPoints[it()] & FRONTVERTEXPROCBND)
-            {
-                const label pointI = it();
-                DynList<edge>& pEdges = procPointsDual[pointI];
-
-                forAllRow(pointFaces, pointI, pfI)
-                {
-                    const label faceI = pointFaces(pointI, pfI);
-
-                    // do not store faces at processor boundaries
-                    // and newly created faces
-                    if ((neighbour[faceI] < 0) || (owner[faceI] < 0))
-                    {
-                        continue;
-                    }
-
-                    const edge e
-                    (
-                        globalCellLabel[owner[faceI]],
-                        globalCellLabel[neighbour[faceI]]
-                    );
-
-                    pEdges.append(e);
-                }
-            }
-        }
-
-        for (label procI = 0; procI < Pstream::nProcs(); ++procI)
-        {
-            if (Pstream::myProcNo() == procI)
-            {
-                forAllConstIters(procPointsDual, it)
-                {
-                    Pout<< "Point " << it->first
-                        << " local dual edges " << it->second << endl;
-                }
-            }
-
-            returnReduce(1, sumOp<label>());
-        }
-
-        // fill-in with data at processor boundaries. Store edges
-        // on the processor with the lower label not to duplicate the data
-        returnReduce(1, sumOp<label>());
-        Pout << "Adding data from processor boundaries" << endl;
-        forAll(procBoundaries, patchI)
-        {
-            if (procBoundaries[patchI].owner())
-            {
-                continue;
-            }
-
-            const label start = procBoundaries[patchI].patchStart();
-            labelList globalLabels(procBoundaries[patchI].patchSize());
-            forAll(globalLabels, fI)
-            {
-                if (owner[start + fI] < 0)
-                {
-                    globalLabels[fI] = -1;
-                }
-                else
-                {
-                    globalLabels[fI] = globalCellLabel[owner[start + fI]];
-                }
-            }
-
-            OPstream toOtherProc
-            (
-                Pstream::commsTypes::blocking,
-                procBoundaries[patchI].neiProcNo(),
-                globalLabels.byteSize()
-            );
-
-            toOtherProc << globalLabels;
-        }
-
-        forAll(procBoundaries, patchI)
-        {
-            if (!procBoundaries[patchI].owner())
-            {
-                continue;
-            }
-
-            labelList receivedData;
-            IPstream fromOtherProc
-            (
-                Pstream::commsTypes::blocking,
-                procBoundaries[patchI].neiProcNo()
-            );
-
-            fromOtherProc >> receivedData;
-
-            const label start = procBoundaries[patchI].patchStart();
-
-            forAll(receivedData, i)
-            {
-                if (owner[start + i] < 0)
-                {
-                    continue;
-                }
-
-                const face& f = faces[start + i];
-
-                forAll(f, pI)
-                {
-                    if (frontPoints[f[pI]] & FRONTVERTEXPROCBND)
-                    {
-                        dualEdgesMap::iterator dIter =
-                            procPointsDual.find(f[pI]);
-                        const label cOwn = globalCellLabel[owner[start + i]];
-                        const label cNei = receivedData[i];
-                        dIter->second.append(edge(cOwn, cNei));
-                    }
-                }
-            }
-        }
-
-        // exchange this information with neighbouring processors
-        returnReduce(1, sumOp<label>());
-        Pout << "Exchanging data with other processors" << endl;
-
-        std::map<label, labelLongList> exchangeData;
-        forAll(pProcs, i)
-        {
-            exchangeData.insert(std::make_pair(pProcs[i], labelLongList()));
-        }
-
-        // fill in the exchangeData map
-        forAllConstIters(procPointsDual, dIter)
-        {
-            const label pointI = dIter->first;
-
-            forAllRow(pAtProcs, pointI, i)
-            {
-                const label neiProc = pAtProcs(pointI, i);
-
-                if (neiProc == Pstream::myProcNo())
-                {
-                    continue;
-                }
-
-                labelLongList& dts = exchangeData[neiProc];
-
-                dts.append(globalPointLabel[pointI]);
-
-                const DynList<edge>& dualEdges = dIter->second;
-                dts.append(dualEdges.size());
-                forAll(dualEdges, edgeI)
-                {
-                    const edge& e = dualEdges[edgeI];
-                    dts.append(e.start());
-                    dts.append(e.end());
-                }
-            }
-        }
-
-        // exchange data with other processors
-        labelLongList receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        // update local data
-        label counter(0);
-        while (counter < receivedData.size())
-        {
-            const label pointI = globalToLocal[receivedData[counter++]];
-
-            DynList<edge>& dualEdges = procPointsDual[pointI];
-
-            const label nDualEdges = receivedData[counter++];
-            for (label eI = 0; eI < nDualEdges; ++eI)
-            {
-                edge e;
-                e.start() = receivedData[counter++];
-                e.end() = receivedData[counter++];
-
-                dualEdges.append(e);
-            }
-        }
-
-        for (label procI = 0; procI < Pstream::nProcs(); ++procI)
-        {
-            if (Pstream::myProcNo() == procI)
-            {
-                forAllConstIters(procPointsDual, it)
-                {
-                    Pout<< "Point " << it->first
-                        << " dual edges " << it->second << endl;
-                }
-            }
-
-            returnReduce(1, sumOp<label>());
-        }
-
-        // Finally, find groups of faces and create new vertices
-        returnReduce(1, sumOp<label>());
-        Pout << "Finding groups of edges at vertex" << endl;
-        forAllConstIters(procPointsDual, dIter)
-        {
-            const label pointI = dIter->first;
-            const DynList<edge>& dEdges = dIter->second;
-
-            DynList<label> edgeGroup;
-            edgeGroup.setSize(dEdges.size());
-            edgeGroup = -1;
-
-            // check edge connections and store all edges which can be reached
-            // over other edges into the same group
-            label group(0);
-
-            forAll(dEdges, eI)
-            {
-                if (edgeGroup[eI] != -1)
-                {
-                    continue;
-                }
-
-                edgeGroup[eI] = group;
-                DynList<label> front;
-                front.append(eI);
-
-                while (front.size() != 0)
-                {
-                    const label eLabel = front.remove();
-
-                    forAll(dEdges, eJ)
-                    {
-                        if (edgeGroup[eJ] != -1)
-                        {
-                            continue;
-                        }
-                        if (eJ == eLabel)
-                        {
-                            continue;
-                        }
-
-                        if (dEdges[eLabel].commonVertex(dEdges[eJ]) != -1)
-                        {
-                            front.append(eJ);
-                            edgeGroup[eJ] = group;
-                        }
-                    }
-                }
-
-                ++group;
-            }
-
-            // find face groups from the groups assigned to dual edges
-            DynList<label> faceGroups;
-            faceGroups.setSize(pointFaces.sizeOfRow(pointI));
-            faceGroups = -1;
-
-            forAllRow(pointFaces, pointI, pfI)
-            {
-                const label faceI = pointFaces(pointI, pfI);
-
-                if (owner[faceI] < 0)
-                {
-                    continue;
-                }
-
-                const label own = globalCellLabel[owner[faceI]];
-
-                forAll(dEdges, eI)
-                {
-                    const edge& dualEdge = dEdges[eI];
-
-                    if ((own == dualEdge.start()) || (own == dualEdge.end()))
-                    {
-                        faceGroups[pfI] = edgeGroup[eI];
-                        break;
-                    }
-                }
-            }
-
-            Info<< "Edge groups for point " << pointI << " are " << edgeGroup << endl;
-            Info<< "Face groups at point " << pointI << " are " << faceGroups
-                << " point faces " << pointFaces[pointI] << endl;
-
-            // stop in case there is only one group
-            // of faces attached to this point
-            if (group == 1)
-            {
-                bool problem(true);
-                forAll(faceGroups, i)
-                {
-                    if (faceGroups[i] != 0)
-                    {
-                        problem = false;
-                        break;
-                    }
-                }
-
-                if (problem)
-                {
-                    FatalErrorInFunction
-                        << "Front is not defined at point " << pointI
-                        << ". Cannot continue.." << exit(FatalError);
-                }
-            }
-
-            // create new vertices
-            const label currentNumPoints = points.size();
-            for (label i = 0; i < group; ++i)
-            {
-                const point p = points[pointI];
-                origPointLabel_.append(pointI);
-                points.append(p);
-            }
-
-            // renumber faces
-            forAllRow(pointFaces, pointI, pfI)
-            {
-                if (faceGroups[pfI] == -1)
-                {
-                    continue;
-                }
-
-                face& f = faces[pointFaces(pointI, pfI)];
-
-                const label pos = f.which(pointI);
-                f[pos] = currentNumPoints + faceGroups[pfI];
-            }
-        }
-
-        Pout << "Finishing creating new vertices at paralle boundaries" << endl;
-        returnReduce(1, sumOp<label>());
-    }
 
     // treat local points
     forAll(pointFaces, pointI)
@@ -776,24 +353,6 @@ void Foam::Module::extrudeLayer::createNewVertices()
 
     polyMeshGenModifier(mesh_).clearOut();
 
-    # ifdef DEBUGExtrudeLayer
-    const label procID = mesh_.addPointSubset("parPoints");
-    const label frontID = mesh_.addPointSubset("frontPoints");
-    forAll(frontPoints, pI)
-    {
-        if (frontPoints[pI] & FRONTVERTEXPROCBND)
-        {
-            mesh_.addPointToSubset(procID, pI);
-        }
-        if (frontPoints[pI] & FRONTVERTEX)
-        {
-            mesh_.addPointToSubset(frontID, pI);
-        }
-    }
-
-    returnReduce(1, sumOp<label>());
-    //::exit(1);
-    # endif
 }
 
 
@@ -803,134 +362,16 @@ void Foam::Module::extrudeLayer::movePoints()
     const faceListPMG& faces = mesh_.faces();
 
     vectorField displacements(points.size()-nOrigPoints_);
-    boolList pointAtProcBnd(displacements.size(), false);
 
     VRWGraph pointFaces;
     pointFaces.reverseAddressing(points.size(), mesh_.faces());
 
-    if (Pstream::parRun())
-    {
-        const polyMeshGenAddressing& addr = mesh_.addressingData();
-        const Map<label>& globalToLocal = addr.globalToLocalPointAddressing();
-        const VRWGraph& pAtProcs = addr.pointAtProcs();
-        const DynList<label>& pProcs = addr.pointNeiProcs();
-
-        std::map<label, vector> normals;
-        std::map<label, scalar> distances;
-
-        // create a map for exchanging data
-        std::map<label, LongList<labelledPointScalar>> exchangeData;
-        forAll(pProcs, i)
-        {
-            exchangeData.insert
-            (
-                std::make_pair(pProcs[i], LongList<labelledPointScalar>())
-            );
-        }
-
-        // create displacements from local data
-        forAllConstIters(globalToLocal, it)
-        {
-            if (it() >= nOrigPoints_)
-            {
-                const label pointI = it();
-
-                pointAtProcBnd[pointI - nOrigPoints_] = true;
-
-                // create local part of the displacement vector
-                labelledPointScalar lps;
-                lps.pointLabel() = it.key();
-                lps.coordinates() = vector::zero;
-                lps.scalarValue() = VGREAT;
-
-                forAllRow(pointFaces, pointI, pfI)
-                {
-                    const label faceI = pointFaces(pointI, pfI);
-
-                    if (faceI >= nOrigFaces_)
-                    {
-                        const face& f = faces[faceI];
-
-                        lps.coordinates() -= f.areaNormal(points);
-
-                        if (thickness_ < 0.0)
-                        {
-                            const vector c = f.centre(points);
-                            scalar d(VGREAT);
-
-                            forAll(f, pI)
-                            {
-                                d = Foam::min(d, Foam::mag(points[f[pI]] - c));
-                            }
-
-                            d *= 0.4;
-                            lps.scalarValue() = Foam::min(lps.scalarValue(), d);
-                        }
-                        else
-                        {
-                            lps.scalarValue() = thickness_;
-                        }
-                    }
-                }
-
-                normals[pointI] = lps.coordinates();
-                distances[pointI] = lps.scalarValue();
-
-                // store data in the exchangeData map
-                forAllRow(pAtProcs, pointI, i)
-                {
-                    const label neiProc = pAtProcs(pointI, i);
-
-                    if (neiProc == Pstream::myProcNo())
-                    {
-                        continue;
-                    }
-
-                    exchangeData[neiProc].append(lps);
-                }
-            }
-        }
-
-        LongList<labelledPointScalar> receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            const labelledPointScalar& lps = receivedData[i];
-            const label pointI = globalToLocal[lps.pointLabel()];
-
-            normals[pointI] += lps.coordinates();
-            scalar& d = distances[pointI];
-            d = Foam::min(d, lps.scalarValue());
-        }
-
-        // calculate displacements of vertices at processor boundaries
-        forAllConstIters(normals, it)
-        {
-            vector n = it->second;
-            if (mag(n) > VSMALL)
-            {
-                n /= mag(n);
-            }
-            displacements[it->first - nOrigPoints_] = n*distances[it->first];
-        }
-    }
-
-    # ifdef USE_OMP
     # pragma omp parallel if (displacements.size() > 100)
-    # endif
     {
         // find displacement vectors
-        # ifdef USE_OMP
         # pragma omp for schedule(guided)
-        # endif
         forAll(displacements, pI)
         {
-            if (pointAtProcBnd[pI])
-            {
-                continue;
-            }
-
             const label pointI = nOrigPoints_ + pI;
 
             vector normal(vector::zero);
@@ -975,40 +416,15 @@ void Foam::Module::extrudeLayer::movePoints()
             displacements[pI] = normal*thickness;
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
-        # endif
 
-        # ifdef USE_OMP
         # pragma omp for schedule(guided)
-        # endif
         forAll(displacements, pI)
         {
             points[nOrigPoints_ + pI] += displacements[pI];
         }
     }
 
-    # ifdef DEBUGExtrudeLayer
-    mesh_.write();
-    returnReduce(1, sumOp<label>());
-    //::exit(1);
-    # endif
-
-}
-
-
-void Foam::Module::extrudeLayer::createNewFacesParallel()
-{
-    if (!Pstream::parRun())
-    {
-        return;
-    }
-
-    VRWGraph newProcFaces;
-    labelLongList faceProcPatch;
-
-    // add faces into the mesh
-    polyMeshGenModifier(mesh_).addProcessorFaces(newProcFaces, faceProcPatch);
 }
 
 
@@ -1320,9 +736,6 @@ void Foam::Module::extrudeLayer::createLayerCells()
         newCells.appendGraph(newCell);
     }
 
-    // create new faces at parallel boundaries
-    createNewFacesParallel();
-
     // add cells into the mesh
     polyMeshGenModifier(mesh_).addCells(newCells);
 }
@@ -1505,9 +918,6 @@ Foam::Module::extrudeLayer::extrudeLayer
 
     mesh_.clearAddressingData();
 
-    # ifdef DEBUGExtrudeLayer
-    polyMeshGenChecks::checkMesh(mesh_, true);
-    # endif
 }
 
 

@@ -28,9 +28,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -39,13 +37,11 @@ Foam::Module::triSurfAddressing::pointFacets() const
 {
     if (!pointFacetsPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Cannot calculate pointFacets" << abort(FatalError);
         }
-        # endif
 
         calculatePointFacets();
     }
@@ -59,13 +55,11 @@ Foam::Module::triSurfAddressing::edges() const
 {
     if (!edgesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Cannot calculate edges" << abort(FatalError);
         }
-        # endif
 
         calculateEdges();
     }
@@ -79,13 +73,11 @@ Foam::Module::triSurfAddressing::facetEdges() const
 {
     if (!facetEdgesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Cannot calculate facetEdges" << abort(FatalError);
         }
-        # endif
 
         calculateFacetEdges();
     }
@@ -99,13 +91,11 @@ Foam::Module::triSurfAddressing::edgeFacets() const
 {
     if (!edgeFacetsPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Cannot calculate edgeFacets" << abort(FatalError);
         }
-        # endif
 
         calculateEdgeFacets();
     }
@@ -119,13 +109,11 @@ Foam::Module::triSurfAddressing::pointEdges() const
 {
     if (!pointEdgesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Cannot calculate pointEdges" << abort(FatalError);
         }
-        # endif
 
         calculatePointEdges();
     }
@@ -139,13 +127,11 @@ Foam::Module::triSurfAddressing::facetFacets() const
 {
     if (!facetFacetsEdgesPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Cannot calculate facetFacets" << abort(FatalError);
         }
-        # endif
 
         calculateFacetFacetsEdges();
     }
@@ -159,13 +145,11 @@ Foam::Module::triSurfAddressing::pointNormals() const
 {
     if (!pointNormalsPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Cannot calculate pointNormals" << abort(FatalError);
         }
-        # endif
 
         calculatePointNormals();
     }
@@ -179,13 +163,11 @@ Foam::Module::triSurfAddressing::facetNormals() const
 {
     if (!facetNormalsPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Cannot calculate facetNormals" << abort(FatalError);
         }
-        # endif
 
         calculateFacetNormals();
     }
@@ -199,13 +181,11 @@ Foam::Module::triSurfAddressing::facetCentres() const
 {
     if (!facetCentresPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Cannot calculate facetCentres" << abort(FatalError);
         }
-        # endif
 
         calculateFacetCentres();
     }

@@ -36,104 +36,9 @@ License
 #include "labelLongList.H"
 #include "triSurf.H"
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
-
-//#define DEBUGVrt
-
-# ifdef DEBUGVrt
-#include "OFstream.H"
-# endif
 
 // * * * * * * * * * * * * * * * Local Functions * * * * * * * * * * * * * * //
-
-# ifdef DEBUGVrt
-
-namespace Foam
-{
-namespace Module
-{
-
-static void writeOctreeToVTK
-(
-    const fileName& fName,
-    const meshOctree& octree,
-    const List<direction>& boxTypes,
-    const direction bType
-)
-{
-    OFstream os(fName);
-
-    // write the header
-    os << "# vtk DataFile Version 3.0\n";
-    os << "vtk output\n";
-    os << "ASCII\n";
-    os << "DATASET UNSTRUCTURED_GRID\n";
-
-    label nBoxes(0);
-    forAll(boxTypes, leafI)
-    {
-        if (boxTypes[leafI] & bType)
-        {
-            ++nBoxes;
-        }
-    }
-
-    // write points
-    os << "POINTS " << 8*nBoxes << " float\n";
-    forAll(boxTypes, leafI)
-    {
-        if (boxTypes[leafI] & bType)
-        {
-            FixedList<point, 8> vertices;
-            octree.returnLeaf(leafI).vertices(octree.rootBox(), vertices);
-
-            forAll(vertices, vI)
-            {
-                const point& p = vertices[vI];
-
-                os << p.x() << ' ' << p.y() << ' ' << p.z() << nl;
-            }
-        }
-    }
-
-    // write boxes
-    os  << "\nCELLS " << nBoxes
-        << " " << 9*nBoxes << nl;
-
-    nBoxes = 0;
-    forAll(boxTypes, leafI)
-    {
-        if (boxTypes[leafI] & bType)
-        {
-            const label start = 8*nBoxes;
-            os   << 8 << " " << start << " " << start + 1
-                      << " " << start + 3 << " " << start + 2
-                      << " " << start + 4 << " " << start + 5
-                      << " " << start + 7 << " " << start + 6 << nl;
-
-            ++nBoxes;
-        }
-    }
-
-    os << nl;
-
-    // write cell types
-    os << "CELL_TYPES " << nBoxes << nl;
-    for (label i = 0; i < nBoxes; ++i)
-    {
-        os << 12 << nl;
-    }
-
-    os << nl;
-}
-
-} // End namespace Module
-} // End namespace Foam
-
-# endif
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -146,9 +51,7 @@ void Foam::Module::meshOctreeAddressing::createOctreePoints() const
     pointField& octreePoints = *octreePointsPtr_;
 
     const label nLeaves = nodeLabels.size();
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(guided, 100)
-    # endif
     for (label cubeI = 0; cubeI < nLeaves; ++cubeI)
     {
         if (nodeLabels.sizeOfRow(cubeI) == 0)
@@ -194,34 +97,21 @@ void Foam::Module::meshOctreeAddressing::createNodeLabels() const
     // start creating node labels
     nNodes_ = 0;
     DynList<label> numLocalNodes;
-    # ifdef USE_OMP
     # pragma omp parallel
-    # endif
     {
-        # ifdef USE_OMP
         const label nThreads = omp_get_num_threads();
         const label threadI = omp_get_thread_num();
-        # else
-        const label nThreads = 1;
-        const label threadI = 0;
-        # endif
 
-        # ifdef USE_OMP
         # pragma omp master
-        # endif
         numLocalNodes.setSize(nThreads);
 
-        # ifdef USE_OMP
         # pragma omp barrier
-        # endif
 
         // count the number of nodes local to each process
         label& nLocalNodes = numLocalNodes[threadI];
         nLocalNodes = 0;
 
-        # ifdef USE_OMP
         # pragma omp for schedule(static, 100)
-        # endif
         forAll(nodeLabels, leafI)
         {
             forAllRow(nodeLabels, leafI, nI)
@@ -283,9 +173,7 @@ void Foam::Module::meshOctreeAddressing::createNodeLabels() const
         }
 
         // set start node for each process
-        # ifdef USE_OMP
         # pragma omp barrier
-        # endif
 
         label startNode(0);
         for (label i = 0; i < threadI; ++i)
@@ -294,9 +182,7 @@ void Foam::Module::meshOctreeAddressing::createNodeLabels() const
         }
 
         // start creating node labels
-        # ifdef USE_OMP
         # pragma omp for schedule(static, 100)
-        # endif
         forAll(nodeLabels, leafI)
         {
             forAllRow(nodeLabels, leafI, nI)
@@ -360,94 +246,11 @@ void Foam::Module::meshOctreeAddressing::createNodeLabels() const
         }
 
         // set the number of nodes
-        # ifdef USE_OMP
         # pragma omp critical
-        # endif
         {
             nNodes_ = Foam::max(nNodes_, startNode);
         }
     }
-
-    # ifdef DEBUGVrt
-    List<direction> badLeaves(nodeLabels.size(), direction(0));
-    forAll(nodeLabels, leafI)
-    {
-        forAllRow(nodeLabels, leafI, i)
-        {
-            if (nodeLabels(leafI, i) < 0)
-            {
-                badLeaves[leafI] |= 1;
-            }
-        }
-    }
-    writeOctreeToVTK("badLeaves.vtk", octree_, badLeaves, 1);
-    writeOctreeToVTK("meshCells.vtk", octree_, boxType, MESHCELL);
-    writeOctreeToVTK("boundaryCells.vtk", octree_, boxType, BOUNDARY);
-
-    Info<< "Checking for existence of negative node labels" << endl;
-    forAll(nodeLabels, leafI)
-    {
-        forAllRow(nodeLabels, leafI, nI)
-        {
-            if (nodeLabels(leafI, nI) < 0)
-            {
-                FixedList<label, 8> pLeaves;
-                octree_.findLeavesForCubeVertex(leafI, nI, pLeaves);
-
-                FixedList<bool, 8> validLeaf(true);
-                label minLeaf(leafI);
-                forAll(pLeaves, plI)
-                {
-                    if (pLeaves[plI] > -1)
-                    {
-                        for (label i = plI + 1; i < 8; ++i)
-                        {
-                            if (pLeaves[plI] == pLeaves[i])
-                            {
-                                validLeaf[plI] = false;
-                                validLeaf[i] = false;
-                            }
-                        }
-
-                        if (!boxType[pLeaves[plI]])
-                        {
-                            validLeaf[plI] = false;
-                            pLeaves[plI] = -1;
-                        }
-
-                        if (validLeaf[plI])
-                        {
-                            minLeaf = Foam::min(minLeaf, pLeaves[plI]);
-                        }
-                    }
-                    else
-                    {
-                        validLeaf[plI] = false;
-                    }
-                }
-
-                Info<< "Min leaf " << minLeaf << endl;
-                Info<< "Valid leaf " << validLeaf << endl;
-                Info<< "pLeaves " << pLeaves << endl;
-                Info<< "Node position " << nI << endl;
-
-                Info<< "1.Leaf " << leafI << " node labels "
-                    << nodeLabels[leafI] << endl;
-
-                forAll(validLeaf, i)
-                {
-                    if (validLeaf[i])
-                    {
-                        Info<< "Leaf at position " << i << " has node labels "
-                            << nodeLabels[pLeaves[i]]
-                            << " at level "
-                            << octree_.returnLeaf(pLeaves[i]).level() << endl;
-                    }
-                }
-            }
-        }
-    }
-    # endif
 }
 
 
@@ -461,9 +264,7 @@ void Foam::Module::meshOctreeAddressing::createNodeLeaves() const
     FRWGraph<label, 8>& nodeLeaves = *nodeLeavesPtr_;
 
     boolList storedNode(nNodes_, false);
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(nodeLabels, leafI)
     {
         forAllRow(nodeLabels, leafI, nI)
@@ -504,9 +305,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
     boxTypePtr_ = new List<direction>(octree_.numberOfLeaves(), NONE);
     List<direction>& boxType = *boxTypePtr_;
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(boxType, leafI)
     {
         const meshOctreeCubeBasic& leaf = octree_.returnLeaf(leafI);
@@ -522,9 +321,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
 
     if (meshDict_.getOrDefault<bool>("nonManifoldMeshing", false))
     {
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 40)
-        # endif
         forAll(boxType, leafI)
         {
             const meshOctreeCubeBasic& leaf = octree_.returnLeaf(leafI);
@@ -710,10 +507,8 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
 
     // set BOUNDARY flag to boxes which do not have a MESHCELL flag
     DynList<label> neighs;
-    # ifdef USE_OMP
     # pragma omp parallel for if (boxType.size() > 1000) \
     private(neighs) schedule(dynamic, 20)
-    # endif
     forAll(boxType, leafI)
     {
         if (boxType[leafI] & MESHCELL)
@@ -741,56 +536,6 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
         }
     }
 
-    if (Pstream::parRun())
-    {
-        // make sure that all processors have the same information
-        // about BOUNDARY boxes
-        const labelLongList& globalLeafLabel = this->globalLeafLabel();
-        const VRWGraph& leafAtProcs = this->leafAtProcs();
-        const Map<label>& globalLeafToLocal =
-            this->globalToLocalLeafAddressing();
-
-        std::map<label, labelLongList> exchangeData;
-        forAll(octree_.neiProcs(), procI)
-        {
-            exchangeData.insert
-            (
-                std::make_pair
-                (
-                    octree_.neiProcs()[procI],
-                    labelLongList()
-                )
-            );
-        }
-
-        forAllConstIters(globalLeafToLocal, iter)
-        {
-            const label leafI = iter();
-
-            if (boxType[leafI] & BOUNDARY)
-            {
-                forAllRow(leafAtProcs, leafI, procI)
-                {
-                    const label neiProc = leafAtProcs(leafI, procI);
-
-                    if (neiProc == Pstream::myProcNo())
-                    {
-                        continue;
-                    }
-
-                    exchangeData[neiProc].append(globalLeafLabel[leafI]);
-                }
-            }
-        }
-
-        labelLongList receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            boxType[globalLeafToLocal[receivedData[i]]] = BOUNDARY;
-        }
-    }
 }
 
 
@@ -801,9 +546,7 @@ void Foam::Module::meshOctreeAddressing::calculateNodeType() const
     nodeTypePtr_ = new List<direction>(nNodes_, NONE);
     List<direction>& nodeType = *nodeTypePtr_;
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(static, 1)
-    # endif
     forAll(nodeLeaves, nodeI)
     {
         forAllRow(nodeLeaves, nodeI, nlI)
@@ -853,9 +596,7 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
     label nFaces(0);
     labelList rowSizes, chunkSizes;
 
-    # ifdef USE_OMP
     # pragma omp parallel
-    # endif
     {
         // faces are created and stored into helper arrays, and each thread
         // allocates its own graph for storing faces. The faces are generated
@@ -867,29 +608,18 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
         VRWGraph helperFaces;
         labelLongList helperOwner, helperNeighbour;
 
-        # ifdef USE_OMP
         const label nThreads = omp_get_num_threads();
         const label threadI = omp_get_thread_num();
         const label nChunks = 4*omp_get_num_threads();
         const label chunkSize = boxType.size() / nChunks + 1;
-        # else
-        const label nThreads(1);
-        const label threadI(0);
-        const label nChunks(1);
-        const label chunkSize = boxType.size();
-        # endif
 
-        # ifdef USE_OMP
         # pragma omp master
-        # endif
         {
             chunkSizes.setSize(nChunks);
             chunkSizes = 0;
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
-        # endif
 
         for
         (
@@ -931,12 +661,6 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
                         }
 
                         const label nei = neighbours[0];
-
-                        // stop if the neighbour is on other processor
-                        if (nei == meshOctreeCubeBasic::OTHERPROC)
-                        {
-                            continue;
-                        }
 
                         // create face
                         DynList<label, 8> f;
@@ -1049,16 +773,12 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
         }
 
         // set the sizes of faces graph
-        # ifdef USE_OMP
         # pragma omp critical
-        # endif
         nFaces += helperFaces.size();
 
-        # ifdef USE_OMP
         # pragma omp barrier
 
         # pragma omp master
-        # endif
         {
             rowSizes.setSize(nFaces);
             octreeFacesPtr_->setSize(nFaces);
@@ -1066,9 +786,7 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
             octreeFacesNeighboursPtr_->setSize(nFaces);
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
-        # endif
 
         // set the size of face graph rows and copy owners and neighbours
         for
@@ -1098,17 +816,13 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
             }
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
 
         // set the size of octree faces
         # pragma omp master
-        # endif
         VRWGraphSMPModifier(*octreeFacesPtr_).setSizeAndRowSize(rowSizes);
 
-        # ifdef USE_OMP
         # pragma omp barrier
-        # endif
 
         // copy the data into octree faces
         for
@@ -1142,45 +856,6 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
             }
         }
     }
-
-    # ifdef DEBUGVrt
-    List<vector> sum(octree_.numberOfLeaves(), vector::zero);
-    for (label faceI = 0; faceI < octreeFacesPtr_->size(); ++faceI)
-    {
-        face f(octreeFacesPtr_->sizeOfRow(faceI));
-        forAll(f, pI)
-        {
-            f[pI] = octreeFacesPtr_->operator()(faceI, pI);
-        }
-        const vector n = f.normal(this->octreePoints());
-
-        sum[(*octreeFacesOwnersPtr_)[faceI]] += n;
-        const label nei = (*octreeFacesNeighboursPtr_)[faceI];
-
-        if (nei < 0)
-        {
-            continue;
-        }
-        sum[nei] -= n;
-    }
-
-    forAll(sum, lfI)
-    {
-        if
-        (
-            Pstream::parRun()
-         && octree_.returnLeaf(lfI).procNo() != Pstream::myProcNo()
-        )
-        {
-            continue;
-        }
-
-        if ((boxType[lfI] & MESHCELL) && (mag(sum[lfI]) > SMALL))
-        {
-            Info<< "Leaf " << lfI << " is not closed " << sum[lfI] << endl;
-        }
-    }
-    # endif
 }
 
 

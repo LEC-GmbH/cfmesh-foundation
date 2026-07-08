@@ -71,9 +71,7 @@ void Foam::Module::polyMeshGenAddressing::makeFaceCentresAndAreas
     const faceListPMG& fs = mesh_.faces();
     const label nFaces = fs.size();
 
-    # ifdef USE_OMP
     # pragma omp parallel for if (nFaces > 1000)
-    # endif
     for (label faceI = 0; faceI < nFaces; ++faceI)
     {
         const face& f = fs[faceI];
@@ -127,14 +125,12 @@ Foam::Module::polyMeshGenAddressing::faceCentres() const
 {
     if (!faceCentresPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calcFaceCentresAndAreas();
     }
@@ -147,14 +143,12 @@ const Foam::vectorField& Foam::Module::polyMeshGenAddressing::faceAreas() const
 {
     if (!faceAreasPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calcFaceCentresAndAreas();
     }

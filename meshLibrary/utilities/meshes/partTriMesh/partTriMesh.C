@@ -37,9 +37,7 @@ License
 
 #include <map>
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -49,13 +47,7 @@ Foam::Module::partTriMesh::partTriMesh(const meshSurfacePartitioner& mPart)
     surf_(),
     pointLabelInMeshSurface_(),
     meshSurfacePointLabelInTriMesh_(),
-    pointType_(),
-    globalPointLabelPtr_(nullptr),
-    pAtProcsPtr_(nullptr),
-    globalToLocalPointAddressingPtr_(nullptr),
-    neiProcsPtr_(nullptr),
-    pAtParallelBoundariesPtr_(nullptr),
-    pAtBufferLayersPtr_(nullptr)
+    pointType_()
 {
     const meshSurfaceEngine& meshSurface = mPart.surfaceEngine();
     List<direction> useFace(meshSurface.boundaryFaces().size(), direction(1));
@@ -75,13 +67,7 @@ Foam::Module::partTriMesh::partTriMesh
     surf_(),
     pointLabelInMeshSurface_(),
     meshSurfacePointLabelInTriMesh_(),
-    pointType_(),
-    globalPointLabelPtr_(nullptr),
-    pAtProcsPtr_(nullptr),
-    globalToLocalPointAddressingPtr_(nullptr),
-    neiProcsPtr_(nullptr),
-    pAtParallelBoundariesPtr_(nullptr),
-    pAtBufferLayersPtr_(nullptr)
+    pointType_()
 {
     const meshSurfaceEngine& meshSurface = mPart.surfaceEngine();
     const VRWGraph& pointFaces = meshSurface.pointFaces();
@@ -131,65 +117,6 @@ Foam::Module::partTriMesh::partTriMesh
                 }
             }
         }
-
-        if (Pstream::parRun())
-        {
-            const labelList& globalPointLabel =
-                meshSurface.globalBoundaryPointLabel();
-            const VRWGraph& pProcs = meshSurface.bpAtProcs();
-            const Map<label>& globalToLocal =
-                meshSurface.globalToLocalBndPointAddressing();
-
-            std::map<label, labelLongList> eData;
-            forAllConstIters(globalToLocal, iter)
-            {
-                const label bpI = iter();
-
-                forAllRow(pProcs, bpI, procI)
-                {
-                    const label neiProc = pProcs(bpI, procI);
-                    if (neiProc == Pstream::myProcNo())
-                    {
-                        continue;
-                    }
-
-                    if (eData.find(neiProc) == eData.end())
-                    {
-                        eData.insert
-                        (
-                            std::make_pair(neiProc, labelLongList())
-                        );
-                    }
-
-                    forAllRow(pointFaces, bpI, pfI)
-                    {
-                        if (useFace[pointFaces(bpI, pfI)] == layerI)
-                        {
-                            eData[neiProc].append(globalPointLabel[bpI]);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // exchange data with other processors
-            labelLongList receivedData;
-            help::exchangeMap(eData, receivedData);
-
-            forAll(receivedData, i)
-            {
-                const label bpI = globalToLocal[receivedData[i]];
-
-                forAllRow(pointFaces, bpI, pfI)
-                {
-                    const label fLabel = pointFaces(bpI, pfI);
-                    if (!useFace[fLabel])
-                    {
-                        useFace[fLabel] = layerI + 1;
-                    }
-                }
-            }
-        }
     }
 
     createPointsAndTrias(useFace);
@@ -198,12 +125,6 @@ Foam::Module::partTriMesh::partTriMesh
 
 Foam::Module::partTriMesh::~partTriMesh()
 {
-    deleteDemandDrivenData(globalPointLabelPtr_);
-    deleteDemandDrivenData(pAtProcsPtr_);
-    deleteDemandDrivenData(globalToLocalPointAddressingPtr_);
-    deleteDemandDrivenData(neiProcsPtr_);
-    deleteDemandDrivenData(pAtParallelBoundariesPtr_);
-    deleteDemandDrivenData(pAtBufferLayersPtr_);
 }
 
 
@@ -274,15 +195,9 @@ void Foam::Module::partTriMesh::updateVerticesSMP
 
     List<direction> updateType(pts.size(), direction(0));
 
-    # ifdef USE_OMP
     # pragma omp parallel num_threads(np.size())
-    # endif
     {
-        # ifdef USE_OMP
         const LongList<labelledPoint>& newPoints = np[omp_get_thread_num()];
-        # else
-        const LongList<labelledPoint>& newPoints = np[0];
-        # endif
 
         forAll(newPoints, i)
         {
@@ -304,77 +219,9 @@ void Foam::Module::partTriMesh::updateVerticesSMP
         }
     }
 
-    // update coordinates of buffer layer points
-    if (Pstream::parRun())
-    {
-        const labelLongList& bufferLayerPoints = this->bufferLayerPoints();
-        const VRWGraph& pProcs = this->pointAtProcs();
-        const labelLongList& globalPointLabel = this->globalPointLabel();
-        const Map<label>& globalToLocal = this->globalToLocalPointAddressing();
-        const DynList<label>& neiProcs = this->neiProcs();
-
-        // create the map
-        std::map<label, LongList<labelledPoint>> exchangeData;
-        forAll(neiProcs, i)
-        {
-            exchangeData.insert
-            (
-                std::make_pair(neiProcs[i], LongList<labelledPoint>())
-            );
-        }
-
-        // add points into the map
-        forAll(bufferLayerPoints, pI)
-        {
-            const label pointI = bufferLayerPoints[pI];
-
-            if (!(updateType[pointI] & SMOOTH))
-            {
-                continue;
-            }
-
-            forAllRow(pProcs, pointI, i)
-            {
-                const label neiProc = pProcs(pointI, i);
-
-                if (neiProc == Pstream::myProcNo())
-                {
-                    continue;
-                }
-
-                exchangeData[neiProc].append
-                (
-                    labelledPoint(globalPointLabel[pointI], pts[pointI])
-                );
-            }
-        }
-
-        LongList<labelledPoint> receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            const labelledPoint& lp = receivedData[i];
-
-            const label triPointI = globalToLocal[lp.pointLabel()];
-            pts[triPointI] = lp.coordinates();
-
-            forAllRow(pointFacets, triPointI, ptI)
-            {
-                const labelledTri& tri = surf_[pointFacets(triPointI, ptI)];
-
-                if (pointType_[tri[2]] & FACECENTRE)
-                {
-                    updateType[tri[2]] |= FACECENTRE;
-                }
-            }
-        }
-    }
 
     // update coordinates of FACECENTRE vertices
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 20)
-    # endif
     forAll(updateType, pI)
     {
         if (updateType[pI] & FACECENTRE)
@@ -400,10 +247,6 @@ void Foam::Module::partTriMesh::updateVerticesSMP
         }
     }
 
-    if (Pstream::parRun())
-    {
-        updateBufferLayers();
-    }
 }
 
 
@@ -435,9 +278,7 @@ void Foam::Module::partTriMesh::updateVertices(const labelLongList& movedPoints)
 
     // update coordinates of vertices which exist in the surface
     // of the volume mesh
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(movedPoints, i)
     {
         const label bpI = movedPoints[i];
@@ -463,77 +304,9 @@ void Foam::Module::partTriMesh::updateVertices(const labelLongList& movedPoints)
         }
     }
 
-    // update coordinates of buffer layer points
-    if (Pstream::parRun())
-    {
-        const labelLongList& bufferLayerPoints = this->bufferLayerPoints();
-        const VRWGraph& pProcs = this->pointAtProcs();
-        const labelLongList& globalPointLabel = this->globalPointLabel();
-        const Map<label>& globalToLocal = this->globalToLocalPointAddressing();
-        const DynList<label>& neiProcs = this->neiProcs();
-
-        // create the map
-        std::map<label, LongList<labelledPoint>> exchangeData;
-        forAll(neiProcs, i)
-        {
-            exchangeData.insert
-            (
-                std::make_pair(neiProcs[i], LongList<labelledPoint>())
-            );
-        }
-
-        // add points into the map
-        forAll(bufferLayerPoints, pI)
-        {
-            const label pointI = bufferLayerPoints[pI];
-
-            if (!(updateType[pointI] & SMOOTH))
-            {
-                continue;
-            }
-
-            forAllRow(pProcs, pointI, i)
-            {
-                const label neiProc = pProcs(pointI, i);
-
-                if (neiProc == Pstream::myProcNo())
-                {
-                    continue;
-                }
-
-                exchangeData[neiProc].append
-                (
-                    labelledPoint(globalPointLabel[pointI], pts[pointI])
-                );
-            }
-        }
-
-        LongList<labelledPoint> receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            const labelledPoint& lp = receivedData[i];
-
-            const label triPointI = globalToLocal[lp.pointLabel()];
-            pts[triPointI] = lp.coordinates();
-
-            forAllRow(pointFacets, triPointI, ptI)
-            {
-                const labelledTri& tri = surf_[pointFacets(triPointI, ptI)];
-
-                if (pointType_[tri[2]] & FACECENTRE)
-                {
-                    updateType[tri[2]] |= FACECENTRE;
-                }
-            }
-        }
-    }
 
     // update coordinates of FACECENTRE vertices
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 20)
-    # endif
     forAll(updateType, pI)
     {
         if (updateType[pI] & FACECENTRE)
@@ -560,10 +333,6 @@ void Foam::Module::partTriMesh::updateVertices(const labelLongList& movedPoints)
         }
     }
 
-    if (Pstream::parRun())
-    {
-        updateBufferLayers();
-    }
 }
 
 

@@ -33,15 +33,10 @@ License
 #include "helperFunctions.H"
 #include "boundBox.H"
 
-//#define DEBUGSearch
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 bool Foam::Module::meshOctree::isPointInside(const point& p) const
 {
-    # ifdef DEBUGSearch
-    Info<< "Checking inside/outside for vertex " << p << endl;
-    # endif
     const label cLabel = findLeafContainingVertex(p);
 
     if (cLabel >= 0)

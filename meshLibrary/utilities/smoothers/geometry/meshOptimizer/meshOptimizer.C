@@ -98,7 +98,7 @@ Foam::label Foam::Module::meshOptimizer::findBadFaces
         &changedFace
     );
 
-    const label nBadFaces = returnReduce(badFaces.size(), sumOp<label>());
+    const label nBadFaces = badFaces.size();
 
     return nBadFaces;
 }
@@ -128,7 +128,7 @@ Foam::label Foam::Module::meshOptimizer::findLowQualityFaces
         &badFaces
     );
 
-    const label nBadFaces = returnReduce(badFaces.size(), sumOp<label>());
+    const label nBadFaces = badFaces.size();
 
     return nBadFaces;
 }
@@ -157,16 +157,6 @@ void Foam::Module::meshOptimizer::calculatePointLocations()
     for (const label corneri : mPart.corners())
     {
         vertexLocation_[bPoints[corneri]] = CORNER;
-    }
-
-    if (Pstream::parRun())
-    {
-        const polyMeshGenAddressing& addresing = mesh_.addressingData();
-        const VRWGraph& pointAtProcs = addresing.pointAtProcs();
-
-        forAll(pointAtProcs, pointI)
-            if (pointAtProcs.sizeOfRow(pointI) != 0)
-                vertexLocation_[pointI] |= PARALLELBOUNDARY;
     }
 }
 
@@ -266,9 +256,7 @@ void Foam::Module::meshOptimizer::removeUserConstraints()
     lockedFaces_.setSize(0);
 
     // unlock points
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(vertexLocation_, i)
     {
         if (vertexLocation_[i] & LOCKED)

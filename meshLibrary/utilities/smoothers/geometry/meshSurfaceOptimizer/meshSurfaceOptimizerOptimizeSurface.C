@@ -34,7 +34,6 @@ License
 #include "meshSurfaceCheckInvertedVertices.H"
 #include "meshOctree.H"
 #include "triangle.H"
-#include "helperFunctionsPar.H"
 #include "meshSurfaceMapper.H"
 #include "meshSurfaceMapper2D.H"
 #include "polyMeshGen2DEngine.H"
@@ -46,9 +45,7 @@ License
 #include <map>
 #include <stdexcept>
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -84,8 +81,6 @@ Foam::label Foam::Module::meshSurfaceOptimizer::findInvertedVertices
         }
     }
 
-    if (Pstream::parRun())
-        reduce(nInvertedTria, sumOp<label>());
     Info<< "Number of inverted boundary faces is " << nInvertedTria << endl;
 
     if (nInvertedTria == 0)
@@ -100,52 +95,6 @@ Foam::label Foam::Module::meshSurfaceOptimizer::findInvertedVertices
                 forAllRow(pPoints, bpI, ppI)
                     smoothVertex[pPoints(bpI, ppI)] = true;
 
-        if (Pstream::parRun())
-        {
-            // exchange global labels of inverted points
-            const labelList& globalPointLabel =
-                surfaceEngine_.globalBoundaryPointLabel();
-            const Map<label>& globalToLocal =
-                surfaceEngine_.globalToLocalBndPointAddressing();
-            const VRWGraph& bpAtProcs = surfaceEngine_.bpAtProcs();
-            const DynList<label>& neiProcs = surfaceEngine_.bpNeiProcs();
-
-            std::map<label, labelLongList> shareData;
-            forAll(neiProcs, procI)
-                shareData.insert
-                (
-                    std::make_pair(neiProcs[procI], labelLongList())
-                );
-
-            forAllConstIters(globalToLocal, iter)
-            {
-                const label bpI = iter();
-
-                if (!smoothVertex[bpI])
-                    continue;
-
-                forAllRow(bpAtProcs, bpI, procI)
-                {
-                    const label neiProc = bpAtProcs(bpI, procI);
-
-                    if (neiProc == Pstream::myProcNo())
-                        continue;
-
-                    shareData[neiProc].append(globalPointLabel[bpI]);
-                }
-            }
-
-            // exchange data with other processors
-            labelLongList receivedData;
-            help::exchangeMap(shareData, receivedData);
-
-            forAll(receivedData, j)
-            {
-                const label bpI = globalToLocal[receivedData[j]];
-
-                smoothVertex[bpI] = true;
-            }
-        }
     }
 
     return nInvertedTria;
@@ -159,38 +108,25 @@ void Foam::Module::meshSurfaceOptimizer::smoothEdgePoints
 )
 {
     List<LongList<labelledPoint>> newPositions(1);
-    # ifdef USE_OMP
     newPositions.setSize(omp_get_num_procs());
-    # endif
 
     // smooth edge vertices
-    # ifdef USE_OMP
     # pragma omp parallel num_threads(newPositions.size())
-    # endif
     {
-        # ifdef USE_OMP
         LongList<labelledPoint>& newPos =
             newPositions[omp_get_thread_num()];
-        # else
-        LongList<labelledPoint>& newPos = newPositions[0];
-        # endif
 
-        # ifdef USE_OMP
         # pragma omp for schedule(dynamic, 40)
-        # endif
         forAll(edgePoints, i)
         {
             const label bpI = edgePoints[i];
 
-            if (vertexType_[bpI] & (PROCBND | LOCKED))
+            if (vertexType_[bpI] & LOCKED)
                 continue;
 
             newPos.append(labelledPoint(bpI, newEdgePositionLaplacian(bpI)));
         }
     }
-
-    if (Pstream::parRun())
-        edgeNodeDisplacementParallel(procEdgePoints);
 
     meshSurfaceEngineModifier surfaceModifier(surfaceEngine_);
     forAll(newPositions, threadI)
@@ -217,29 +153,19 @@ void Foam::Module::meshSurfaceOptimizer::smoothLaplacianFC
 )
 {
     List<LongList<labelledPoint>> newPositions(1);
-    # ifdef USE_OMP
     newPositions.setSize(omp_get_num_procs());
-    # endif
 
-    # ifdef USE_OMP
     # pragma omp parallel num_threads(newPositions.size())
-    # endif
     {
-        # ifdef USE_OMP
         LongList<labelledPoint>& newPos =
             newPositions[omp_get_thread_num()];
-        # else
-        LongList<labelledPoint>& newPos = newPositions[0];
-        # endif
 
-        # ifdef USE_OMP
         # pragma omp for schedule(dynamic, 40)
-        # endif
         forAll(selectedPoints, i)
         {
             const label bpI = selectedPoints[i];
 
-            if (vertexType_[bpI] & (PROCBND | LOCKED))
+            if (vertexType_[bpI] & LOCKED)
                 continue;
 
             newPos.append
@@ -249,20 +175,11 @@ void Foam::Module::meshSurfaceOptimizer::smoothLaplacianFC
         }
     }
 
-    if (Pstream::parRun())
-        nodeDisplacementLaplacianFCParallel(selectedProcPoints, transform);
-
     meshSurfaceEngineModifier surfaceModifier(surfaceEngine_);
 
-    # ifdef USE_OMP
     # pragma omp parallel num_threads(newPositions.size())
-    # endif
     {
-        # ifdef USE_OMP
         const label threadI = omp_get_thread_num();
-        # else
-        const label threadI = 0;
-        # endif
 
         const LongList<labelledPoint>& newPos = newPositions[threadI];
 
@@ -292,9 +209,7 @@ void Foam::Module::meshSurfaceOptimizer::smoothSurfaceOptimizer
 
     pointField newPositions(selectedPoints.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 20)
-    # endif
     forAll(selectedPoints, i)
     {
         const label bpI = selectedPoints[i];
@@ -304,19 +219,13 @@ void Foam::Module::meshSurfaceOptimizer::smoothSurfaceOptimizer
 
     meshSurfaceEngineModifier surfaceModifier(surfaceEngine_);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(newPositions, i)
     {
         const label bpI = selectedPoints[i];
 
         surfaceModifier.moveBoundaryVertexNoUpdate(bpI, newPositions[i]);
     }
-
-    // ensure that vertices at inter-processor boundaries are at the same
-    // location at all processors
-    surfaceModifier.syncVerticesAtParallelBoundaries(selectedProcPoints);
 
     // update geometry addressing for moved points
     surfaceModifier.updateGeometry(selectedPoints);
@@ -342,18 +251,8 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
     surfaceEngine_.pointNormals();
     surfaceEngine_.boundaryPointEdges();
 
-    if (Pstream::parRun())
-    {
-        surfaceEngine_.bpAtProcs();
-        surfaceEngine_.globalToLocalBndPointAddressing();
-        surfaceEngine_.globalBoundaryPointLabel();
-        surfaceEngine_.bpNeiProcs();
-    }
-
     boolList smoothVertex(bPoints.size(), false);
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(selectedBoundaryPoints, i)
     {
         if (vertexType_[selectedBoundaryPoints[i]] & LOCKED)
@@ -410,8 +309,6 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
                     << " without sacrificing geometry constraints. Exitting.."
                     << endl;
 
-                returnReduce(1, sumOp<label>());
-
                 throw std::logic_error
                 (
                     "bool meshSurfaceOptimizer::untangleSurface"
@@ -427,9 +324,7 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
                 minNumInverted = nInvertedTria;
                 nAfterRefresh = 0;
 
-                # ifdef USE_OMP
                 # pragma omp parallel for schedule(dynamic, 100)
-                # endif
                 forAll(bPoints, bpI)
                     minInvertedPoints[bpI] = points[bPoints[bpI]];
             }
@@ -473,16 +368,10 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
                 if (vertexType_[bpI] & PARTITION)
                 {
                     movedPoints.append(bpI);
-
-                    if (vertexType_[bpI] & PROCBND)
-                        procBndPoints.append(bpI);
                 }
                 else if (vertexType_[bpI] & EDGE)
                 {
                     movedEdgePoints.append(bpI);
-
-                    if (vertexType_[bpI] & PROCBND)
-                        procEdgePoints.append(bpI);
                 }
             }
 
@@ -527,9 +416,6 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
                 if (smoothVertex[bpI])
                 {
                     movedPoints.append(bpI);
-
-                    if (vertexType_[bpI] & PROCBND)
-                        procBndPoints.append(bpI);
                 }
 
             smoothLaplacianFC(movedPoints, procBndPoints, false);
@@ -613,16 +499,10 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface
         if (vertexType_[bpI] & EDGE)
         {
             edgePoints.append(bpI);
-
-            if (vertexType_[bpI] & PROCBND)
-                procBndPoints.append(bpI);
         }
         else if (vertexType_[bpI] & PARTITION)
         {
             partitionPoints.append(bpI);
-
-            if (vertexType_[bpI] & PROCBND)
-                procPoints.append(bpI);
         }
     }
 
@@ -707,9 +587,6 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface2D
                 updatePoints.append(bp[e.end()]);
 
                 movedPoints.append(bpI);
-
-                if (vertexType_[bpI] & PROCBND)
-                    procBndPoints.append(bpI);
             }
         }
     }
@@ -746,9 +623,6 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface2D
         if (zMinPoint[bPoints[bpI]] && (vertexType_[bpI] & PARTITION))
         {
             movedPoints.append(bpI);
-
-            if (vertexType_[bpI] & PROCBND)
-                procBndPoints.append(bpI);
         }
     Info<< "Optimizing surface vertices. Iteration:";
     for (label i = 0; i < nIterations; ++i)
@@ -833,54 +707,6 @@ void Foam::Module::meshSurfaceOptimizer::untangleSurface2D()
             }
         }
 
-        if (Pstream::parRun())
-        {
-            const Map<label>& globalToLocal =
-                surfaceEngine_.globalToLocalBndPointAddressing();
-            const DynList<label>& neiProcs = surfaceEngine_.bpNeiProcs();
-            const VRWGraph& bpNeiProcs = surfaceEngine_.bpAtProcs();
-
-            std::map<label, labelLongList> exchangeData;
-            forAll(neiProcs, i)
-                exchangeData[neiProcs[i]].clear();
-
-            // collect active points at inter-processor boundaries
-            forAllConstIters(globalToLocal, it)
-            {
-                const label bpI = it();
-
-                if (activeBoundaryPoint[bpI])
-                {
-                    forAllRow(bpNeiProcs, bpI, i)
-                    {
-                        const label neiProc = bpNeiProcs(bpI, i);
-
-                        if (neiProc == Pstream::myProcNo())
-                            continue;
-
-                        exchangeData[neiProc].append(it.key());
-                    }
-                }
-            }
-
-            // exchange active points among the processors
-            labelLongList receivedData;
-            help::exchangeMap(exchangeData, receivedData);
-
-            // ensure that all processors have the same Pts active
-            forAll(receivedData, i)
-            {
-                const label bpI = globalToLocal[receivedData[i]];
-
-                // activate this boundary point
-                activeBoundaryPoint[bpI] = true;
-
-                // set the changeFaces for the faces attached to this point
-                forAllRow(pointFaces, bPoints[bpI], pfI)
-                    changedFace[pointFaces(bPoints[bpI], pfI)] = true;
-            }
-        }
-
         // apply smoothing to the activated points
         meshSurfaceEngineModifier bMod(surfaceEngine_);
 
@@ -893,16 +719,10 @@ void Foam::Module::meshSurfaceOptimizer::untangleSurface2D()
             if (vertexType_[bpI] & EDGE)
             {
                 edgePts.append(bpI);
-
-                if (vertexType_[bpI] & PROCBND)
-                    procEdgePts.append(bpI);
             }
             else if (vertexType_[bpI] & PARTITION)
             {
                 movedPts.append(bpI);
-
-                if (vertexType_[bpI] & PROCBND)
-                    procBndPts.append(bpI);
             }
         }
 

@@ -48,7 +48,6 @@ SourceFiles
     polyMeshGenAddressingCellCentresAndVols.C
     polyMeshGenAddressingFaceCentresAndAreas.C
     polyMeshGenAddressingUpdateGeometry.C
-    polyMeshGenAddressingParallelAddressing.C
 
 \*---------------------------------------------------------------------------*/
 
@@ -136,42 +135,6 @@ class polyMeshGenAddressing
         mutable vectorField* faceAreasPtr_;
 
 
-    // Parallel demand driven data
-
-        //- global point labels
-        mutable labelLongList* globalPointLabelPtr_;
-
-        //- global face labels
-        mutable labelLongList* globalFaceLabelPtr_;
-
-        //- global cell labels
-        mutable labelLongList* globalCellLabelPtr_;
-
-        //- global edge labels
-        mutable labelLongList* globalEdgeLabelPtr_;
-
-
-    // Parallel addressing
-
-        //- processors containing a vertex
-        mutable VRWGraph* pProcsPtr_;
-
-        //- global to local point adressing
-        mutable Map<label>* globalToLocalPointAddressingPtr_;
-
-        //- neighbour processors sharing a point with this processor
-        mutable DynList<label>* pointNeiProcsPtr_;
-
-        //- processors containing an edge
-        mutable VRWGraph* eProcsPtr_;
-
-        //- global to local edge addressing
-        mutable Map<label>* globalToLocalEdgeAddressingPtr_;
-
-        //- neighbour processors sharing an edge with the current processor
-        mutable DynList<label>* edgeNeiProcsPtr_;
-
-
     // Private member functions
 
         //- Disallow construct as copy
@@ -219,21 +182,6 @@ class polyMeshGenAddressing
         // Create and destroy as a set, using clearOutEdges()
         void calcEdges() const;
         void clearOutEdges();
-
-
-    // Parallel calculations
-
-        //- calculate global point labels
-        void calcGlobalPointLabels() const;
-
-        //- calculate global face labels
-        void calcGlobalFaceLabels() const;
-
-        //- calculate global cell labels
-        void calcGlobalCellLabels() const;
-
-        //- calculate global edge labels
-        void calcGlobalEdgeLabels() const;
 
 
     // Geometrical calculations
@@ -339,21 +287,6 @@ public:
             const VRWGraph& cellPoints() const;
 
 
-        // Parallel addressing
-
-            const labelLongList& globalPointLabel() const;
-            const labelLongList& globalFaceLabel() const;
-            const labelLongList& globalCellLabel() const;
-            const labelLongList& globalEdgeLabel() const;
-
-            const VRWGraph& pointAtProcs() const;
-            const Map<label>& globalToLocalPointAddressing() const;
-            const DynList<label>& pointNeiProcs() const;
-            const VRWGraph& edgeAtProcs() const;
-            const Map<label>& globalToLocalEdgeAddressing() const;
-            const DynList<label>& edgeNeiProcs() const;
-
-
         // Geometric data (raw!)
 
             const vectorField& cellCentres() const;
@@ -372,9 +305,6 @@ public:
 
         //- Clear topological data
         void clearAddressing();
-
-        //- Clear parallel addressing
-        void clearParallelAddressing();
 
         //- Clear all geometry and addressing unnecessary for CFD
         void clearOut();

@@ -69,17 +69,7 @@ Foam::Module::polyMeshGenAddressing::polyMeshGenAddressing
     cellCentresPtr_(nullptr),
     faceCentresPtr_(nullptr),
     cellVolumesPtr_(nullptr),
-    faceAreasPtr_(nullptr),
-    globalPointLabelPtr_(nullptr),
-    globalFaceLabelPtr_(nullptr),
-    globalCellLabelPtr_(nullptr),
-    globalEdgeLabelPtr_(nullptr),
-    pProcsPtr_(nullptr),
-    globalToLocalPointAddressingPtr_(nullptr),
-    pointNeiProcsPtr_(nullptr),
-    eProcsPtr_(nullptr),
-    globalToLocalEdgeAddressingPtr_(nullptr),
-    edgeNeiProcsPtr_(nullptr)
+    faceAreasPtr_(nullptr)
 {}
 
 

@@ -31,10 +31,6 @@ License
 #include "triSurfacePartitioner.H"
 #include "demandDrivenData.H"
 
-# ifdef DEBUGPartitioner
-#include <sstream>
-# endif
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::Module::triSurfacePartitioner::triSurfacePartitioner

@@ -76,9 +76,6 @@ class meshOctreeInsideOutside
         //- flag for DATA boxes next to the OUTSIDE boxes
         boolList hasOutsideNeighbour_;
 
-        //- label of cubes at processor boundaries
-        labelLongList communicationCubes_;
-
         //- labels of cubes marked by different threads
         VRWGraph neighbouringGroups_;
 

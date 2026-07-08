@@ -93,9 +93,7 @@ void Foam::Module::triSurfaceImportSurfaceAsSubset::addSurfaceAsSubset
     const pointField& importSurfPoints = importSurf.points();
     const vectorField& importFaceCentres = importSurf.facetCentres();
     const vectorField& importFaceNormals = importSurf.facetNormals();
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(nearestTriangle, triI)
     {
         point np;
@@ -153,9 +151,7 @@ void Foam::Module::triSurfaceImportSurfaceAsSubset::addSurfaceAsSubset
 
     // search for nearest facets in the import surface
     DynList<label> containedTriangles;
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40) private(containedTriangles)
-    # endif
     forAll(surf_, triI)
     {
         // find the bounding box and the ize of the triangle

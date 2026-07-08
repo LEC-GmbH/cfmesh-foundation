@@ -34,144 +34,11 @@ License
 #include "meshSurfacePartitioner.H"
 #include "meshOctree.H"
 #include "triSurf.H"
-#include "helperFunctionsPar.H"
 #include "helperFunctions.H"
 
 #include <map>
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
-
-//#define DEBUGMapping
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-// Private member functions
-
-void Foam::Module::meshSurfaceMapper::selectNodesAtParallelBnd
-(
-    const labelLongList& selNodes
-)
-{
-    if (!Pstream::parRun())
-        return;
-
-    std::map<label, labelLongList> exchangeData;
-    const DynList<label>& neiProcs = surfaceEngine_.bpNeiProcs();
-    forAll(neiProcs, i)
-        exchangeData.insert(std::make_pair(neiProcs[i], labelLongList()));
-
-    const VRWGraph& bpAtProcs = surfaceEngine_.bpAtProcs();
-    const labelList& globalPointLabel =
-        surfaceEngine_.globalBoundaryPointLabel();
-    const Map<label>& globalToLocal =
-        surfaceEngine_.globalToLocalBndPointAddressing();
-
-    boolList selectedNode(bpAtProcs.size(), false);
-
-    forAll(selNodes, i)
-    {
-        const label bpI = selNodes[i];
-
-        selectedNode[bpI] = true;
-
-        forAllRow(bpAtProcs, bpI, procI)
-        {
-            const label neiProc = bpAtProcs(bpI, procI);
-            if (neiProc == Pstream::myProcNo())
-                continue;
-
-            exchangeData[neiProc].append(globalPointLabel[bpI]);
-        }
-    }
-
-    // exchange data
-    labelLongList receivedData;
-    help::exchangeMap(exchangeData, receivedData);
-
-    forAll(receivedData, i)
-    {
-        if (!selectedNode[globalToLocal[receivedData[i]]])
-        {
-            selectedNode[globalToLocal[receivedData[i]]] = true;
-            const_cast<labelLongList&>(selNodes).append
-            (
-                globalToLocal[receivedData[i]]
-            );
-        }
-    }
-}
-
-
-void Foam::Module::meshSurfaceMapper::mapToSmallestDistance
-(
-    LongList<parMapperHelper>& parN
-)
-{
-    if (!Pstream::parRun())
-        return;
-
-    std::map<label, LongList<parMapperHelper>> exchangeData;
-    const DynList<label>& neiProcs = surfaceEngine_.bpNeiProcs();
-    forAll(neiProcs, i)
-        exchangeData.insert
-        (
-            std::make_pair(neiProcs[i], LongList<parMapperHelper>())
-        );
-
-    const VRWGraph& bpAtProcs = surfaceEngine_.bpAtProcs();
-    const labelList& globalPointLabel =
-        surfaceEngine_.globalBoundaryPointLabel();
-    const Map<label>& globalToLocal =
-        surfaceEngine_.globalToLocalBndPointAddressing();
-
-    Map<label> bpToList(parN.size());
-
-    forAll(parN, i)
-    {
-        const label bpI = parN[i].globalLabel();
-        bpToList.insert(bpI, i);
-
-        forAllRow(bpAtProcs, bpI, procI)
-        {
-            const label neiProc = bpAtProcs(bpI, procI);
-            if (neiProc == Pstream::myProcNo())
-                continue;
-
-            exchangeData[neiProc].append
-            (
-                parMapperHelper
-                (
-                    parN[i].coordinates(),
-                    parN[i].movingDistance(),
-                    globalPointLabel[bpI],
-                    parN[i].pointPatch()
-                )
-            );
-        }
-    }
-
-    // exchange data
-    LongList<parMapperHelper> receivedData;
-    help::exchangeMap(exchangeData, receivedData);
-
-    // select the point with the smallest moving distance
-    meshSurfaceEngineModifier surfModifier(surfaceEngine_);
-    forAll(receivedData, i)
-    {
-        const parMapperHelper& ph = receivedData[i];
-
-        const label bpI = globalToLocal[ph.globalLabel()];
-
-        parMapperHelper& phOrig = parN[bpToList[bpI]];
-        if (phOrig.movingDistance() < ph.movingDistance())
-        {
-            surfModifier.moveBoundaryVertexNoUpdate(bpI, ph.coordinates());
-            phOrig = ph;
-        }
-    }
-}
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -232,26 +99,14 @@ void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurface
     const labelList& boundaryPoints = surfaceEngine_.boundaryPoints();
     const pointFieldPMG& points = surfaceEngine_.points();
 
-    const VRWGraph* bpAtProcsPtr(nullptr);
-    if (Pstream::parRun())
-        bpAtProcsPtr = &surfaceEngine_.bpAtProcs();
-
     meshSurfaceEngineModifier surfaceModifier(surfaceEngine_);
-    LongList<parMapperHelper> parallelBndNodes;
 
-    # ifdef USE_OMP
     const label size = nodesToMap.size();
-    # pragma omp parallel for if (size > 1000) shared(parallelBndNodes) \
+    # pragma omp parallel for if (size > 1000) \
     schedule(dynamic, Foam::max(1, size/(3*omp_get_max_threads())))
-    # endif
     forAll(nodesToMap, i)
     {
         const label bpI = nodesToMap[i];
-
-        # ifdef DEBUGMapping
-        Info<< nl << "Mapping vertex " << bpI << " with coordinates "
-            << points[boundaryPoints[bpI]] << endl;
-        # endif
 
         label patch, nt;
         point mapPoint;
@@ -267,31 +122,7 @@ void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurface
         );
 
         surfaceModifier.moveBoundaryVertexNoUpdate(bpI, mapPoint);
-
-        if (bpAtProcsPtr && bpAtProcsPtr->sizeOfRow(bpI))
-        {
-            # ifdef USE_OMP
-            # pragma omp critical
-            # endif
-            parallelBndNodes.append
-            (
-                parMapperHelper
-                (
-                    mapPoint,
-                    dSq,
-                    bpI,
-                    patch
-                )
-            );
-        }
-
-        # ifdef DEBUGMapping
-        Info<< "Mapped point " << points[boundaryPoints[bpI]] << endl;
-        # endif
     }
-
-    // make sure that the points are at the nearest location on the surface
-    mapToSmallestDistance(parallelBndNodes);
 
     // re-calculate face normals, point normals, etc.
     surfaceModifier.updateGeometry(nodesToMap);
@@ -344,18 +175,11 @@ void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurfacePatches
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
     const pointFieldPMG& points = surfaceEngine_.points();
 
-    const VRWGraph* bpAtProcsPtr(nullptr);
-    if (Pstream::parRun())
-        bpAtProcsPtr = &surfaceEngine_.bpAtProcs();
-
     meshSurfaceEngineModifier surfaceModifier(surfaceEngine_);
-    LongList<parMapperHelper> parallelBndNodes;
 
-    # ifdef USE_OMP
     const label size = nodesToMap.size();
-    # pragma omp parallel for if (size > 1000) shared(parallelBndNodes) \
+    # pragma omp parallel for if (size > 1000) \
     schedule(dynamic, Foam::max(1, size /(3*omp_get_max_threads())))
-    # endif
     forAll(nodesToMap, nI)
     {
         const label bpI = nodesToMap[nI];
@@ -377,34 +201,7 @@ void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurfacePatches
         );
 
         surfaceModifier.moveBoundaryVertexNoUpdate(bpI, mapPoint);
-
-        if (bpAtProcsPtr && bpAtProcsPtr->sizeOfRow(bpI))
-        {
-            # ifdef USE_OMP
-            # pragma omp critical
-            # endif
-            {
-                parallelBndNodes.append
-                (
-                    parMapperHelper
-                    (
-                        mapPoint,
-                        dSq,
-                        bpI,
-                        -1
-                    )
-                );
-            }
-        }
-
-        # ifdef DEBUGMapping
-        Info<< "Mapped point " << points[boundaryPoints[bpI]] << endl;
-        # endif
     }
-
-    // map vertices at inter-processor boundaries to the nearest location
-    // on the surface
-    mapToSmallestDistance(parallelBndNodes);
 
     // update face normals, point normals, etc.
     surfaceModifier.updateGeometry(nodesToMap);

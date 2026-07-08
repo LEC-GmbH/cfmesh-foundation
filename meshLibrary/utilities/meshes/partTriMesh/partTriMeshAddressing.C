@@ -185,18 +185,6 @@ void Foam::Module::partTriMesh::createPointsAndTrias
         }
     }
 
-    // create addressing for parallel runs
-    if (Pstream::parRun())
-    {
-        createParallelAddressing
-        (
-            meshSurfacePointLabelInTriMesh_,
-            nodeLabelForFace
-        );
-
-        createBufferLayers();
-    }
-
     // calculate point facets addressing
     surf_.pointFacets();
 }

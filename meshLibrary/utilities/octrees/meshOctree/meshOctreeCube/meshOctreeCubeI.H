@@ -47,7 +47,7 @@ inline Foam::Module::meshOctreeCube::meshOctreeCube()
 
 inline Foam::Module::meshOctreeCube::meshOctreeCube(const meshOctreeCube& moc)
 :
-    meshOctreeCubeBasic(moc.coordinates(), moc.cubeType(), moc.procNo()),
+    meshOctreeCubeBasic(moc.coordinates(), moc.cubeType()),
     activeSlotPtr_(moc.activeSlotPtr_),
     subCubesPtr_(moc.subCubesPtr_),
     cubeLabel_(moc.cubeLabel_),

@@ -137,9 +137,7 @@ void Foam::Module::triSurfacePartitioner::calculateEdgeGroups()
     // make all feature edges
     boolList featureEdge(edgeFaces.size(), false);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(edgeFaces, eI)
     {
         DynList<label> patches;

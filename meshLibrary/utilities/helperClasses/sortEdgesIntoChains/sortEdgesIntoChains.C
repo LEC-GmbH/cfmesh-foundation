@@ -32,8 +32,6 @@ License
 #include "helperFunctions.H"
 #include "Map.H"
 
-//#define DEBUGSort
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::sortEdgesIntoChains::createNodeLabels()
@@ -79,10 +77,6 @@ bool Foam::Module::sortEdgesIntoChains::findPointsBelongingToTheChain
     DynList<bool>& chainEdges
 ) const
 {
-    # ifdef DEBUGSort
-    Info<< "Finding point belonging to a chain" << endl;
-    # endif
-
     chainEdges.setSize(bEdges_.size());
     chainEdges = false;
 
@@ -102,12 +96,6 @@ bool Foam::Module::sortEdgesIntoChains::findPointsBelongingToTheChain
     {
         chainEdges[edgesAtPoint_[currPos][posI]] = true;
     }
-
-    # ifdef DEBUGSort
-    Info<< "commonVrt " << commonVrt << endl;
-    Info<< "prevVrt " << prevVrt << endl;
-    Info<< "nextVrt " << nextVrt << endl;
-    # endif
 
     bool found;
     do
@@ -158,10 +146,6 @@ bool Foam::Module::sortEdgesIntoChains::findPointsBelongingToTheChain
         chainEdges = false;
         return false;
     }
-
-    # ifdef DEBUGSort
-    Info<< "Chain edges " << chainEdges << endl;
-    # endif
 
     return true;
 }
@@ -216,17 +200,9 @@ void Foam::Module::sortEdgesIntoChains::createChainFromEdges
             chainPoints[i++] = bEdges_[eI].start();
             chainPoints[i++] = bEdges_[eI].end();
 
-            # ifdef DEBUGSort
-            Info<< "Init chainPoints " << chainPoints << endl;
-            # endif
-
             bool found;
             do
             {
-                # ifdef DEBUGSort
-                Info<< "Iteration " << label(i - 1) << endl;
-                # endif
-
                 found = false;
                 const DynList<label>& pEdges =
                     edgesAtPoint_[newNodeLabel_[chainPoints[i - 1]]];
@@ -238,9 +214,6 @@ void Foam::Module::sortEdgesIntoChains::createChainFromEdges
                         const label otherPoint =
                             bEdges_[pEdges[peI]].otherVertex(chainPoints[i - 1]);
 
-                        # ifdef DEBUGSort
-                        Info<< "Other point " << otherPoint << endl;
-                        # endif
                         if (otherPoint == -1)
                         {
                             continue;

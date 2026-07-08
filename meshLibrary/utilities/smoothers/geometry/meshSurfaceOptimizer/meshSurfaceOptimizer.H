@@ -46,7 +46,6 @@ SourceFiles
 #include "DynList.H"
 #include "triFace.H"
 #include "meshSurfaceEngine.H"
-#include "parTriFace.H"
 #include "meshSurfacePartitioner.H"
 #include "partTriMesh.H"
 
@@ -214,36 +213,6 @@ class meshSurfaceOptimizer
         );
 
 
-    // Functions needed for parallel runs
-
-        //- transfer data between processors
-        void exchangeData
-        (
-            const labelLongList& nodesToSmooth,
-            std::map<label, DynList<parTriFace>>& m
-        ) const;
-
-        //- laplacian smoothing of points at processor boundaries
-        //- new position is the average of the neighbouring vertices
-        void nodeDisplacementLaplacianParallel
-        (
-            const labelLongList& nodesToSmooth,
-            const bool transformIntoPlane = true
-        );
-
-        //- laplacian smoothing of points at processor boundaries
-        void nodeDisplacementLaplacianFCParallel
-        (
-            const labelLongList& nodesToSmooth,
-            const bool transformIntoPlane = true
-        );
-
-        //- smooth edge nodes at processor boundaries
-        void edgeNodeDisplacementParallel
-        (
-            const labelLongList& nodesToSmooth
-        );
-
         //- Disallow default bitwise copy construct
         meshSurfaceOptimizer(const meshSurfaceOptimizer&);
 
@@ -258,7 +227,6 @@ class meshSurfaceOptimizer
             PARTITION = 1,
             EDGE = 2,
             CORNER = 4,
-            PROCBND = 8,
             LOCKED = 16
         };
 

@@ -35,12 +35,6 @@ License
 #include "meshOctreeCreator.H"
 #include "helperFunctions.H"
 
-//#define DEBUGSurfaceChecks
-
-# ifdef DEBUGSurfaceChecks
-#include "triSurfModifier.H"
-# endif
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::label Foam::Module::triSurfaceChecks::checkAngles
@@ -56,9 +50,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkAngles
 
     const pointField& pts = surf.points();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(surf, tI)
     {
         const labelledTri& tri = surf[tI];
@@ -72,9 +64,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkAngles
 
             if ((vp & vn) >= tol)
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 badTriangles.append(tI);
 
                 break;
@@ -289,16 +279,12 @@ Foam::label Foam::Module::triSurfaceChecks::checkForHoles
 
     const VRWGraph& edgeFacets = surf.edgeFacets();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(edgeFacets, eI)
     {
         if (edgeFacets.sizeOfRow(eI) == 1)
         {
-            # ifdef USE_OMP
             # pragma omp critical
-            # endif
             badTriangles.append(edgeFacets(eI, 0));
         }
     }
@@ -340,16 +326,12 @@ Foam::label Foam::Module::triSurfaceChecks::checkForNonManifoldEdges
 
     const VRWGraph& edgeFacets = surf.edgeFacets();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(edgeFacets, eI)
     {
         if (edgeFacets.sizeOfRow(eI) > 2)
         {
-            # ifdef USE_OMP
             # pragma omp critical
-            # endif
             {
                 forAllRow(edgeFacets, eI, efI)
                     badTriangles.append(edgeFacets(eI, efI));
@@ -712,9 +694,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkCollocatedPoints
 
     boolList collocated(pts.size(), false);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(collocated, pI)
     {
         const point& p = pts[pI];
@@ -803,9 +783,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkSelfIntersections
 
     boolList intersected(surf.size(), false);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(intersected, tI)
     {
         const labelledTri& tri = surf[tI];
@@ -898,16 +876,6 @@ Foam::label Foam::Module::triSurfaceChecks::checkSelfIntersections
                         intersected[tI] = true;
                         intersected[triJ] = true;
 
-                        # ifdef DEBUGSurfaceChecks
-                        const label sId =
-                            const_cast<triSurf&>(surf).addFacetSubset
-                            (
-                                "noCommonIntersect_" + Foam::name(tI)
-                              + "_" + Foam::name(triJ)
-                            );
-                        const_cast<triSurf&>(surf).addFacetToSubset(sId, tI);
-                        const_cast<triSurf&>(surf).addFacetToSubset(sId, triJ);
-                        # endif
                     }
                 }
             }
@@ -967,9 +935,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkOverlaps
 
     boolList intersected(surf.size(), false);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(intersected, tI)
     {
         const labelledTri& tri = surf[tI];
@@ -1034,31 +1000,6 @@ Foam::label Foam::Module::triSurfaceChecks::checkOverlaps
                     intersected[tI] = true;
                     intersected[triJ] = true;
 
-                    # ifdef DEBUGSurfaceChecks
-                    const label sId =
-                        const_cast<triSurf&>(surf).addFacetSubset
-                        (
-                            "noCommonOverlap_" + Foam::name(tI)
-                          + "_" + Foam::name(triJ)
-                        );
-                    const_cast<triSurf&>(surf).addFacetToSubset(sId, tI);
-                    const_cast<triSurf&>(surf).addFacetToSubset(sId, triJ);
-
-                    triSurf newSurf;
-                    geometricSurfacePatchList& patches =
-                        triSurfModifier(newSurf).patchesAccess();
-                    patches.setSize(1);
-                    patches[0].name() = "patch0";
-                    forAll(commonPolygon, i)
-                        newSurf.appendVertex(commonPolygon[i]);
-                    for (label i = 0; i < commonPolygon.size()-2; ++i)
-                        newSurf.appendTriangle(labelledTri(0, i + 1, i + 2, 0));
-                    newSurf.writeSurface
-                    (
-                        "overlap_" + Foam::name(tI)
-                      + "_" + Foam::name) + ".fms"
-                    );
-                    # endif
                 }
             }
         }

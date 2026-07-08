@@ -33,9 +33,6 @@ License
 #include "partTetMesh.H"
 #include "tetMatcher.H"
 #include "polyMeshGenAddressing.H"
-#include "helperFunctionsPar.H"
-
-//#define DEBUGSmooth
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -51,8 +48,6 @@ void Foam::Module::partTetMesh::createPointsAndTets
     const labelList& owner = origMesh_.owner();
     const labelList& neighbour = origMesh_.neighbour();
     const PtrList<boundaryPatch>& boundaries = origMesh_.boundaries();
-    const PtrList<processorBoundaryPatch>& procBoundaries =
-        origMesh_.procBoundaries();
     const label nInternalFaces = origMesh_.nInternalFaces();
 
     // check how many neighbours of a face are marked for smoothing
@@ -74,51 +69,6 @@ void Foam::Module::partTetMesh::createPointsAndTets
         if (useCell[neighbour[faceI]])
         {
             ++usedFace[faceI];
-        }
-    }
-
-    // send data at processor boundaries
-    forAll(procBoundaries, patchI)
-    {
-        const label start = procBoundaries[patchI].patchStart();
-        const label size = procBoundaries[patchI].patchSize();
-
-        labelLongList dataToSend;
-        for (label faceI = 0; faceI < size; ++faceI)
-        {
-            if (usedFace[start + faceI])
-            {
-                dataToSend.append(faceI);
-            }
-        }
-
-        OPstream toOtherProc
-        (
-            Pstream::commsTypes::blocking,
-            procBoundaries[patchI].neiProcNo(),
-            dataToSend.byteSize()
-        );
-
-        toOtherProc << dataToSend;
-    }
-
-    // receive data at proc boundaries
-    forAll(procBoundaries, patchI)
-    {
-        labelLongList receivedData;
-
-        IPstream fromOtherProc
-        (
-            Pstream::commsTypes::blocking,
-            procBoundaries[patchI].neiProcNo()
-        );
-
-        fromOtherProc >> receivedData;
-
-        const label start = procBoundaries[patchI].patchStart();
-        forAll(receivedData, faceI)
-        {
-            ++usedFace[start + receivedData[faceI]];
         }
     }
 
@@ -166,50 +116,6 @@ void Foam::Module::partTetMesh::createPointsAndTets
                     points_.append(points[pointI]);
 
                     smoothVertex_.append(BOUNDARY);
-                }
-            }
-        }
-    }
-
-    // create points at processor boundaries
-    forAll(procBoundaries, patchI)
-    {
-        const processorBoundaryPatch& patch = procBoundaries[patchI];
-        const label start = patch.patchStart();
-        const label end = start + patch.patchSize();
-
-        for (label faceI = start; faceI < end; ++faceI)
-        {
-            if (!usedFace[faceI])
-            {
-                continue;
-            }
-
-            const face& f = faces[faceI];
-
-            if (f.size() > 3)
-            {
-                // create face centre
-                nodeLabelForFace[faceI] = points_.size();
-                points_.append(faceCentres[faceI]);
-                smoothVertex_.append(FACECENTRE);
-            }
-
-            // add face corners
-            const direction vType = usedFace[faceI]==2?SMOOTH:NONE;
-            forAll(f, pI)
-            {
-                const label pointI = f[pI];
-                if (nodeLabelForPoint[pointI] == -1)
-                {
-                    nodeLabelForPoint[pointI] = points_.size();
-                    points_.append(points[pointI]);
-
-                    smoothVertex_.append(vType);
-                }
-                else if (vType == NONE)
-                {
-                     smoothVertex_[nodeLabelForPoint[pointI]] = NONE;
                 }
             }
         }
@@ -298,11 +204,6 @@ void Foam::Module::partTetMesh::createPointsAndTets
                             centreLabel
                         );
 
-                        # ifdef DEBUGSmooth
-                        Info<< "1.1 Tet " << tets_.size() << " is "
-                            << tet << endl;
-                        # endif
-
                         tets_.append(tet);
                     }
                     else
@@ -316,11 +217,6 @@ void Foam::Module::partTetMesh::createPointsAndTets
                                 nodeLabelForFace[c[fI]],
                                 centreLabel
                             );
-
-                            # ifdef DEBUGSmooth
-                            Info<< "1.2 Tet " << tets_.size() << " is "
-                                << tet << endl;
-                            # endif
 
                             tets_.append(tet);
                         }
@@ -338,11 +234,6 @@ void Foam::Module::partTetMesh::createPointsAndTets
                             centreLabel
                         );
 
-                        # ifdef DEBUGSmooth
-                        Info<< "2.1 Tet " << tets_.size() << " is "
-                            << tet << endl;
-                        # endif
-
                         tets_.append(tet);
                     }
                     else
@@ -356,11 +247,6 @@ void Foam::Module::partTetMesh::createPointsAndTets
                                 nodeLabelForFace[c[fI]],
                                 centreLabel
                             );
-
-                            # ifdef DEBUGSmooth
-                            Info<< "2.2 Tet " << tets_.size() << " is "
-                                << tet << endl;
-                            # endif
 
                             tets_.append(tet);
                         }
@@ -390,35 +276,6 @@ void Foam::Module::partTetMesh::createPointsAndTets
 
     // create pointTets_
     pointTets_.reverseAddressing(points_.size(), tets_);
-
-    // create addressing for parallel runs
-    if (Pstream::parRun())
-    {
-        createParallelAddressing
-        (
-            nodeLabelForPoint,
-            nodeLabelForFace,
-            nodeLabelForCell
-        );
-
-        createBufferLayers();
-    }
-
-    # ifdef DEBUGSmooth
-    forAll(nodeLabelInOrigMesh_, pI)
-    {
-        if
-        (
-            (nodeLabelInOrigMesh_[pI] != -1)
-         && (mag(points_[pI] - points[nodeLabelInOrigMesh_[pI]]) > SMALL)
-        )
-        {
-            FatalErrorInFunction
-                << "Node " << pI << " is dislocated" << abort(FatalError);
-        }
-    }
-    # endif
-
 }
 
 

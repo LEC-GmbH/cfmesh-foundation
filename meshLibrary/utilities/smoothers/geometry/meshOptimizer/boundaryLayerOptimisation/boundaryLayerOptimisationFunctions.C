@@ -35,8 +35,6 @@ License
 #include "detectBoundaryLayers.H"
 //#include "helperFunctions.H"
 //#include "labelledScalar.H"
-//#include "refLabelledPoint.H"
-//#include "refLabelledPointScalar.H"
 #include "polyMeshGenAddressing.H"
 #include "meshSurfaceOptimizer.H"
 #include "meshSurfaceEngineModifier.H"
@@ -44,11 +42,7 @@ License
 //#include "volumeOptimizer.H"
 #include "OFstream.H"
 
-//#define DEBUGLayer
-
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -184,11 +178,9 @@ Foam::Module::boundaryLayerOptimisation::meshSurface() const
 {
     if (!meshSurfacePtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Cannot generate meshSurfaceEngine" << abort(FatalError);
-        # endif
 
         meshSurfacePtr_ = new meshSurfaceEngine(mesh_);
     }
@@ -202,12 +194,10 @@ Foam::Module::boundaryLayerOptimisation::surfacePartitioner() const
 {
     if (!partitionerPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
             FatalErrorInFunction
                 << "Cannot generate meshSurfacePartitioner"
                 << abort(FatalError);
-        # endif
 
         partitionerPtr_ = new meshSurfacePartitioner(meshSurface());
     }
@@ -237,9 +227,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
     // mark boundary faces which are base face for the boundary layer
     const labelList& layerAtBndFace = detectLayers.faceInLayer();
     isBndLayerBase_.setSize(bFaces.size());
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(layerAtBndFace, bfI)
     {
         if (layerAtBndFace[bfI] < 0)
@@ -252,21 +240,11 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
         }
     }
 
-    # ifdef DEBUGLayer
-    const label bndLayerFaceId = mesh_.addFaceSubset("bndLayerFaces");
-    const label startBndFaceI = mesh_.boundaries()[0].patchStart();
-    forAll(isBndLayerBase_, bfI)
-        if (isBndLayerBase_[bfI])
-            mesh_.addFaceToSubset(bndLayerFaceId, startBndFaceI + bfI);
-    # endif
-
     // check if a face is an exiting face for a bnd layer
     isExitFace_.setSize(isBndLayerBase_.size());
     isExitFace_ = false;
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(edgeFaces, edgeI)
     {
         // avoid edges at inter-processor boundaries
@@ -292,13 +270,6 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
         }
     }
 
-    # ifdef DEBUGLayer
-    const label exittingFaceId = mesh_.addFaceSubset("exittingFaces");
-    forAll(isExitFace_, bfI)
-        if (isExitFace_[bfI])
-            mesh_.addFaceToSubset(exittingFaceId, startBndFaceI + bfI);
-    # endif
-
     // classify hair edges as they require different tretment
     // in the smoothing procedure
     hairEdgeType_.setSize(hairEdges_.size());
@@ -307,9 +278,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
     const labelHashSet& edgePoints = mPart.edgePoints();
     const labelHashSet& featureEdges = mPart.featureEdges();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(hairEdges_, hairEdgeI)
     {
         hairEdgeType_[hairEdgeI] = NONE;
@@ -429,47 +398,6 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
         hairEdgesNearHairEdge_.setRow(hairEdgeI, neiHairEdges);
     }
 
-    # ifdef DEBUGLayer
-    const label hairEdgesId = mesh_.addPointSubset("hairEdgePoints");
-    const label bndHairEdgeId = mesh_.addPointSubset("bndHairEdgePoints");
-    const label featureHairEdgeId = mesh_.addPointSubset("featureEdgePoints");
-    const label cornerHairEdgeId = mesh_.addPointSubset("cornerHairEdgePoints");
-    const label hairEdgeAtEdgeId = mesh_.addPointSubset("hairEdgeAtEdgePoints");
-
-    forAll(hairEdgeType_, heI)
-    {
-        const edge& e = hairEdges_[heI];
-
-        mesh_.addPointToSubset(hairEdgesId, e.start());
-        mesh_.addPointToSubset(hairEdgesId, e.end());
-        if (hairEdgeType_[heI] & FEATUREEDGE)
-        {
-            mesh_.addPointToSubset(featureHairEdgeId, e.start());
-            mesh_.addPointToSubset(featureHairEdgeId, e.end());
-        }
-
-        if (hairEdgeType_[heI] & BOUNDARY)
-        {
-            mesh_.addPointToSubset(bndHairEdgeId, e.start());
-            mesh_.addPointToSubset(bndHairEdgeId, e.end());
-        }
-
-        if (hairEdgeType_[heI] & ATCORNER)
-        {
-            mesh_.addPointToSubset(cornerHairEdgeId, e.start());
-            mesh_.addPointToSubset(cornerHairEdgeId, e.end());
-        }
-
-        if (hairEdgeType_[heI] & ATEDGE)
-        {
-            mesh_.addPointToSubset(hairEdgeAtEdgeId, e.start());
-            mesh_.addPointToSubset(hairEdgeAtEdgeId, e.end());
-        }
-    }
-
-    mesh_.write();
-    # endif
-
 }
 
 
@@ -481,14 +409,10 @@ bool Foam::Module::boundaryLayerOptimisation::optimiseLayersAtExittingFaces()
     // attached to it
     labelList nEdgesAtPoint(mesh_.points().size(), 0);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(hairEdges_, heI)
     {
-        # ifdef USE_OMP
         # pragma omp atomic
-        # endif
         ++nEdgesAtPoint[hairEdges_[heI].end()];
     }
 
@@ -496,9 +420,7 @@ bool Foam::Module::boundaryLayerOptimisation::optimiseLayersAtExittingFaces()
     // in the previous procedure
     boolList thinnedPoints(mesh_.points().size(), false);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(thinnedHairEdge_, heI)
     {
         if
@@ -511,8 +433,6 @@ bool Foam::Module::boundaryLayerOptimisation::optimiseLayersAtExittingFaces()
             thinnedPoints[hairEdges_[heI].end()] = true;
         }
     }
-
-    reduce(modified, maxOp<bool>());
 
     if (!modified)
         return false;
@@ -559,29 +479,12 @@ void Foam::Module::boundaryLayerOptimisation::optimiseLayer()
             bMod.updateGeometry();
         }
 
-        # ifdef DEBUGLayer
-        label counter(0);
-        forAll(thinnedHairEdge_, heI)
-            if (thinnedHairEdge_[heI])
-                ++counter;
-        reduce(counter, sumOp<label>());
-        Info<< "Thinned " << counter << " bnd hair edges" << endl;
-        # endif
-
         // optimise normals inside the mesh
         optimiseHairNormalsInside();
 
         // optimise thickness variation inside the mesh
         optimiseThicknessVariation(INSIDE);
 
-        # ifdef DEBUGLayer
-        label intCounter = 0;
-        forAll(thinnedHairEdge_, heI)
-            if (thinnedHairEdge_[heI])
-                ++intCounter;
-        Info<< "Thinned " << (intCounter - counter)
-             << " inner hair edges" << endl;
-        # endif
     } while (optimiseLayersAtExittingFaces() && (++nIter < maxNumIterations_));
 }
 

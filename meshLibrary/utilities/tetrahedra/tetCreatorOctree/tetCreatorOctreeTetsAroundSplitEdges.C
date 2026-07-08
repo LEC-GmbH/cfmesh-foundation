@@ -32,8 +32,6 @@ License
 #include "demandDrivenData.H"
 #include "meshOctree.H"
 
-//#define DEBUGTets
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
@@ -46,10 +44,6 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
     const FRWGraph<label, 8>& pLeaves = octreeCheck_.nodeLeaves();
     const VRWGraph& subNodeLabels = *subNodeLabelsPtr_;
     const VRWGraph& faceCentreLabel = *faceCentreLabelPtr_;
-
-    # ifdef DEBUGTets
-    Info<< "Number of octree nodes " << octreeCheck_.numberOfNodes() << endl;
-    # endif
 
     // find maximum refinement level of octree leaves attached to each vertex
     List<direction> nodeLevel(octreeCheck_.numberOfNodes());
@@ -121,16 +115,6 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
                 for (label i = 0; i < 4; ++i)
                     edgeCubes[i] = pLeaves(start, fNodes[i]);
 
-                # ifdef DEBUGTets
-                Info<< "Cube " << curLabel << " has nodes ";
-                forAllRow(nodeLabels, curLabel, i)
-                    Info<< nodeLabels(curLabel, i) << " ";
-                Info<< endl;
-                Info<< "Creating tets around edge " << eI << endl;
-                Info<< "Edge nodes are " << start << " and " << end << endl;
-                Info<< "Edge cubes " << edgeCubes << endl;
-                # endif
-
                 forAll(edgeCubes, i)
                 {
                     const label cLabel = edgeCubes[i];
@@ -145,10 +129,6 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
                         create = false;
                         break;
                     }
-
-                    # ifdef DEBUGTets
-                    Info<< "Edge cube " << i << " is " << cLabel << endl;
-                    # endif
 
                     for (label j = 0; j < 8; ++j)
                     {
@@ -200,18 +180,6 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
 
                 if (!create)
                     continue;
-
-                # ifdef DEBUGTets
-                for (label n = 0; n < 4; ++n)
-                {
-                    Info<< "Face centre " << n << "  "
-                        << faceCentres[n] << endl;
-                    Info<< "Hex 0 " << helpNodes[0][n] << " and "
-                        << helpNodes[0][n + 4] << endl;
-                    Info<< "Hex 1 " << helpNodes[1][n] << " and "
-                        << helpNodes[1][n + 4] << endl;
-                }
-                # endif
 
                 if (nodeLevel[start] > level)
                 {
@@ -380,11 +348,6 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
             }
         }
     }
-
-    # ifdef DEBUGTets
-    Info<< "Created tets " << tets_ << endl;
-    # endif
-
 }
 
 

@@ -47,10 +47,8 @@ void Foam::Module::polyMeshGenAddressing::updateGeometry
         vectorField& fCtrs = *faceCentresPtr_;
         vectorField& fAreas = *faceAreasPtr_;
 
-        # ifdef USE_OMP
         # pragma omp parallel for if (faces.size() > 100) \
         schedule(dynamic, 10)
-        # endif
         forAll(faces, faceI)
         {
             if (changedFace[faceI])
@@ -111,10 +109,8 @@ void Foam::Module::polyMeshGenAddressing::updateGeometry
         const labelList& own = mesh_.owner();
         const cellListPMG& cells = mesh_.cells();
 
-        # ifdef USE_OMP
         # pragma omp parallel for if (cells.size() > 100) \
         schedule(dynamic, 10)
-        # endif
         forAll(cells, cellI)
         {
             const cell& c = cells[cellI];

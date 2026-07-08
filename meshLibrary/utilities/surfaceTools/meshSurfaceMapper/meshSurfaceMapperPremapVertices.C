@@ -33,8 +33,7 @@ License
 #include "meshSurfaceMapper.H"
 #include "meshOctree.H"
 #include "triSurf.H"
-#include "refLabelledPoint.H"
-#include "refLabelledPointScalar.H"
+#include "labelledPointScalar.H"
 #include "helperFunctions.H"
 #include "meshSurfaceOptimizer.H"
 
@@ -57,9 +56,7 @@ void Foam::Module::meshSurfaceMapper::preMapVertices(const label nIterations)
     List<labelledPointScalar> preMapPositions(boundaryPoints.size());
     List<DynList<scalar, 6>> faceCentreDistances(bFaces.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 20)
-    # endif
     forAll(bFaces, bfI)
     {
         const point& c = faceCentres[bfI];
@@ -77,9 +74,7 @@ void Foam::Module::meshSurfaceMapper::preMapVertices(const label nIterations)
     {
         // find patches in the vicinity of a boundary face
         List<DynList<label>> boundaryPointPatches(boundaryPoints.size());
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 50)
-        # endif
         forAll(bFaces, bfI)
         {
             const face& bf = bFaces[bfI];
@@ -131,9 +126,7 @@ void Foam::Module::meshSurfaceMapper::preMapVertices(const label nIterations)
         }
 
         // use the shrinking laplace first
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 40)
-        # endif
         forAll(pointFaces, bpI)
         {
             labelledPointScalar lp(bpI, vector::zero, 0.0);
@@ -156,77 +149,10 @@ void Foam::Module::meshSurfaceMapper::preMapVertices(const label nIterations)
             preMapPositions[bpI] = lp;
         }
 
-        // pointer needed in case of parallel calculation
-        const VRWGraph* bpAtProcsPtr(nullptr);
-
-        if (Pstream::parRun())
-        {
-            const VRWGraph& bpAtProcs = surfaceEngine_.bpAtProcs();
-            bpAtProcsPtr = &bpAtProcs;
-            const labelList& globalPointLabel =
-                surfaceEngine_.globalBoundaryPointLabel();
-            const Map<label>& globalToLocal =
-                surfaceEngine_.globalToLocalBndPointAddressing();
-
-            // collect data to be sent to other processors
-            std::map<label, LongList<labelledPointScalar>> exchangeData;
-            forAll(surfaceEngine_.bpNeiProcs(), i)
-                exchangeData.insert
-                (
-                    std::make_pair
-                    (
-                        surfaceEngine_.bpNeiProcs()[i],
-                        LongList<labelledPointScalar>()
-                    )
-                );
-
-            forAllConstIters(globalToLocal, it)
-            {
-                const label bpI = it();
-
-                forAllRow(bpAtProcs, bpI, procI)
-                {
-                    const label neiProc = bpAtProcs(bpI, procI);
-
-                    if (neiProc == Pstream::myProcNo())
-                        continue;
-
-                    exchangeData[neiProc].append
-                    (
-                        labelledPointScalar
-                        (
-                            globalPointLabel[bpI],
-                            preMapPositions[bpI].coordinates(),
-                            preMapPositions[bpI].scalarValue()
-                        )
-                    );
-                }
-            }
-
-            // exchange data with other processors
-            LongList<labelledPointScalar> receivedData;
-            help::exchangeMap(exchangeData, receivedData);
-
-            // combine collected data with the available data
-            forAll(receivedData, i)
-            {
-                const labelledPointScalar& lps = receivedData[i];
-
-                const label bpI = globalToLocal[lps.pointLabel()];
-
-                labelledPointScalar& lp = preMapPositions[bpI];
-                lp.coordinates() += lps.coordinates();
-                lp.scalarValue() += lps.scalarValue();
-            }
-        }
-
         // create the surface modifier and move the surface points
         meshSurfaceEngineModifier surfaceModifier(surfaceEngine_);
-        LongList<parMapperHelper> parallelBndNodes;
 
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 50)
-        # endif
         forAll(boundaryPoints, bpI)
         {
             labelledPointScalar& lps = preMapPositions[bpI];
@@ -265,28 +191,7 @@ void Foam::Module::meshSurfaceMapper::preMapVertices(const label nIterations)
             const point newP = p + 0.5*(pMap - p);
 
             surfaceModifier.moveBoundaryVertexNoUpdate(bpI, newP);
-
-            if (bpAtProcsPtr && bpAtProcsPtr->sizeOfRow(bpI))
-            {
-                # ifdef USE_OMP
-                # pragma omp critical
-                # endif
-                parallelBndNodes.append
-                (
-                    parMapperHelper
-                    (
-                        newP,
-                        dSq,
-                        bpI,
-                        -1
-                    )
-                );
-            }
         }
-
-        // make sure that the vertices at inter-processor boundaries
-        // are mapped onto the same location
-        mapToSmallestDistance(parallelBndNodes);
 
         // update the surface geometry of the
         surfaceModifier.updateGeometry();

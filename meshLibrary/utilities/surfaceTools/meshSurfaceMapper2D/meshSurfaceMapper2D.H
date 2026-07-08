@@ -43,7 +43,6 @@ SourceFiles
 #include "labelList.H"
 #include "pointField.H"
 #include "labelLongList.H"
-#include "parMapperHelper.H"
 #include "boundBox.H"
 
 #include <map>
@@ -136,17 +135,12 @@ class meshSurfaceMapper2D
         void clearOut();
 
 
-    // Private member functions needed for parallel execution
-
         //- find mapping distance for corner points
         void findMappingDistance
         (
             const labelLongList&,
             std::map<label, scalar>&
         ) const;
-
-        //- map to the location with the smallest distance
-        void mapToSmallestDistance(LongList<parMapperHelper>&);
 
         //- Disallow default bitwise copy construct
         meshSurfaceMapper2D(const meshSurfaceMapper2D&);

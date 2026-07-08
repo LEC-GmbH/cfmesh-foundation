@@ -69,22 +69,6 @@ void Foam::Module::symmetryPlaneOptimisation::detectSymmetryPlanes()
         }
     }
 
-    if (Pstream::parRun())
-    {
-        // sum up all normals and centres of all processors
-        // every symmetry plane patch must be present on all processors
-        forAllIters(centreSum, pIter)
-        {
-            std::pair<vector, label>& cs = pIter->second;
-            reduce(cs.second, sumOp<label>());
-            reduce(cs.first, sumOp<vector>());
-
-            std::pair<vector, label>& ns = normalSum[pIter->first];
-            reduce(ns.first, sumOp<vector>());
-            ns.second = cs.second;
-        }
-    }
-
     // create planes corresponding to each symmetry plane
     forAllConstIters(centreSum, it)
     {
@@ -144,56 +128,6 @@ bool Foam::Module::symmetryPlaneOptimisation::pointInPlanes
             }
         }
     }
-
-    if (Pstream::parRun())
-    {
-        const Map<label>& globalToLocal =
-            mesh_.addressingData().globalToLocalPointAddressing();
-        const VRWGraph& pointAtProcs = mesh_.addressingData().pointAtProcs();
-        const DynList<label>& neiProcs =
-            mesh_.addressingData().pointNeiProcs();
-
-        std::map<label, labelLongList> exchangeData;
-        forAll(neiProcs, i)
-            exchangeData[neiProcs[i]].clear();
-
-        forAllConstIters(globalToLocal, it)
-        {
-            const label pointI = it();
-
-            if (pointInPlanes.sizeOfRow(pointI) == 0)
-                continue;
-
-            forAllRow(pointAtProcs, pointI, i)
-            {
-                const label neiProc = pointAtProcs(pointI, i);
-
-                if (neiProc == Pstream::myProcNo())
-                    continue;
-
-                labelLongList& dataToSend = exchangeData[neiProc];
-
-                dataToSend.append(it.key());
-                dataToSend.append(pointInPlanes.sizeOfRow(pointI));
-                forAllRow(pointInPlanes, pointI, pipI)
-                    dataToSend.append(pointInPlanes(pointI, pipI));
-            }
-        }
-
-        labelLongList receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        for (label counter = 0; counter < receivedData.size(); )
-        {
-            const label pointI = globalToLocal[receivedData[counter++]];
-
-            const label size = receivedData[counter++];
-            for (label i = 0; i < size; ++i)
-                pointInPlanes.appendUniq(pointI, receivedData[counter++]);
-        }
-    }
-
-    reduce(foundProblematic, maxOp<bool>());
 
     return foundProblematic;
 }

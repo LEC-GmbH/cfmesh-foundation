@@ -31,8 +31,6 @@ License
 #include "voronoiMeshExtractor.H"
 #include "demandDrivenData.H"
 
-//#define DEBUGVoronoi
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::voronoiMeshExtractor::createAddressing() const
@@ -97,10 +95,6 @@ void Foam::Module::voronoiMeshExtractor::createAddressing() const
         }
     }
 
-    # ifdef DEBUGVoronoi
-    Info<< "Edge tets " << edgeTets << endl;
-    # endif
-
     // calculate point-edges addressing
     pointEdges.reverseAddressing(edges);
 
@@ -108,25 +102,15 @@ void Foam::Module::voronoiMeshExtractor::createAddressing() const
     boundaryEdges.setSize(edgeTets.size());
     boundaryEdges = false;
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(edgeTets, edgeI)
     {
         const edge& e = edges[edgeI];
         row eTets = edgeTets[edgeI];
 
-        # ifdef DEBUGVoronoi
-        Info<< "Edge " << edgeI << " has points " << e << endl;
-        # endif
-
         forAll(eTets, tetI)
         {
             const partTet& pt = tets[eTets[tetI]];
-
-            # ifdef DEBUGVoronoi
-            Info<< "Checking tet " << eTets[tetI] << " points " << pt << endl;
-            # endif
 
             // find the face shared with the neighbour
             const FixedList<edge, 6> tetEdges = pt.edges();

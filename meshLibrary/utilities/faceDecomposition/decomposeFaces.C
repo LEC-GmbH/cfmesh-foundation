@@ -31,12 +31,6 @@ License
 #include "decomposeFaces.H"
 #include "boolList.H"
 
-//#define DEBUGDec
-
-# ifdef DEBUGDec
-#include "polyMeshGenAddressing.H"
-# endif
-
 // * * * * * * * * * * * * * * * Constructor * * * * * * * * * * * * * * * * //
 
 Foam::Module::decomposeFaces::decomposeFaces(polyMeshGen& mesh)
@@ -96,10 +90,6 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
 
         if (decomposeFace[faceI])
         {
-            # ifdef DEBUGDec
-            Info<< "Decomposing internal face " << faceI << " with nodes "
-                << f << endl;
-            # endif
 
             FixedList<label, 3> newF;
 
@@ -109,10 +99,6 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
                 newF[1] = f.nextLabel(pI);
                 newF[2] = nPoints;
 
-                # ifdef DEBUGDec
-                Info<< "Storing face " << newF << " with label "
-                    << nFaces << endl;
-                # endif
 
                 newFaces.appendList(newF);
                 newFacesForFace_.append(faceI, nFaces++);
@@ -124,10 +110,6 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
         }
         else
         {
-            # ifdef DEBUGDec
-            Info<< "Storing internal face " << faceI << " with nodes "
-                << f << " as new face " << faceI << endl;
-            # endif
 
             newFaces.appendList(f);
             newFacesForFace_.append(faceI, nFaces++);
@@ -148,10 +130,6 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
             const face& f = faces[bfI];
             if (decomposeFace[bfI])
             {
-                # ifdef DEBUGDec
-                Info<< "Decomposing boundary face " << bfI
-                    << " with nodes " << f << endl;
-                # endif
 
                 FixedList<label, 3> newF;
 
@@ -161,10 +139,6 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
                     newF[1] = f.nextLabel(pI);
                     newF[2] = nPoints;
 
-                    # ifdef DEBUGDec
-                    Info<< "Storing face " << newF << " with label "
-                        << nFaces << endl;
-                    # endif
 
                     newFaces.appendList(newF);
                     newFacesForFace_.append(bfI, nFaces++);
@@ -175,10 +149,6 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
             }
             else
             {
-                # ifdef DEBUGDec
-                Info<< "Storing boundary face " << bfI << " in patch"
-                    << patchI << " as new face " << bfI << endl;
-                # endif
 
                 newFaces.appendList(f);
                 newFacesForFace_.append(bfI, nFaces++);
@@ -187,91 +157,6 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
 
         boundaries[patchI].patchSize() =
             nFaces - boundaries[patchI].patchStart();
-    }
-
-    // decompose processor faces
-    if (Pstream::parRun())
-    {
-        PtrList<processorBoundaryPatch>& procBoundaries =
-            meshModifier.procBoundariesAccess();
-
-        forAll(procBoundaries, patchI)
-        {
-            const label start = procBoundaries[patchI].patchStart();
-            const label end = start + procBoundaries[patchI].patchSize();
-
-            const bool own = procBoundaries[patchI].owner();
-
-            procBoundaries[patchI].patchStart() = nFaces;
-
-            for (label bfI = start; bfI < end; ++bfI)
-            {
-                face f;
-                if (own)
-                {
-                    f = faces[bfI];
-                }
-                else
-                {
-                    f = faces[bfI].reverseFace();
-                }
-
-                if (decomposeFace[bfI])
-                {
-                    # ifdef DEBUGDec
-                    Info<< "Decomposing processor boundary face " << bfI
-                        << " with nodes " << f << endl;
-                    # endif
-
-                    face newF(3);
-
-                    forAll(f, pI)
-                    {
-                        newF[0] = f[pI];
-                        newF[1] = f.nextLabel(pI);
-                        newF[2] = nPoints;
-
-                        # ifdef DEBUGDec
-                        Info<< "Storing face " << newF << " with label "
-                            << nFaces << endl;
-                        # endif
-
-                        if (own)
-                        {
-                            newFaces.appendList(newF);
-                        }
-                        else
-                        {
-                            newFaces.appendList(newF.reverseFace());
-                        }
-                        newFacesForFace_.append(bfI, nFaces++);
-                    }
-
-                    p = f.centre(points);
-                    points[nPoints++] = p;
-                }
-                else
-                {
-                    # ifdef DEBUGDec
-                    Info<< "Storing boundary face " << bfI << " in patch"
-                        << patchI << " as new face " << bfI << endl;
-                    # endif
-
-                    if (own)
-                    {
-                        newFaces.appendList(f);
-                    }
-                    else
-                    {
-                        newFaces.appendList(f.reverseFace());
-                    }
-                    newFacesForFace_.append(bfI, nFaces++);
-                }
-            }
-
-            procBoundaries[patchI].patchSize() =
-                nFaces - procBoundaries[patchI].patchStart();
-        }
     }
 
     // store the faces back into their list
@@ -294,9 +179,7 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
     // change the mesh
     cellListPMG& cells = meshModifier.cellsAccess();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(cells, cellI)
     {
         cell& c = cells[cellI];
@@ -310,10 +193,6 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
             newC.append(newFacesForFace_(faceI, nfI));
         }
 
-        # ifdef DEBUGDec
-        Info<< "Cell " << cellI << " with faces " << c
-            << " is changed into " << newC << endl;
-        # endif
 
         c.setSize(newC.size());
         forAll(newC, fJ)
@@ -324,10 +203,6 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
 
     done_ = true;
 
-    # ifdef DEBUGDec
-    Info<< "New cells are " << cells << endl;
-    mesh_.write();
-    # endif
 }
 
 
@@ -336,12 +211,6 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
     const boolList& concaveVertex
 )
 {
-    if (Pstream::parRun())
-    {
-        FatalErrorInFunction
-            << "This procedure is not parallelised!" << exit(FatalError);
-    }
-
     done_ = false;
 
     newFacesForFace_.setSize(mesh_.faces().size());
@@ -364,9 +233,6 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
     DynList<label> newF;
     newF.setSize(3);
 
-    # ifdef DEBUGDec
-    const label id = mesh_.addFaceSubset("decomposedFaces");
-    # endif
 
     // decompose internal faces
     for (label faceI = 0; faceI < nIntFaces; ++faceI)
@@ -384,11 +250,6 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
 
         if (concavePos.size() == 1)
         {
-            # ifdef DEBUGDec
-            Info<< "1. Decomposing internal face " << faceI << " with nodes "
-                << f << endl;
-            mesh_.addFaceToSubset(id, faceI);
-            # endif
 
             newF[0] = f[concavePos[0]];
 
@@ -398,10 +259,6 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
                 newF[1] = f[pJ];
                 newF[2] = f.nextLabel(pJ);
 
-                # ifdef DEBUGDec
-                Info<< "Storing face " << newF << " with label "
-                    << newFaces.size() << endl;
-                # endif
 
                 newFacesForFace_.append(faceI, newFaces.size());
                 newFaces.appendList(newF);
@@ -409,11 +266,6 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
         }
         else if (concavePos.size() > 1)
         {
-            # ifdef DEBUGDec
-            Info<< "2. Decomposing internal face " << faceI << " with nodes "
-                << f << endl;
-            mesh_.addFaceToSubset(id, faceI);
-            # endif
 
             newF[0] = points.size();
             forAll(f, pI)
@@ -421,10 +273,6 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
                 newF[1] = f[pI];
                 newF[2] = f.nextLabel(pI);
 
-                # ifdef DEBUGDec
-                Info<< "2. Storing face " << newF << " with label "
-                    << newFaces.size() << endl;
-                # endif
 
                 newFacesForFace_.append(faceI, newFaces.size());
                 newFaces.appendList(newF);
@@ -435,10 +283,6 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
         }
         else
         {
-            # ifdef DEBUGDec
-            Info<< "Storing internal face " << faceI << " with nodes "
-                << f << " as new face " << newFaces.size() << endl;
-            # endif
 
             newFacesForFace_.append(faceI, newFaces.size());
             newFaces.appendList(f);
@@ -479,9 +323,7 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
     // update cells
     cellListPMG& cells = meshModifier.cellsAccess();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(cells, cellI)
     {
         cell& c = cells[cellI];
@@ -495,10 +337,6 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
             newC.append(newFacesForFace_(faceI, nfI));
         }
 
-        # ifdef DEBUGDec
-        Info<< "Cell " << cellI << " with faces " << c
-            << " is changed into " << newC << endl;
-        # endif
 
         c.setSize(newC.size());
         forAll(newC, fJ)
@@ -512,11 +350,6 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
     // update subsets
     mesh_.updateFaceSubsets(newFacesForFace_);
 
-    # ifdef DEBUGDec
-    Info<< "New cells are " << cells << endl;
-    mesh_.write();
-    ::exit(1);
-    # endif
 
     meshModifier.removeUnusedVertices();
 

@@ -31,19 +31,10 @@ License
 #include "demandDrivenData.H"
 #include "meshUntangler.H"
 
-//#define DEBUGSmooth
-
-# ifdef DEBUGSmooth
-#include "helperFunctions.H"
-# endif
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::meshUntangler::cutRegion::findNewFaces()
 {
-    #ifdef DEBUGSmooth
-    Info<< "Finding new faces " << endl;
-    #endif
 
     bool finished;
     do
@@ -65,32 +56,17 @@ void Foam::Module::meshUntangler::cutRegion::findNewFaces()
         {
             const DynList<label, 8>& f = fcs[fI];
 
-            # ifdef DEBUGSmooth
-            Info<< "Creating new face from face " << fI
-                << " consisting of edges " << f << endl;
-            # endif
-
             pointUsage = 0;
 
             DynList<label, 8> newFace;
 
             forAll(f, eI)
             {
-                # ifdef DEBUGSmooth
-                const DynList<edge>& edges = *edgesPtr_;
-                Info<< "Vertex types for face edge " << eI << " are "
-                    << label(vertexTypes_[edges[f[eI]].start()]) << " and "
-                    << label(vertexTypes_[edges[f[eI]].end()]) << endl;
-                # endif
 
                 const label edgeLabel = newEdgeLabel_[f[eI]];
 
                 if (edgeLabel != -1)
                 {
-                    # ifdef DEBUGSmooth
-                    Info<< "Orig edge " << eI << " " << edges[f[eI]]
-                        << " is replaced with " << cEdges[edgeLabel] << endl;
-                    # endif
 
                     const edge& e = cEdges[edgeLabel];
                     ++pointUsage[e[0]];
@@ -108,18 +84,12 @@ void Foam::Module::meshUntangler::cutRegion::findNewFaces()
 
                 if (newEdge.size() == 2)
                 {
-                    # ifdef DEBUGSmooth
-                    Info<< "Storing new edge " << newEdge << endl;
-                    # endif
 
                     newFace.append(cEdges.size());
                     cEdges.append(edge(newEdge[0], newEdge[1]));
                 }
                 else if (newEdge.size() > 2)
                 {
-                    # ifdef DEBUGSmooth
-                    Info<< "New edge " << newEdge << endl;
-                    # endif
 
                     tieBreak(f);
                     if (!valid_) return;
@@ -155,52 +125,9 @@ void Foam::Module::meshUntangler::cutRegion::findNewFaces()
 
         if (faceInPlane.size() > 2)
         {
-            # ifdef DEBUGSmooth
-            Info<< "Adding face in plane " << faceInPlane << endl;
-            Info<< "Face in plane consists of edges " << endl;
-            forAll(faceInPlane, eI)
-                Info<< "Edge " << eI << " is "
-                    << cEdges[faceInPlane[eI]] << endl;
-            # endif
 
             cFaces.append(faceInPlane);
         }
-
-        # ifdef DEBUGSmooth
-        Info<< "cEdges " << cEdges << endl;
-        Info<< "Number of faces before cutting " << fcs.size() << endl;
-        Info<< "Found " << cFaces.size() << " new faces" << endl;
-        forAll(fcs, fI)
-        {
-            Info<< "Old face " << fI << " contains edges " << fcs[fI] << endl;
-        }
-
-        forAll(cFaces, fI)
-        {
-            Info<< "New face " << fI << " contains edges " << cFaces[fI] << endl;
-        }
-
-        // test if the region is closed
-        List<DynList<label, 4>> eFaces(cEdges.size());
-        forAll(cFaces, fI)
-        {
-            const DynList<label, 8>& f = cFaces[fI];
-            forAll(f, eI)
-                eFaces[f[eI]].append(fI);
-        }
-
-        if (eFaces.size() > 5)
-        forAll(eFaces, fI)
-            if (eFaces[fI].size() != 2)
-            {
-                Info<< "eFaces " << eFaces << endl;
-                Info<< "cEdges " << cEdges << endl;
-                Info<< "cFaces " << cFaces << endl;
-
-                FatalErrorInFunction
-                    << "Cell is not topologically closed!" << abort(FatalError);
-            }
-        # endif
 
     } while (!finished);
 }

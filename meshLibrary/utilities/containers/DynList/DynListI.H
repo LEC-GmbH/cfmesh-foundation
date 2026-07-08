@@ -56,9 +56,6 @@ inline Foam::Module::DynList<T, SizeMin>::DynList()
 {
     setCapacity(0); // Update UList reference to point to shortList_
 
-    # ifdef DEBUG
-    checkAllocation();
-    # endif
 }
 
 
@@ -72,9 +69,6 @@ inline Foam::Module::DynList<T, SizeMin>::DynList(const label nElem)
 {
     setSize(nElem);
 
-    # ifdef DEBUG
-    checkAllocation();
-    # endif
 }
 
 
@@ -362,9 +356,6 @@ Foam::Module::DynList<T, SizeMin>::shrink()
 template<class T, int SizeMin>
 inline void Foam::Module::DynList<T, SizeMin>::append(const T& val)
 {
-    # ifdef DEBUG
-    checkAllocation();
-    # endif
 
     const label idx = UList<T>::size();
 
@@ -376,9 +367,6 @@ inline void Foam::Module::DynList<T, SizeMin>::append(const T& val)
 
     UList<T>::setAddressableSize(idx + 1);
 
-    # ifdef DEBUG
-    checkAllocation();
-    # endif
 
     this->operator[](idx) = val;
 }
@@ -391,9 +379,6 @@ inline void Foam::Module::DynList<T, SizeMin>::appendUniq(const T& val)
     {
         this->append(val);
 
-        # ifdef DEBUG
-        checkAllocation();
-        # endif
     }
 }
 
@@ -430,9 +415,6 @@ inline T Foam::Module::DynList<T, SizeMin>::removeElement(const label i)
 template<class T, int SizeMin>
 inline T& Foam::Module::DynList<T, SizeMin>::newElmt(const label i)
 {
-    # ifdef DEBUG
-    checkAllocation();
-    # endif
 
     return this->operator()(i);
 }
@@ -443,9 +425,6 @@ inline T& Foam::Module::DynList<T, SizeMin>::newElmt(const label i)
 template<class T, int SizeMin>
 inline T& Foam::Module::DynList<T, SizeMin>::operator()(const label i)
 {
-    # ifdef DEBUG
-    checkAllocation();
-    # endif
 
     if (i >= UList<T>::size())
     {
@@ -459,9 +438,6 @@ inline T& Foam::Module::DynList<T, SizeMin>::operator()(const label i)
         setCapacity(2 * sz+1);
     }
 
-    # ifdef DEBUG
-    checkAllocation();
-    # endif
 
     return this->operator[](i);
 }
@@ -483,17 +459,11 @@ inline void Foam::Module::DynList<T, SizeMin>::operator=
     const Foam::Module::DynList<T, SizeMin>& list
 )
 {
-    # ifdef DEBUG
-    checkAllocation();
-    # endif
 
     const label nElem = list.size();
     setCapacity(nElem);
     UList<T>::setAddressableSize(nElem);
 
-    # ifdef DEBUG
-    checkAllocation();
-    # endif
 
     for (label i=0; i<nElem; ++i)
     {

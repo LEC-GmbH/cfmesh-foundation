@@ -32,8 +32,6 @@ License
 #include "volumeOptimizer.H"
 #include "tetrahedron.H"
 
-//#define DEBUGSmooth
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::scalar Foam::Module::volumeOptimizer::evaluateFunc() const
@@ -271,13 +269,6 @@ Foam::scalar Foam::Module::volumeOptimizer::optimiseDivideAndConquer
         // calculate the tolerence
         const scalar t = mag(funcAfter - funcBefore) / funcAfter;
 
-        # ifdef DEBUGSmooth
-        Info<< "Point position " << pOpt << endl;
-        Info<< "Func before " << funcBefore << endl;
-        Info<< "Func after " << funcAfter << endl;
-        Info<< "Normalised difference " << t << endl;
-        # endif
-
         if (t < tol)
             break;
     } while (++iter < 100);
@@ -294,15 +285,6 @@ Foam::scalar Foam::Module::volumeOptimizer::optimiseSteepestDescent
     label iter(0);
 
     point& p = points_[pointI_];
-
-    # ifdef DEBUGSmooth
-    Info<< nl << "Smoothing point " << pointI_
-         << " with coordinates " << p << endl;
-    scalar Vmina(VGREAT);
-    forAll(tets_, tetI)
-    Vmina = Foam::min(Vmina, tets_[tetI].mag(points_));
-    Info<< "Vmin before " << Vmina << endl;
-    # endif
 
     vector gradF;
     vector disp(vector::zero);
@@ -328,15 +310,6 @@ Foam::scalar Foam::Module::volumeOptimizer::optimiseSteepestDescent
             p -= disp;
 
             funcAfter = evaluateFunc();
-
-            # ifdef DEBUGSmooth
-            Info<< nl << "gradF " << gradF << endl;
-            Info<< "gradGradF " << gradGradF << endl;
-            Info<< "det(gradGradF) " << determinant << endl;
-            Info<< "disp " << disp << endl;
-            Info<< "Func before " << funcBefore << endl;
-            Info<< "Func after " << funcAfter << endl;
-            # endif
 
             scalar relax(0.8);
             label nLoops(0);
@@ -394,17 +367,6 @@ Foam::scalar Foam::Module::volumeOptimizer::optimiseSteepestDescent
             funcAfter = evaluateFunc();
         }
     } while ((++iter < 100) && !finished);
-
-    # ifdef DEBUGSmooth
-    scalar Vmin(VGREAT);
-    forAll(tets_, tetI)
-        Vmin = Foam::min(Vmin, tets_[tetI].mag(points_));
-
-    Info<< nl << "New coordinates for point "
-        << pointI_ << " are " << p << endl;
-    Info<< "Num iterations " << iter << " gradient " << gradF << endl;
-    Info<< "Vmin " << Vmin << endl;
-    # endif
 
     return funcAfter;
 }

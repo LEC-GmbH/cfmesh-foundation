@@ -243,7 +243,6 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
             }
         }
 
-        reduce(foundProblematic, maxOp<bool>());
         if (foundProblematic)
         {
             throw std::logic_error

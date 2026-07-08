@@ -31,20 +31,12 @@ License
 #include "boundaryLayers.H"
 #include "meshSurfaceEngine.H"
 #include "helperFunctions.H"
-#include "helperFunctionsPar.H"
 #include "demandDrivenData.H"
 #include "VRWGraphList.H"
 
-#include "labelledPair.H"
 #include "HashSet.H"
 
 #include <map>
-
-//#define DEBUGLayer
-
-# ifdef DEBUGLayer
-#include "polyMeshGenAddressing.H"
-# endif
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -77,18 +69,6 @@ void Foam::Module::boundaryLayers::createLayerCells
         {
             treatPatches[treatPatchesWithPatch_[pLabel][i]] = true;
         }
-    }
-
-    // create new faces at parallel boundaries
-    const Map<label>* otherProcPatchPtr(nullptr);
-    const Map<label>* otherFaceProcPtr(nullptr);
-
-    if (Pstream::parRun())
-    {
-        createNewFacesParallel(treatPatches);
-
-        otherProcPatchPtr = &mse.otherEdgeFacePatch();
-        otherFaceProcPtr = &mse.otherEdgeFaceAtProc();
     }
 
     // create lists for new boundary faces
@@ -162,54 +142,15 @@ void Foam::Module::boundaryLayers::createLayerCells
                         newBoundaryPatches.append(boundaryFacePatches[neiFace]);
                     }
                 }
-                else if (edgeFaces.sizeOfRow(edgeI) == 1)
-                {
-                    const Map<label>& otherProcPatch = *otherProcPatchPtr;
-                    if (!treatPatches[otherProcPatch[edgeI]])
-                    {
-                        // face is a new boundary face
-                        newBoundaryFaces.appendList(newF);
-                        newBoundaryOwners.append(cellsToAdd.size() + nOldCells);
-                        newBoundaryPatches.append(otherProcPatch[edgeI]);
-                    }
-                }
             }
-
-            # ifdef DEBUGLayer
-            Info<< "Adding cell " << cellFaces << endl;
-            # endif
 
             cellsToAdd.appendGraph(cellFaces);
         }
         else
         {
-            # ifdef DEBUGLayer
-            Info<< "Storing original boundary face "
-                << bfI << " into patch " << boundaryFacePatches[bfI] << endl;
-            # endif
-
             newBoundaryFaces.appendList(bFaces[bfI]);
             newBoundaryOwners.append(faceOwners[bfI]);
             newBoundaryPatches.append(boundaryFacePatches[bfI]);
-        }
-    }
-
-    // data for parallel execution
-    boolList procPoint;
-    LongList<DynList<label, 4>> pointProcFaces;
-    LongList<labelPair> faceAtPatches;
-    if (Pstream::parRun())
-    {
-        procPoint.setSize(nPoints_);
-        procPoint = false;
-
-        const Map<label>& globalToLocal = mse.globalToLocalBndPointAddressing();
-        const labelList& bPoints = mse.boundaryPoints();
-
-        forAllConstIters(globalToLocal, iter)
-        {
-            const label bpI = iter();
-            procPoint[bPoints[bpI]] = true;
         }
     }
 
@@ -222,28 +163,10 @@ void Foam::Module::boundaryLayers::createLayerCells
             continue;
         }
 
-        // cells are generated at the processor with the lowest label
-        if
-        (
-            (edgeFaces.sizeOfRow(edgeI) == 1)
-         && (otherFaceProcPtr->operator[](edgeI) < Pstream::myProcNo())
-        )
-        {
-            continue;
-        }
-
         // check if the edge is a feature edge
         const label patchI = boundaryFacePatches[edgeFaces(edgeI, 0)];
 
-        label patchJ;
-        if (otherProcPatchPtr && otherProcPatchPtr->found(edgeI))
-        {
-            patchJ = otherProcPatchPtr->operator[](edgeI);
-        }
-        else
-        {
-            patchJ = boundaryFacePatches[edgeFaces(edgeI, 1)];
-        }
+        const label patchJ = boundaryFacePatches[edgeFaces(edgeI, 1)];
 
         if (patchI == patchJ)
         {
@@ -289,7 +212,7 @@ void Foam::Module::boundaryLayers::createLayerCells
         newBoundaryOwners.append(nOldCells + cellsToAdd.size());
         newBoundaryPatches.append(patchI);
 
-        // check if face 5 is a boundary face or at an inter-processor boundary
+        // check if face 5 is a boundary face
         const label bps = bp[e.start()];
         label unusedPatch(-1);
         forAllRow(pointPatches, bps, i)
@@ -320,14 +243,8 @@ void Foam::Module::boundaryLayers::createLayerCells
             newBoundaryOwners.append(nOldCells + cellsToAdd.size());
             newBoundaryPatches.append(unusedPatch);
         }
-        else if (Pstream::parRun() && procPoint[e.start()])
-        {
-            // add a face at inter-pocessor boundary
-            pointProcFaces.append(cellFaces[5]);
-            faceAtPatches.append(labelPair(patchI, patchJ));
-        }
 
-        // check if face 4 is a boundary face or at an inter-processor boundary
+        // check if face 4 is a boundary face
         const label bpe = bp[e.end()];
         unusedPatch = -1;
         forAllRow(pointPatches, bpe, i)
@@ -358,16 +275,6 @@ void Foam::Module::boundaryLayers::createLayerCells
             newBoundaryOwners.append(nOldCells + cellsToAdd.size());
             newBoundaryPatches.append(unusedPatch);
         }
-        else if (Pstream::parRun() && procPoint[e.end()])
-        {
-            // add a face at inter-pocessor boundary
-            pointProcFaces.append(cellFaces[4]);
-            faceAtPatches.append(labelPair(patchI, patchJ));
-        }
-
-        # ifdef DEBUGLayer
-        Info<< "Adding new cell at edge " << cellFaces << endl;
-        # endif
 
         // append cell to the queue
         cellsToAdd.appendGraph(cellFaces);
@@ -377,178 +284,10 @@ void Foam::Module::boundaryLayers::createLayerCells
     typedef std::map<label, DynList<label, 3>> ppType;
 
     ppType nodePatches;
-    labelHashSet parPoint;
 
-    if (Pstream::parRun())
-    {
-        const labelList& bPoints = mse.boundaryPoints();
-        const VRWGraph& pProcs = mse.bpAtProcs();
-        const labelList& globalPointLabel = mse.globalBoundaryPointLabel();
-        const Map<label>& globalToLocal = mse.globalToLocalBndPointAddressing();
-
-        std::map<label, labelLongList> facesToSend;
-
-        typedef std::map<label, DynList<DynList<label, 8>, 8>> ppfType;
-
-        ppfType parPointFaces;
-        ppType parPointPatches;
-
-        forAllConstIters(otherVrts_, iter)
-        {
-            // skip points on feature edges
-            if (iter->second.size() == 2)
-            {
-                continue;
-            }
-
-            const label bpI = bp[iter->first];
-
-            if (pProcs.sizeOfRow(bpI) != 0)
-            {
-                parPoint.insert(iter->first);
-
-                // point is at a parallel boundary
-                label pMin = pProcs(bpI, 0);
-                forAllRow(pProcs, bpI, i)
-                {
-                    const label prI = pProcs(bpI, i);
-
-                    if (facesToSend.find(prI) == facesToSend.end())
-                    {
-                        facesToSend.insert
-                        (
-                            std::make_pair(prI, labelLongList())
-                        );
-                    }
-
-                    if (prI < pMin)
-                    {
-                        pMin = prI;
-                    }
-                }
-
-                if (Pstream::myProcNo() == pMin)
-                {
-                    DynList<label, 3>& pPatches = parPointPatches[bpI];
-                    pPatches.setSize(pointFaces.sizeOfRow(bpI));
-
-                    DynList<DynList<label, 8>, 8>& pFaces = parPointFaces[bpI];
-                    pFaces.setSize(pPatches.size());
-
-                    forAllRow(pointFaces, bpI, pfI)
-                    {
-                        const label bfI = pointFaces(bpI, pfI);
-                        const face& bf = bFaces[bfI];
-
-                        pPatches[pfI] = boundaryFacePatches[bfI];
-
-                        DynList<label, 8>& bfCopy = pFaces[pfI];
-                        bfCopy.setSize(bf.size());
-                        forAll(bf, pI)
-                        {
-                            bfCopy[pI] = globalPointLabel[bp[bf[pI]]];
-                        }
-                    }
-
-                    continue;
-                }
-
-                labelLongList& stp = facesToSend[pMin];
-
-                // send the data to the processor with the lowest label
-                // data is flatenned as follows
-                // 1. the number of faces and global point label
-                // 2. number of points in the face
-                // 3. patch label
-                // 4. global labels of face points
-                stp.append(globalPointLabel[bpI]);
-                stp.append(pointFaces.sizeOfRow(bpI));
-                forAllRow(pointFaces, bpI, pfI)
-                {
-                    const label bfI = pointFaces(bpI, pfI);
-                    const face& bf = bFaces[bfI];
-
-                    stp.append(bf.size());
-                    stp.append(boundaryFacePatches[bfI]);
-                    forAll(bf, pI)
-                    {
-                        stp.append(globalPointLabel[bp[bf[pI]]]);
-                    }
-                }
-            }
-        }
-
-        // exchange data with other processors
-        labelLongList receivedData;
-        help::exchangeMap(facesToSend, receivedData);
-
-        label counter(0);
-        while (counter < receivedData.size())
-        {
-            const label bpI = globalToLocal[receivedData[counter++]];
-            const label nFaces = receivedData[counter++];
-            for (label fI = 0; fI < nFaces; ++fI)
-            {
-                DynList<label, 8> f(receivedData[counter++]);
-                parPointPatches[bpI].append(receivedData[counter++]);
-                forAll(f, pI)
-                {
-                    f[pI] = receivedData[counter++];
-                }
-                parPointFaces[bpI].append(f);
-            }
-        }
-
-        // sort faces sharing corners at the parallel boundaries
-        forAllIters(parPointFaces, iter)
-        {
-            DynList<DynList<label, 8>, 8>& pFaces = iter->second;
-            DynList<label, 3>& fPatches = parPointPatches[iter->first];
-            const label gpI = globalPointLabel[iter->first];
-
-            for (label i = 0; i < pFaces.size(); ++i)
-            {
-                const DynList<label, 8>& bf = pFaces[i];
-                const label pos = bf.find(gpI);
-                const edge e(bf[pos], bf[bf.fcIndex(pos)]);
-
-                for (label j = i + 1; j < pFaces.size(); ++j)
-                {
-                    const auto& obf = pFaces[j];
-                    if (obf.found(e.start()) && obf.found(e.end()))
-                    {
-                        DynList<label, 8> add;
-                        add = pFaces[i + 1];
-                        pFaces[i + 1] = pFaces[j];
-                        pFaces[j] = add;
-
-                        const label pAdd = fPatches[i + 1];
-                        fPatches[i + 1] = fPatches[j];
-                        fPatches[j] = pAdd;
-                        break;
-                    }
-                }
-            }
-
-            DynList<label, 3> patchIDs;
-            forAll(fPatches, fpI)
-            {
-                patchIDs.appendUniq(fPatches[fpI]);
-            }
-
-            nodePatches.insert(std::make_pair(bPoints[iter->first], patchIDs));
-        }
-    }
-
-    // sort out point which are not at inter-processor boundaries
     forAllConstIters(otherVrts_, iter)
     {
         if (iter->second.size() == 2)
-        {
-            continue;
-        }
-
-        if (parPoint.found(iter->first))
         {
             continue;
         }
@@ -615,10 +354,6 @@ void Foam::Module::boundaryLayers::createLayerCells
             continue;
         }
 
-        # ifdef DEBUGLayer
-        Pout << "Creating corner cell at point " << iter->first << endl;
-        # endif
-
         FixedList<FixedList<label, 4>, 6> cellFaces;
         createNewCellFromNode(iter->first, pKeys, cellFaces);
 
@@ -635,38 +370,8 @@ void Foam::Module::boundaryLayers::createLayerCells
         newBoundaryOwners.append(nOldCells + cellsToAdd.size());
         newBoundaryPatches.append(patchIDs[2]);
 
-        if (Pstream::parRun())
-        {
-            if (procPoint[iter->first])
-            {
-                pointProcFaces.append(cellFaces[0]);
-                faceAtPatches.append(labelPair(patchIDs[1], patchIDs[2]));
-
-                pointProcFaces.append(cellFaces[2]);
-                faceAtPatches.append(labelPair(patchIDs[0], patchIDs[2]));
-
-                pointProcFaces.append(cellFaces[4]);
-                faceAtPatches.append(labelPair(patchIDs[0], patchIDs[1]));
-            }
-        }
-
-        # ifdef DEBUGLayer
-        Info<< "Adding corner cell " << cellFaces << endl;
-        # endif
-
         // append cell to the queue
         cellsToAdd.appendGraph(cellFaces);
-    }
-
-    if (Pstream::parRun())
-    {
-        // create faces at parallel boundaries created from
-        // points at parallel boundaries
-        createNewFacesFromPointsParallel
-        (
-            pointProcFaces,
-            faceAtPatches
-        );
     }
 
     // create mesh modifier
@@ -694,199 +399,6 @@ void Foam::Module::boundaryLayers::createLayerCells
     this->clearOut();
 
     Info<< "Finished creating layer cells" << endl;
-}
-
-
-void Foam::Module::boundaryLayers::createNewFacesFromPointsParallel
-(
-    const LongList<DynList<label, 4>>& faceCandidates,
-    const LongList<labelPair>& candidatePatches
-)
-{
-    const meshSurfaceEngine& mse = this->surfaceEngine();
-    const labelList& bPoints = mse.boundaryPoints();
-    const labelList& bp = mse.bp();
-    const VRWGraph& bpAtProcs = mse.bpAtProcs();
-    const labelList& globalPointLabel = mse.globalBoundaryPointLabel();
-    const Map<label>& globalToLocal = mse.globalToLocalBndPointAddressing();
-
-    labelList otherFaceProc(faceCandidates.size(), -1);
-    // some faces may appear more than once
-    // such faces are ordinary internal faces
-    VRWGraph pointFaceCandidates(nPoints_);
-    forAll(faceCandidates, fI)
-    {
-        forAll(faceCandidates[fI], pI)
-        {
-            pointFaceCandidates.append(faceCandidates[fI][pI], fI);
-        }
-    }
-
-    boolList duplicateFace(faceCandidates.size(), false);
-    List<labelledPair> pointOfOrigin(faceCandidates.size());
-    std::map<labelledPair, label> pointOfOriginToFaceLabel;
-    forAll(faceCandidates, fI)
-    {
-        const DynList<label, 4>& f = faceCandidates[fI];
-
-        const label pointI = f[0];
-
-        const labelledPair lp
-        (
-            globalPointLabel[bp[pointI]],
-            Pair<label>
-            (
-                patchKey_[candidatePatches[fI][0]],
-                patchKey_[candidatePatches[fI][1]]
-            )
-        );
-
-        if
-        (
-            pointOfOriginToFaceLabel.find(lp) != pointOfOriginToFaceLabel.end()
-        )
-        {
-            duplicateFace[fI] = true;
-            pointOfOrigin[fI] = lp;
-            duplicateFace[pointOfOriginToFaceLabel[lp]] = true;
-            continue;
-        }
-
-        pointOfOrigin[fI] = lp;
-
-        pointOfOriginToFaceLabel.insert(std::make_pair(lp, fI));
-    }
-
-    // find the processor patch for each processor boundary face
-    // the key of the algorithm is the point from which the face was created
-    // by sending the point label and the associated patches, it will be
-    // possible to find the other processor containing that face
-    std::map<label, LongList<labelledPair>> exchangeData;
-    const DynList<label>& neiProcs = mse.bpNeiProcs();
-    forAll(neiProcs, procI)
-    {
-        const label neiProcI = neiProcs[procI];
-
-        if (neiProcI == Pstream::myProcNo())
-        {
-            continue;
-        }
-
-        if (exchangeData.find(neiProcI) == exchangeData.end())
-        {
-            exchangeData.insert
-            (
-                std::make_pair(neiProcI, LongList<labelledPair>())
-            );
-        }
-    }
-
-    forAll(faceCandidates, fI)
-    {
-        if (duplicateFace[fI])
-        {
-            continue;
-        }
-
-        const label bpI = bp[faceCandidates[fI][0]];
-
-        forAllRow(bpAtProcs, bpI, procI)
-        {
-            const label neiProcNo = bpAtProcs(bpI, procI);
-            if (neiProcNo == Pstream::myProcNo())
-            {
-                continue;
-            }
-
-            LongList<labelledPair>& dataToSend = exchangeData[neiProcNo];
-            dataToSend.append(pointOfOrigin[fI]);
-        }
-    }
-
-    // exchange the data with other processors
-    std::map<label, List<labelledPair>> receivedMap;
-    help::exchangeMap(exchangeData, receivedMap);
-    exchangeData.clear();
-
-    forAllConstIters(receivedMap, iter)
-    {
-        const List<labelledPair>& receivedData = iter->second;
-
-        forAll(receivedData, i)
-        {
-            const labelledPair& lpp = receivedData[i];
-            const label gpI = lpp.pairLabel();
-            const label pointI = bPoints[globalToLocal[gpI]];
-            const labelPair& lp = lpp.pair();
-
-            forAllRow(pointFaceCandidates, pointI, i)
-            {
-                const label fI = pointFaceCandidates(pointI, i);
-                const DynList<label, 4>& f = faceCandidates[fI];
-
-                const labelPair pk
-                (
-                    patchKey_[candidatePatches[fI][0]],
-                    patchKey_[candidatePatches[fI][1]]
-                );
-
-                const labelPair rpk
-                (
-                    patchKey_[candidatePatches[fI][1]],
-                    patchKey_[candidatePatches[fI][0]]
-                );
-
-                if ((f[0] == pointI) && ((pk == lp) || (rpk == lp)))
-                {
-                    // found the processor containing other face
-                    otherFaceProc[pointOfOriginToFaceLabel[lpp]] = iter->first;
-                }
-            }
-        }
-    }
-    receivedMap.clear();
-
-    // sort the points in ascending order
-    // this ensures the correct order of faces at the processor boundaries
-    sort(pointOfOrigin);
-
-    Map<label> otherProcToProcPatch;
-    forAll(mesh_.procBoundaries(), patchI)
-    {
-        const processorBoundaryPatch& wp = mesh_.procBoundaries()[patchI];
-        otherProcToProcPatch.insert(wp.neiProcNo(), patchI);
-    }
-
-    // store processor faces
-    VRWGraph newProcFaces;
-    labelLongList newProc;
-
-    forAll(pointOfOrigin, i)
-    {
-        const label fI = pointOfOriginToFaceLabel[pointOfOrigin[i]];
-
-        if (duplicateFace[fI] || (otherFaceProc[fI] == -1))
-        {
-            continue;
-        }
-
-        if (!otherProcToProcPatch.found(otherFaceProc[fI]))
-        {
-            otherProcToProcPatch.insert
-            (
-                otherFaceProc[fI],
-                polyMeshGenModifier(mesh_).addProcessorPatch
-                (
-                    otherFaceProc[fI]
-                )
-            );
-        }
-
-        newProcFaces.appendList(faceCandidates[fI]);
-        newProc.append(otherProcToProcPatch[otherFaceProc[fI]]);
-    }
-
-    polyMeshGenModifier(mesh_).addProcessorFaces(newProcFaces, newProc);
 }
 
 

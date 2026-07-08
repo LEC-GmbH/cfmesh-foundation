@@ -32,8 +32,6 @@ License
 #include "meshUntangler.H"
 #include "sortEdgesIntoChains.H"
 
-//#define DEBUGSmooth
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::meshUntangler::cutRegion::tieBreak
@@ -47,10 +45,6 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
     // to find a single region which will be cut off from the feasible region.
     // This will be done by finding the node with the most negative distance,
     // and then start marking vertices connected to that vertex via an edge.
-
-    # ifdef DEBUGSmooth
-    Info<< "Starting tie break" << endl;
-    # endif
 
     // delete pointer data
     deleteDemandDrivenData(cPtsPtr_);
@@ -113,21 +107,9 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
             ++region;
         }
 
-    # ifdef DEBUGSmooth
-    Info<< "Tolerance " << tol_ << endl;
-    Info<< "Number of regions " << region - 1 << endl;
-    Info<< "Vertex regions " << vertexRegion << endl;
-    # endif
-
     if (region > 2)
     {
         // there are more than two regions which need to be cut off
-        # ifdef DEBUGSmooth
-        forAll(fv, vI)
-            Info<< "Distance for vertex " << fv[vI] << " is "
-                << vertexDistance_[fv[vI]] << endl;
-        # endif
-
         // there should be only one cut-off region
         // there this region will be determined by the most negative
         // distance from plane
@@ -157,19 +139,8 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
             {
                 vertexTypes_[fv[vI]] ^= INPLANE;
                 vertexTypes_[fv[vI]] |= KEEP;
-
-                # ifdef DEBUGSmooth
-                Info<< "Node " << vI << " was INPLANE" << endl;
-                Info<< "New type " << label(vertexTypes_[fv[vI]]) << endl;
-                # endif
             }
     }
-
-    # ifdef DEBUGSmooth
-    forAll(fv, vI)
-        Info<< "Vertex type for vertex " << fv[vI] << " is "
-            << label(vertexTypes_[fv[vI]]) << endl;
-    # endif
 
     // create new points
     const DynList<point, 64>& points = *pointsPtr_;

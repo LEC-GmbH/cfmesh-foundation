@@ -78,9 +78,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
         nChangedFacesInMesh = 0;
 
         // calculate pointFaces addressing
-        # ifdef DEBUG_ZIPUP
-        Info<< "Starting pointFaces addressing " << endl;
-        # endif
 
         List<direction> nUsage(points.size(), direction(0));
         forAll(faces, fI)
@@ -110,10 +107,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
         }
 
         nUsage.clear();
-
-        # ifdef DEBUG_ZIPUP
-        Info<< "Starting zipping cells " << endl;
-        # endif
 
         forAll(cells, cellI)
         {
@@ -162,25 +155,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                         << "Should be 1 or 2 - serious error "
                         << "in mesh structure. " << endl;
 
-#           ifdef DEBUG_ZIPUP
-                    forAll(curFaces, faceI)
-                    {
-                        Info<< "face: " << faces[curFaces[faceI]]
-                            << endl;
-                    }
-
-                    Info<< "Cell edges: " << cellEdges << nl
-                        << "Edge usage: " << edgeUsage << nl
-                        << "Cell points: " << cellPoints << endl;
-
-                    forAll(cellPoints, cpI)
-                    {
-                        Info<< "vertex create \"" << cellPoints[cpI]
-                            << "\" coordinates "
-                            << points[cellPoints[cpI]] << endl;
-                    }
-#           endif
-
                     // Gather the problem cell
                     problemCells.insert(cellI);
                 }
@@ -190,27 +164,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
             if (nSingleEdges == 0) continue;
 
             singleEdges.setSize(nSingleEdges);
-
-#           ifdef DEBUG_ZIPUP
-            Info<< "Cell " << cellI << endl;
-
-            forAll(curFaces, faceI)
-            {
-                Info<< "face: " << faces[curFaces[faceI]] << endl;
-            }
-
-            Info<< "Cell edges: " << cellEdges << nl
-                << "Edge usage: " << edgeUsage << nl
-                << "Single edges: " << singleEdges << nl
-                << "Cell points: " << cellPoints << endl;
-
-            forAll(cellPoints, cpI)
-            {
-                Info<< "vertex create \"" << cellPoints[cpI]
-                    << "\" coordinates "
-                    << points[cellPoints[cpI]] << endl;
-            }
-#           endif
 
             // Loop through all single edges and mark the points they use
             // points marked twice are internal to edge; those marked more than
@@ -299,11 +252,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                     pointChain.insert(newEdgeStart);
                     pointChain.append(newEdgeEnd);
 
-#                   ifdef DEBUG_CHAIN
-                    Info<< "found edge to start with: "
-                        << singleEdges[edgeI] << endl;
-#                   endif
-
                     // Check if head or tail are blocked
                     forAll(cellPoints, pointI)
                     {
@@ -311,10 +259,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                         {
                             if (pointUsage[pointI] > 2)
                             {
-#                               ifdef DEBUG_CHAIN
-                                Info<< "start head blocked" << endl;
-#                               endif
-
                                 blockHead = true;
                             }
                         }
@@ -322,10 +266,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                         {
                             if (pointUsage[pointI] > 2)
                             {
-#                               ifdef DEBUG_CHAIN
-                                Info<< "start tail blocked" << endl;
-#                               endif
-
                                 blockTail = true;
                             }
                         }
@@ -348,11 +288,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
 
                                 label addEnd =
                                     singleEdges[addEdgeI].end();
-
-#                               ifdef DEBUG_CHAIN
-                                Info<< "Trying candidate "
-                                    << singleEdges[addEdgeI] << endl;
-#                               endif
 
                                 // Try to add the edge onto the head
                                 if (!blockHead)
@@ -395,21 +330,12 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                                 label curEdgeStart = pointChain.first();
                                 label curEdgeEnd = pointChain.last();
 
-#                               ifdef DEBUG_CHAIN
-                                Info<< "curEdgeStart: " << curEdgeStart
-                                    << " curEdgeEnd: " << curEdgeEnd << endl;
-#                               endif
-
                                 forAll(cellPoints, pointI)
                                 {
                                     if (cellPoints[pointI] == curEdgeStart)
                                     {
                                         if (pointUsage[pointI] > 2)
                                         {
-#                                           ifdef DEBUG_CHAIN
-                                            Info<< "head blocked" << endl;
-#                                           endif
-
                                             blockHead = true;
                                         }
                                     }
@@ -417,10 +343,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                                     {
                                         if (pointUsage[pointI] > 2)
                                         {
-#                                           ifdef DEBUG_CHAIN
-                                            Info<< "tail blocked" << endl;
-#                                           endif
-
                                             blockTail = true;
                                         }
                                     }
@@ -429,10 +351,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                                 // Check if the loop is closed
                                 if (curEdgeStart == curEdgeEnd)
                                 {
-#                                   ifdef DEBUG_CHAIN
-                                    Info<< "closed loop" << endl;
-#                                   endif
-
                                     pointChain.removeHead();
 
                                     blockHead = true;
@@ -441,20 +359,11 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                                     stopSearching = true;
                                 }
 
-#                               ifdef DEBUG_CHAIN
-                                Info<< "current pointChain: " << pointChain
-                                    << endl;
-#                               endif
-
                                 if (stopSearching) break;
                             }
                         }
                     } while (stopSearching);
                 }
-
-#               ifdef DEBUG_CHAIN
-                Info<< "completed patch chain: " << pointChain << endl;
-#               endif
 
                 if (pointChain.size() > 2)
                 {
@@ -479,10 +388,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
             }
 
             edgesToInsert.setSize(nEdgesToInsert);
-
-#           ifdef DEBUG_ZIPUP
-            Info<< "edgesToInsert: " << edgesToInsert << endl;
-#           endif
 
             // Insert the edges into a list of faces
             forAll(edgesToInsert, edgeToInsertI)
@@ -532,11 +437,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                     orderedEdge[epI] = unorderedEdge[nextPoint];
                     used[nextPoint] = true;
                 }
-
-#               ifdef DEBUG_ORDER
-                Info<< "unorderedEdge: " << unorderedEdge << nl
-                    << "orderedEdge: " << orderedEdge << endl;
-#               endif
 
                 // check for duplicate points in the ordered edge
                 forAll(orderedEdge, checkI)
@@ -643,13 +543,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                                 allPointsPresent && curPointFound;
                         }
 
-#                       ifdef DEBUG_ZIPUP
-                        if (allPointsPresent)
-                        {
-                            Info<< "All points present" << endl;
-                        }
-#                       endif
-
                         if (!allPointsPresent)
                         {
                             // Not all points are already present.  The
@@ -661,10 +554,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                             // edges are grabbed before the face is
                             // resized.
                             edgeList newFaceEdges = newFace.edges();
-
-#                           ifdef DEBUG_ZIPUP
-                            Info<< "Not all points present." << endl;
-#                           endif
 
                             label nNewFacePoints = 0;
 
@@ -737,12 +626,6 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                                     newFace[pI],
                                     currentFaceIndex
                                 );
-
-#                           ifdef DEBUG_ZIPUP
-                            Info<< "oldFace: "
-                                << faces[currentFaceIndex] << nl
-                                << "newFace: " << newFace << endl;
-#                           endif
 
                             // Check for duplicate points in the new face
                             forAll(newFace, checkI)

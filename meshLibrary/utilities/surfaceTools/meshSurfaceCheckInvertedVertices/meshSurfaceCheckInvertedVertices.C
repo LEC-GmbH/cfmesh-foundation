@@ -32,7 +32,6 @@ License
 #include "meshSurfacePartitioner.H"
 #include "boolList.H"
 #include "demandDrivenData.H"
-#include "refLabelledPoint.H"
 #include "helperFunctions.H"
 
 #include <map>
@@ -105,61 +104,6 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
         }
     }
 
-    if (Pstream::parRun())
-    {
-        const Map<label>& globalToLocal = mse.globalToLocalBndPointAddressing();
-        const DynList<label>& neiProcs = mse.bpNeiProcs();
-        const VRWGraph& bpAtProcs = mse.bpAtProcs();
-
-        std::map<label, LongList<refLabelledPoint>> exchangeData;
-        forAll(neiProcs, i)
-            exchangeData[neiProcs[i]].clear();
-
-        forAllConstIters(globalToLocal, it)
-        {
-            const label bpI = it();
-
-            if (pointPatchNormal.find(bpI) != pointPatchNormal.end())
-            {
-                const ltvMap& patchNormal = pointPatchNormal[bpI];
-
-                forAllRow(bpAtProcs, bpI, i)
-                {
-                    const label neiProc = bpAtProcs(bpI, i);
-
-                    if (neiProc == Pstream::myProcNo())
-                        continue;
-
-                    forAllConstIters(patchNormal, pIt)
-                    {
-                        exchangeData[neiProc].append
-                        (
-                            refLabelledPoint
-                            (
-                                it.key(),
-                                labelledPoint(pIt->first, pIt->second)
-                            )
-                        );
-                    }
-                }
-            }
-        }
-
-        LongList<refLabelledPoint> receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            const refLabelledPoint& rlp = receivedData[i];
-            const label bpI = globalToLocal[rlp.objectLabel()];
-
-            ltvMap& patchNormal = pointPatchNormal[bpI];
-
-            const labelledPoint& lp = rlp.lPoint();
-            patchNormal[lp.pointLabel()] += lp.coordinates();
-        }
-    }
-
     forAllIters(pointPatchNormal, it)
     {
         auto& patchNormal = pointPatchNormal[it->first];
@@ -174,10 +118,8 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
 
     invertedVertices_.clear();
 
-    # ifdef USE_OMP
     # pragma omp parallel for if (pointFaces.size() > 100) \
     schedule(dynamic, 20)
-    # endif
     forAll(pointFaces, bpI)
     {
         if (activePointsPtr_ && !activePointsPtr_->operator[](bpI))
@@ -209,9 +151,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
             // face has zero area
             if (mNext < VSMALL)
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 invertedVertices_.insert(bf[pI]);
 
                 break;
@@ -224,18 +164,14 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
             // collocated points
             if (magSqr(triNext.a() - triNext.b()) < VSMALL)
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 invertedVertices_.insert(bf[pI]);
 
                 break;
             }
             if (magSqr(triNext.c() - triNext.a()) < VSMALL)
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 invertedVertices_.insert(bf[pI]);
 
                 break;
@@ -244,9 +180,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
             // normal vector is not visible
             if ((nNext & pNormal) < 0.0)
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 invertedVertices_.insert(bf[pI]);
 
                 break;
@@ -266,9 +200,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
             // face has zero area
             if (mPrev < VSMALL)
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 invertedVertices_.insert(bf[pI]);
 
                 break;
@@ -281,18 +213,14 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
             // collocated points
             if (magSqr(triPrev.a() - triPrev.b()) < VSMALL)
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 invertedVertices_.insert(bf[pI]);
 
                 break;
             }
             if (magSqr(triPrev.c() - triPrev.a()) < VSMALL)
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 invertedVertices_.insert(bf[pI]);
 
                 break;
@@ -301,9 +229,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
             // normal vector is not visible
             if ((nPrev & pNormal) < 0.0)
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 invertedVertices_.insert(bf[pI]);
 
                 break;
@@ -313,9 +239,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
             // point in the same direction
             if ((nNext & nPrev) < 0.0)
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 invertedVertices_.insert(bf[pI]);
 
                 break;
@@ -324,9 +248,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
     }
 
     // check if there exist concave faces
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(bFaces, bfI)
     {
         const face& bf = bFaces[bfI];
@@ -341,9 +263,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
 
                 if (!OkPoints[pI])
                 {
-                    # ifdef USE_OMP
                     # pragma omp critical
-                    # endif
                     {
                         invertedVertices_.insert(bf[pI]);
                     }
@@ -352,49 +272,6 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
         }
     }
 
-    if (Pstream::parRun())
-    {
-        // exchange global labels of inverted points
-        const labelList& bPoints = mse.boundaryPoints();
-        const Map<label>& globalToLocal =
-            mse.globalToLocalBndPointAddressing();
-        const VRWGraph& bpAtProcs = mse.bpAtProcs();
-        const DynList<label>& neiProcs = mse.bpNeiProcs();
-
-        std::map<label, labelLongList> shareData;
-        forAll(neiProcs, i)
-        {
-            shareData.insert(std::make_pair(neiProcs[i], labelLongList()));
-        }
-
-        forAllConstIters(globalToLocal, iter)
-        {
-            const label bpI = iter();
-
-            if (!invertedVertices_.found(bPoints[bpI]))
-                continue;
-
-            forAllRow(bpAtProcs, bpI, procI)
-            {
-                const label neiProc = bpAtProcs(bpI, procI);
-
-                if (neiProc == Pstream::myProcNo())
-                    continue;
-
-                shareData[neiProc].append(iter.key());
-            }
-        }
-
-        // exchange data with other processors
-        labelLongList receivedData;
-        help::exchangeMap(shareData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            const label bpI = globalToLocal[receivedData[i]];
-            invertedVertices_.insert(bPoints[bpI]);
-        }
-    }
 }
 
 

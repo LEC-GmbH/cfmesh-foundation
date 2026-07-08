@@ -183,35 +183,6 @@ void Foam::Module::meshOctreeAddressing::checkGluedRegions()
         (*boxTypePtr_)[removeBox[i]] = BOUNDARY;
     }
 
-    if (Pstream::parRun())
-    {
-        LongList<meshOctreeCubeCoordinates> checkBoundary;
-        forAll(removeBox, i)
-        {
-            const meshOctreeCubeBasic& oc = octree_.returnLeaf(removeBox[i]);
-            checkBoundary.append(oc.coordinates());
-        }
-
-        LongList<meshOctreeCubeCoordinates> receivedBoundary;
-        octree_.exchangeRequestsWithNeighbourProcessors
-        (
-            checkBoundary,
-            receivedBoundary
-        );
-
-        forAll(receivedBoundary, i)
-        {
-            const label cLabel =
-                octree_.findLeafLabelForPosition(receivedBoundary[i]);
-
-            if (cLabel < 0)
-            {
-                continue;
-            }
-            (*boxTypePtr_)[cLabel] = BOUNDARY;
-        }
-    }
-
     Info<< "Finished removing glued regions" << endl;
 }
 

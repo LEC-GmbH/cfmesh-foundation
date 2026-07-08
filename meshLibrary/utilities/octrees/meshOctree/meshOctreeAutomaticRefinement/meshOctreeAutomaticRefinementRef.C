@@ -40,15 +40,6 @@ License
 
 #include "Map.H"
 
-//#define DEBUGAutoRef
-
-# ifdef DEBUGAutoRef
-#include "pointSet.H"
-#include "IOdictionary.H"
-#include "objectRegistry.H"
-#include "Time.H"
-# endif
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::meshOctreeAutomaticRefinement::activateHexRefinement()
@@ -178,11 +169,9 @@ bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnContainedCorners
     }
 
     DynList<label> leavesInBox;
-    # ifdef USE_OMP
     # pragma omp parallel for if (refCandidates.size() > 1000) \
     private(leavesInBox) shared(cornerInLeaf) \
     reduction(+ : nMarked) schedule(dynamic, 20)
-    # endif
     forAll(refCandidates, refI)
     {
         const label leafI = refCandidates[refI];
@@ -233,7 +222,6 @@ bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnContainedCorners
         }
     }
 
-    reduce(nMarked, sumOp<label>());
     Info<< nMarked << " boxes marked by the corner criteria" << endl;
 
     if (nMarked)
@@ -260,10 +248,6 @@ refineBasedOnContainedPartitions
     const labelList& edgeGroups = sPart.edgeGroups();
     const List<labelHashSet>& eNeiGroups = sPart.edgeGroupEdgeGroups();
 
-    # ifdef DEBUGAutoRef
-    Info<< "pPart " << pPart << endl;
-    # endif
-
     label nMarked(0);
 
     meshOctreeModifier octreeModifier(octree_);
@@ -271,11 +255,9 @@ refineBasedOnContainedPartitions
     const LongList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
 
     DynList<label> patches, eGroups, helper;
-    # ifdef USE_OMP
     # pragma omp parallel for if (refCandidates.size() > 1000) \
     private(patches, eGroups, helper) \
     reduction(+ : nMarked) schedule(dynamic, 20)
-    # endif
     forAll(refCandidates, refI)
     {
         const label leafI = refCandidates[refI];
@@ -310,10 +292,6 @@ refineBasedOnContainedPartitions
             eGroups.appendUniq(edgeGroups[helper[i]]);
         }
 
-        # ifdef DEBUGAutoRef
-        Info<< "patches for leaf " << leafI << " are " << patches << endl;
-        # endif
-
         bool refine(false);
         forAll(patches, patchI)
         {
@@ -321,10 +299,6 @@ refineBasedOnContainedPartitions
             {
                 if (!pPatches[patches[patchI]].found(patches[patchJ]))
                 {
-                    # ifdef DEBUGAutoRef
-                    Info<< "2.Here" << endl;
-                    # endif
-
                     refine = true;
                     break;
                 }
@@ -345,17 +319,11 @@ refineBasedOnContainedPartitions
 
         if (refine)
         {
-            # ifdef DEBUGAutoRef
-            Info<< "Selecting leaf " << leafI
-                << " for auto - refinement" << endl;
-            # endif
-
             ++nMarked;
             refineBox[leafI] = 1;
         }
     }
 
-    reduce(nMarked, sumOp<label>());
     Info<< nMarked << " boxed marked by partitioning criteria" << endl;
 
     if (nMarked)
@@ -379,11 +347,9 @@ bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnCurvature
 
     label nMarked(0);
     DynList<label> containedTrias;
-    # ifdef USE_OMP
     # pragma omp parallel for if (refCandidates.size() > 10000) \
     private(containedTrias) \
     reduction(+ : nMarked) schedule(dynamic, 100)
-    # endif
     forAll(refCandidates, refI)
     {
         const label leafI = refCandidates[refI];
@@ -436,7 +402,6 @@ bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnCurvature
         }
     }
 
-    reduce(nMarked, sumOp<label>());
     Info<< nMarked << " boxes marked by curvature criteria!" << endl;
 
     if (nMarked)
@@ -459,10 +424,8 @@ bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnProximityTests
 
     label nMarked(0);
     DynList<label> helper;
-    # ifdef USE_OMP
     # pragma omp parallel for if (refCandidates.size() > 1000) \
     private(helper) reduction(+ : nMarked) schedule(dynamic, 20)
-    # endif
     forAll(refCandidates, refI)
     {
         const label leafI = refCandidates[refI];
@@ -511,7 +474,6 @@ bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnProximityTests
         }
     }
 
-    reduce(nMarked, sumOp<label>());
     Info<< nMarked << " boxed marked by proximity criteria" << endl;
 
     if (nMarked != 0)
@@ -548,19 +510,7 @@ void Foam::Module::meshOctreeAutomaticRefinement::refineSelectedBoxes
     }
     leaves.setSize(0);
 
-    // perform load distribution in case od parallel runs
-    octreeModifier.loadDistribution();
-
-    // communicate the cubes selected for refinement with other processors
     LongList<meshOctreeCubeCoordinates> receivedCoordinates;
-    if (Pstream::parRun())
-    {
-        octree_.exchangeRequestsWithNeighbourProcessors
-        (
-            refinedCubes,
-            receivedCoordinates
-        );
-    }
 
     forAll(refinedCubes, i)
     {

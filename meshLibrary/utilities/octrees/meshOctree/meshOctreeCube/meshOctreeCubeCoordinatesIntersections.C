@@ -32,8 +32,6 @@ License
 #include "meshOctreeCubeCoordinates.H"
 #include "helperFunctions.H"
 
-//#define DEBUGSearch
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 // Static data
 
@@ -292,23 +290,11 @@ bool Foam::Module::meshOctreeCubeCoordinates::isPositionInside
     const meshOctreeCubeCoordinates& cc
 ) const
 {
-    # ifdef DEBUGSearch
-    Info<< "Checking cube " << *this << endl;
-    Info<< "level " << short(l) << " x: " << px
-        << " y: " << py << " z:" << pz << endl;
-    # endif
-
     if (cc.level() >= this->level())
     {
         const direction diff = cc.level() - this->level();
         meshOctreeCubeCoordinates reducedLevel =
             cc.reduceLevelBy(diff);
-
-        # ifdef DEBUGSearch
-        Info<< "diff " << label(diff) << endl;
-        Info<< "Divider " << divider << endl;
-        Info<< "Coordinates at level are " << reducedLevel << endl;
-        # endif
 
         if (reducedLevel == *this)
         {

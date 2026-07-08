@@ -174,15 +174,12 @@ $(coordinateModification)/coordinateModifier.C
 
 $(boundaryPatch)/boundaryPatchBase.C
 $(boundaryPatch)/boundaryPatch.C
-$(boundaryPatch)/processorBoundaryPatch.C
 
 $(polyMeshGenModifier)/polyMeshGenModifierRemoveUnusedVertices.C
 $(polyMeshGenModifier)/polyMeshGenModifierRemoveFaces.C
 $(polyMeshGenModifier)/polyMeshGenModifierRemoveCells.C
 $(polyMeshGenModifier)/polyMeshGenModifierReorderBoundaryFaces.C
 $(polyMeshGenModifier)/polyMeshGenModifierAddCells.C
-$(polyMeshGenModifier)/polyMeshGenModifierAddProcessorFaces.C
-$(polyMeshGenModifier)/polyMeshGenModifierAddBufferCells.C
 $(polyMeshGenModifier)/polyMeshGenModifierReplaceBoundary.C
 $(polyMeshGenModifier)/polyMeshGenModifierZipUpCells.C
 $(polyMeshGenModifier)/polyMeshGenModifierRenumberMesh.C
@@ -204,7 +201,6 @@ $(polyMeshGenAddressing)/polyMeshGenAddressingPointCells.C
 $(polyMeshGenAddressing)/polyMeshGenAddressingPointEdges.C
 $(polyMeshGenAddressing)/polyMeshGenAddressingPointFaces.C
 $(polyMeshGenAddressing)/polyMeshGenAddressingPointPoints.C
-$(polyMeshGenAddressing)/polyMeshGenAddressingParallelAddressing.C
 
 $(polyMeshGenChecks)/polyMeshGenChecks.C
 $(polyMeshGenChecks)/polyMeshGenChecksGeometry.C
@@ -212,12 +208,10 @@ $(polyMeshGenChecks)/polyMeshGenChecksTopology.C
 
 $(partTetMesh)/partTetMesh.C
 $(partTetMesh)/partTetMeshAddressing.C
-$(partTetMesh)/partTetMeshParallelAddressing.C
 $(partTetMesh)/partTetMeshSimplex.C
 
 $(partTriMesh)/partTriMesh.C
 $(partTriMesh)/partTriMeshAddressing.C
-$(partTriMesh)/partTriMeshParallelAddressing.C
 $(partTriMesh)/partTriMeshSimplex.C
 
 $(triSurf)/triSurf.C
@@ -277,7 +271,6 @@ $(triangulateNonPlanarBaseFaces)/triangulateNonPlanarBaseFacesFunctions.C
 
 $(meshSurfaceEngine)/meshSurfaceEngine.C
 $(meshSurfaceEngine)/meshSurfaceEngineCalculateBoundaryNodesAndFaces.C
-$(meshSurfaceEngine)/meshSurfaceEngineParallelAddressing.C
 $(meshSurfaceEngine)/meshSurfaceEngineModifier.C
 
 $(meshSurfacePartitioner)/meshSurfacePartitioner.C
@@ -319,12 +312,10 @@ $(renameBoundaryPatches)/renameBoundaryPatches.C
 
 $(meshOptimizer)/meshOptimizer.C
 $(meshOptimizer)/meshOptimizerOptimizePoint.C
-$(meshOptimizer)/meshOptimizerOptimizePointParallel.C
 $(meshOptimizer)/meshOptimizerOptimizeSurface.C
 $(meshOptimizer)/optimizeMeshFV.C
 
 $(tetMeshOptimisation)/tetMeshOptimisation.C
-$(tetMeshOptimisation)/tetMeshOptimisationParallel.C
 
 $(symmetryPlaneOptimisation)/symmetryPlaneOptimisation.C
 
@@ -353,7 +344,6 @@ $(meshSurfaceOptimizer)/meshSurfaceOptimizer.C
 $(meshSurfaceOptimizer)/meshSurfaceOptimizerCalculateTrianglesAndAddressing.C
 $(meshSurfaceOptimizer)/meshSurfaceOptimizerOptimizePoint.C
 $(meshSurfaceOptimizer)/meshSurfaceOptimizerOptimizeSurface.C
-$(meshSurfaceOptimizer)/meshSurfaceOptimizerOptimizePointParallel.C
 
 $(surfaceOptimizer)/surfaceOptimizer.C
 
@@ -366,11 +356,7 @@ $(meshOctreeCube)/meshOctreeCubeCoordinatesIntersections.C
 $(meshOctreeModifier)/meshOctreeModifier.C
 $(meshOctreeModifier)/meshOctreeModifierRefineSelectedBoxes.C
 $(meshOctreeModifier)/meshOctreeModifierEnsureCorrectRegularity.C
-$(meshOctreeModifier)/meshOctreeModifierParallelRefinement.C
-$(meshOctreeModifier)/meshOctreeModifierDistributeLeavesToProcessors.C
-$(meshOctreeModifier)/meshOctreeModifierLoadDistribution.C
 $(meshOctreeModifier)/meshOctreeModifierReduceMemoryConsumption.C
-$(meshOctreeModifier)/meshOctreeModifierUpdateCommunicationPattern.C
 
 $(meshOctreeInsideOutside)/meshOctreeInsideOutside.C
 
@@ -378,13 +364,11 @@ $(meshOctreeCreator)/meshOctreeCreator.C
 $(meshOctreeCreator)/meshOctreeCreatorAdjustOctreeToSurface.C
 $(meshOctreeCreator)/meshOctreeCreatorCreateOctreeBoxes.C
 $(meshOctreeCreator)/meshOctreeCreatorFrontalMarking.C
-$(meshOctreeCreator)/meshOctreeCreatorLoadDistribution.C
 
 $(meshOctreeAddressing)/meshOctreeAddressing.C
 $(meshOctreeAddressing)/meshOctreeAddressingCreation.C
 $(meshOctreeAddressing)/meshOctreeAddressingGluedMesh.C
 $(meshOctreeAddressing)/meshOctreeAddressingIrregularConnections.C
-$(meshOctreeAddressing)/meshOctreeAddressingParallelAddressing.C
 
 $(meshOctreeAutoRef)/meshOctreeAutomaticRefinement.C
 $(meshOctreeAutoRef)/meshOctreeAutomaticRefinementRef.C
@@ -394,7 +378,6 @@ $(meshOctree)/meshOctreeCubePatches.C
 $(meshOctree)/meshOctreeNeighbourSearches.C
 $(meshOctree)/meshOctreeFindNearestSurfacePoint.C
 $(meshOctree)/meshOctreeInsideCalculations.C
-$(meshOctree)/meshOctreeParallelCommunication.C
 
 $(patchRefinement)/patchRefinement.C
 $(objectRefinement)/objectRefinement.C

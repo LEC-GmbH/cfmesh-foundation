@@ -34,8 +34,6 @@ License
 #include "polyMeshGenModifierAddCellByCell.H"
 #include "demandDrivenData.H"
 
-// #define DEBUGTets
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::tetMeshExtractorOctree::createPoints()
@@ -47,9 +45,7 @@ void Foam::Module::tetMeshExtractorOctree::createPoints()
 
     points.setSize(tetPoints.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel for
-    # endif
     forAll(tetPoints, pointI)
         points[pointI] = tetPoints[pointI];
 }
@@ -62,7 +58,6 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
     faceListPMG& faces = meshModifier.facesAccess();
     cellListPMG& cells = meshModifier.cellsAccess();
     meshModifier.boundariesAccess().setSize(0);
-    meshModifier.procBoundariesAccess().setSize(0);
 
     const LongList<partTet>& tets = tetCreator_.tets();
 
@@ -76,21 +71,15 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
     faces.setSize(4*tets.size());
     boolList removeFace(faces.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel if (tets.size() > 1000)
-    # endif
     {
         // set face labels
-        # ifdef USE_OMP
         # pragma omp for
-        # endif
         forAll(removeFace, faceI)
             removeFace[faceI] = false;
 
         // set sizes of cells and create all faces
-        # ifdef USE_OMP
         # pragma omp for schedule(dynamic, 20)
-        # endif
         forAll(tets, elmtI)
         {
             cells[elmtI].setSize(4);
@@ -146,14 +135,10 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
             f3[2] = elmt.d();
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
-        # endif
 
         // find duplicate faces
-        # ifdef USE_OMP
         # pragma omp for schedule(dynamic, 20)
-        # endif
         forAll(cells, cellI)
         {
             cell& c = cells[cellI];
@@ -212,9 +197,7 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
     faces.setSize(nFaces);
 
     // change cells
-    # ifdef USE_OMP
     # pragma omp for schedule(dynamic, 40)
-    # endif
     forAll(cells, cellI)
     {
         cell& c = cells[cellI];

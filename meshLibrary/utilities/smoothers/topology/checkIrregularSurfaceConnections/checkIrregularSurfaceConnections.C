@@ -95,7 +95,7 @@ checkAndFixIrregularConnections()
 
     Info<< "Finished checking for irregular surface connections" << endl;
 
-    if (returnReduce(badVertices.size(), sumOp<label>()) != 0 )
+    if (badVertices.size() != 0 )
         return true;
 
     return false;

@@ -90,22 +90,10 @@ public:
         //- relocate the selected boundary vertex and update geometry data
         void moveBoundaryVertex(const label bpI, const point& newP);
 
-        //- update normals of boundary vertices at processor boundaries
-        inline void updateVertexNormals()
-        {
-            if (surfaceEngine_.pointNormalsPtr_)
-                surfaceEngine_.updatePointNormalsAtProcBoundaries();
-        }
-
         //- updates faceCentres, face normal, and point normals
         //- of the boundary faces attached to the selected boundary points
         void updateGeometry(const labelLongList&);
         void updateGeometry();
-
-        //- makes sure that all surface vertices at parallel boundaries
-        //- have the same coordinates
-        void syncVerticesAtParallelBoundaries();
-        void syncVerticesAtParallelBoundaries(const labelLongList&);
 };
 
 

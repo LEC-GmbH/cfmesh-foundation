@@ -72,9 +72,7 @@ void Foam::Module::meshSurfaceEdgeExtractorFUN::distributeBoundaryFaces()
 
     // find the region for face by finding the patch nearest
     // to the face centre
-    # ifdef USE_OMP
     # pragma omp parallel for if (bFaces.size() > 100) schedule(guided)
-    # endif
     forAll(bFaces, bfI)
     {
         const point c = bFaces[bfI].centre(points);

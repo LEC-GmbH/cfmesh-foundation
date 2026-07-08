@@ -45,11 +45,6 @@ inline void Foam::Module::tetCreatorOctree::checkAndAppendTet(const partTet pt)
     if (valid)
     {
         tets_.append(pt);
-
-        # ifdef DEBUGTets
-        Info<< "Added tet " << (tets_.size()-1) << " is "
-            << tets_[tets_.size()-1] << endl;
-        # endif
     }
 }
 

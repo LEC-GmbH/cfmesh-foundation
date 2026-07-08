@@ -59,9 +59,7 @@ void Foam::Module::checkNonMappableCellConnections::findCellTypes()
     meshSurfaceEngine mse(mesh_);
     const labelList& bp = mse.bp();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 1000)
-    # endif
     for (label cellI = cells.size()-1; cellI>=0; --cellI)
     {
         if (cellType_[cellI] & INTERNALCELL)
@@ -96,10 +94,6 @@ void Foam::Module::checkNonMappableCellConnections::findCellTypes()
         forAll(c, fI)
         {
             if (c[fI] < mesh_.nInternalFaces())
-            {
-                internalFaces.append(c[fI]);
-            }
-            else if (mesh_.faceIsInProcPatch(c[fI]) != -1)
             {
                 internalFaces.append(c[fI]);
             }
@@ -175,57 +169,13 @@ void Foam::Module::checkNonMappableCellConnections::findCells
     const labelList& owner = mesh_.owner();
     const labelList& neighbour = mesh_.neighbour();
     const label nInternalFaces = mesh_.nInternalFaces();
-    const PtrList<processorBoundaryPatch>& procBoundaries = mesh_.procBoundaries();
 
-    labelListList otherProcType;
-    if (Pstream::parRun())
-    {
-        // exchange cell types at processor boundaries
-        otherProcType.setSize(procBoundaries.size());
-
-        // send data to other processors
-        forAll(procBoundaries, patchI)
-        {
-            label start = procBoundaries[patchI].patchStart();
-            labelList patchCellType(procBoundaries[patchI].patchSize());
-
-            forAll(patchCellType, faceI)
-                patchCellType[faceI] = cellType_[owner[start++]];
-
-            OPstream toOtherProc
-            (
-                Pstream::commsTypes::blocking,
-                procBoundaries[patchI].neiProcNo(),
-                patchCellType.byteSize()
-            );
-
-            toOtherProc << patchCellType;
-        }
-
-        // receive data from other processors
-        forAll(procBoundaries, patchI)
-        {
-            IPstream fromOtherProc
-            (
-                Pstream::commsTypes::blocking,
-                procBoundaries[patchI].neiProcNo()
-            );
-
-            labelList& otherTypes = otherProcType[patchI];
-            fromOtherProc >> otherTypes;
-        }
-    }
-
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     for (label cellI = cellType_.size()-1; cellI>=0; --cellI)
     {
         if (cellType_[cellI] & INTERNALFACEGROUP)
         {
-            # ifdef USE_OMP
             # pragma omp critical
-            # endif
             badCells.insert(cellI);
         }
         else if (cellType_[cellI] & (ALLBNDVERTEXCELL + INTERNALFACEGROUP))
@@ -254,26 +204,11 @@ void Foam::Module::checkNonMappableCellConnections::findCells
                         break;
                     }
                 }
-                else if (mesh_.faceIsInProcPatch(faceI) != -1)
-                {
-                    ++nNeiCells;
-
-                    const label patchI = mesh_.faceIsInProcPatch(faceI);
-                    const label j = faceI - procBoundaries[patchI].patchStart();
-
-                    if (otherProcType[patchI][j] & INTERNALCELL)
-                    {
-                        hasInternalNeighbour = true;
-                        break;
-                    }
-                }
             }
 
             if (hasInternalNeighbour || (nNeiCells == 1))
             {
-                # ifdef USE_OMP
                 # pragma omp critical
-                # endif
                 badCells.insert(cellI);
             }
         }
@@ -293,7 +228,6 @@ bool Foam::Module::checkNonMappableCellConnections::removeCells()
         findCells(badCells);
 
         nRemoved = badCells.size();
-        reduce(nRemoved, sumOp<label>());
 
         Info<< "Found " << nRemoved << " non - mappable cells" << endl;
 

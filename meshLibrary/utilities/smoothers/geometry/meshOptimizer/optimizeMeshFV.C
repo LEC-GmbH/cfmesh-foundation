@@ -42,13 +42,6 @@ License
 #include "refineBoundaryLayers.H"
 #include "meshSurfaceEngine.H"
 
-//#define DEBUGSmooth
-
-# ifdef DEBUGSmooth
-#include "helperFunctions.H"
-#include "polyMeshGenModifier.H"
-# endif
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::meshOptimizer::untangleMeshFV
@@ -60,48 +53,6 @@ void Foam::Module::meshOptimizer::untangleMeshFV
 )
 {
     Info<< "Starting untangling the mesh" << endl;
-
-    # ifdef DEBUGSmooth
-    partTetMesh tm(mesh_);
-    forAll(tm.tets(), tetI)
-        if (tm.tets()[tetI].mag(tm.points()) < 0.0)
-            Info<< "Tet " << tetI << " is inverted!" << endl;
-    polyMeshGen tetPolyMesh(mesh_.returnTime());
-    tm.createPolyMesh(tetPolyMesh);
-    polyMeshGenModifier(tetPolyMesh).removeUnusedVertices();
-    forAll(tm.smoothVertex(), pI)
-        if (!tm.smoothVertex()[pI])
-            Info<< "Point " << pI << " cannot be moved!" << endl;
-
-    const VRWGraph& pTets = tm.pointTets();
-    forAll(pTets, pointI)
-    {
-        const LongList<partTet>& tets = tm.tets();
-        forAllRow(pTets, pointI, i)
-            if (tets[pTets(pointI, i)].whichPosition(pointI) < 0)
-                FatalError << "Wrong partTet" << abort(FatalError);
-
-        partTetMeshSimplex simplex(tm, pointI);
-    }
-
-    boolList boundaryVertex(tetPolyMesh.points().size(), false);
-    const labelList& neighbour = tetPolyMesh.neighbour();
-    forAll(neighbour, faceI)
-        if (neighbour[faceI] == -1)
-        {
-            const face& f = tetPolyMesh.faces()[faceI];
-
-            forAll(f, pI)
-                boundaryVertex[f[pI]] = true;
-        }
-
-    forAll(boundaryVertex, pI)
-    {
-        if (boundaryVertex[pI] && tm.smoothVertex()[pI])
-            FatalErrorInFunction
-                << "Boundary vertex should not be moved!" << abort(FatalError);
-    }
-    # endif
 
     label nBadFaces, nGlobalIter(0), nIter;
 
@@ -243,7 +194,6 @@ void Foam::Module::meshOptimizer::untangleMeshFV
                     << " without sacrificing geometry constraints. Exitting.."
                     << endl;
 
-                returnReduce(1, sumOp<label>());
                 throw std::logic_error
                 (
                     "void meshOptimizer::untangleMeshFV()"
@@ -360,19 +310,11 @@ void Foam::Module::meshOptimizer::optimizeBoundaryLayer
         labelLongList bndLayerCells;
         const boolList& baseFace = optimiser.isBaseFace();
 
-        # ifdef DEBUGSmooth
-        const label blCellsId = mesh_.addCellSubset("blCells");
-        # endif
-
         forAll(baseFace, bfI)
         {
             if (baseFace[bfI])
             {
                 bndLayerCells.append(faceOwner[bfI]);
-
-                # ifdef DEBUGSmooth
-                mesh_.addCellToSubset(blCellsId, faceOwner[bfI]);
-                # endif
             }
         }
 
@@ -382,29 +324,11 @@ void Foam::Module::meshOptimizer::optimizeBoundaryLayer
         // lock boundary layer points, faces and cells
         lockCells(bndLayerCells);
 
-        # ifdef DEBUGSmooth
-        pointField origPoints(mesh_.points().size());
-        forAll(origPoints, pI)
-            origPoints[pI] = mesh_.points()[pI];
-        # endif
-
         // optimize mesh quality
         optimizeMeshFV(5, 1, 50, 0);
 
         // untangle remaining faces and lock the boundary layer cells
         untangleMeshFV(2, 50, 0);
-
-        # ifdef DEBUGSmooth
-        forAll(vertexLocation_, pI)
-        {
-            if (vertexLocation_[pI] & LOCKED)
-            {
-                if (mag(origPoints[pI] - mesh_.points()[pI]) > SMALL)
-                    FatalError << "Locked points were moved"
-                               << abort(FatalError);
-            }
-        }
-        # endif
 
         // unlock bnd layer points
         removeUserConstraints();
@@ -435,8 +359,7 @@ void Foam::Module::meshOptimizer::untangleBoundaryLayer()
         labelHashSet badFaces;
         polyMeshGenChecks::checkFacePyramids(mesh_, false, VSMALL, &badFaces);
 
-        const label nInvalidFaces =
-            returnReduce(badFaces.size(), sumOp<label>());
+        const label nInvalidFaces = badFaces.size();
 
         if (nInvalidFaces != 0)
         {
@@ -457,8 +380,6 @@ void Foam::Module::meshOptimizer::untangleBoundaryLayer()
 
                 mesh_.addCellToSubset(badBlCellsId, neighbour[facei]);
             }
-
-            returnReduce(1, sumOp<label>());
 
             throw std::logic_error
             (

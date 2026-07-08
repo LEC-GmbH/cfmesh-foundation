@@ -152,13 +152,6 @@ class edgeExtractor
             const Map<label>* otherFacePatchPtr = nullptr
         ) const;
 
-        //- find patches over edges
-        void findOtherFacePatchesParallel
-        (
-            Map<label>& otherFacePatch,
-            const labelList* facePatchPtr = nullptr
-        ) const;
-
         //- find neighbour patches over edges for a boundary face
         void findNeiPatches
         (
@@ -222,35 +215,20 @@ class edgeExtractor
                 //- const reference to the parent class
                 const edgeExtractor& extractor_;
 
-                //- calculated patches of faces over inter-processor boundaries
-                Map<label> otherFacePatch_;
-
                 //- new status of face patches after re-assigning of patches
                 const labelList* newBoundaryPatchesPtr_;
-
-                //- calculated patches of faces over inter-processor boundaries
-                //  after re-assigning of patches
-                Map<label>* newOtherFacePatchPtr_;
 
 
             // Private member functions
 
-                //- calculate patches of faces over inter-processor boundaries
-                void calculateNeiPatchesParallel();
-                void calculateNeiPatchesParallelNewPatches();
-
                 //- find neighbour faces over edges
                 void neiFacesOverEdges(const label, DynList<label>&) const;
-
-                //- find processors of faces over edges
-                void neiFacesProcs(const label, DynList<label>&) const;
 
                 //- calculate neighbour patches over edges of a boundary face
                 void neiPatchesOverEdges
                 (
                     const label bfI,
                     const labelList& fPatches,
-                    const Map<label>& otherFacePatch,
                     DynList<label> &neiPatches
                 ) const;
 
@@ -307,16 +285,8 @@ class edgeExtractor
                 //- const reference to meshSurfacePartitioner
                 const meshSurfacePartitioner& partitioner_;
 
-                //- faces attached to points at inter-processor boundaries
-                std::map<label, DynList<DynList<labelledPoint, 6>>> faceMap_;
-                std::map<label, DynList<label>> facePatches_;
-                std::map<label, DynList<label>> faceAtProc_;
-
 
             // Private member functions
-
-                //- create addressing at inter-processor boundaries
-                void createParallelAddressing();
 
                 //- sort faces attached to a boundary point
                 void sortedFacesAtPoint(const label, DynList<label>&) const;

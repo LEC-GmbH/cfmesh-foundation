@@ -36,14 +36,6 @@ License
 #include "helperFunctions.H"
 #include "partTriMeshSimplex.H"
 
-//#define DEBUGSmooth
-
-# ifdef DEBUGSmooth
-#include "triSurf.H"
-#include "triSurfModifier.H"
-#include "helperFunctions.H"
-# endif
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 inline const Foam::Module::partTriMesh&
@@ -89,10 +81,6 @@ inline bool Foam::Module::meshSurfaceOptimizer::transformIntoPlane
     DynList<triFace>& trias
 ) const
 {
-    # ifdef DEBUGSmooth
-    Pout << "Transforming boundary node " << bpI << endl;
-    # endif
-
     const partTriMesh& triMesh = this->triMesh();
     const label triPointI = triMesh.meshSurfacePointLabelInTriMesh()[bpI];
     if (triPointI < 0)
@@ -126,11 +114,6 @@ inline bool Foam::Module::meshSurfaceOptimizer::transformIntoPlane
 
     trias = simplex.triangles();
 
-    # ifdef DEBUGSmooth
-    Pout << "VecX " << vecX << endl;
-    Pout << "vecY " << vecY << endl;
-    # endif
-
     //- transform the vertices
     pts.setSize(sPts.size());
 
@@ -145,40 +128,6 @@ inline bool Foam::Module::meshSurfaceOptimizer::transformIntoPlane
 
         pts[pI] = pt;
     }
-
-    # ifdef DEBUGSmooth
-    Info<< "Original triangles " << endl;
-    forAll(simplex.triangles(), triI)
-        Info<< "Tri " << triI << " is " << simplex.triangles()[triI] << endl;
-    Info<< "Transformed triangles are " << trias << endl;
-    Info<< "Transformed vertices " << pts << endl;
-
-    triSurf surf;
-    triSurfModifier sMod(surf);
-    pointField& sPoints = sMod.pointsAccess();
-    sPoints.setSize(pts.size());
-    forAll(sPoints, i)
-        sPoints[i] = pts[i];
-    LongList<labelledTri>& sTrias = sMod.facetsAccess();
-    sTrias.setSize(trias.size());
-    forAll(sTrias, i)
-    {
-        labelledTri& tf = sTrias[i];
-        tf[0] = trias[i][0];
-        tf[1] = trias[i][1];
-        tf[2] = trias[i][2];
-
-        tf.region() = 0;
-    }
-    sMod.patchesAccess().setSize(1);
-    sMod.patchesAccess()[0].name() = "bnd";
-    sMod.patchesAccess()[0].geometricType() = "patch";
-
-    fileName sName("bndSimplex_");
-    sName += Foam::name(bpI);
-    sName += ".stl";
-    surf.writeSurface(sName);
-    # endif
 
     return found;
 }
@@ -352,12 +301,6 @@ Foam::Module::meshSurfaceOptimizer::newPositionSurfaceOptimizer
     if (vertexType_[bpI] & LOCKED)
         return points[bPoints[bpI]];
 
-    # ifdef DEBUGSmooth
-    Pout << "Smoothing boundary node " << bpI << endl;
-    Pout << "Node label in the mesh is " << bPoints[bpI] << endl;
-    Pout << "Point coordinates " << points[bPoints[bpI]] << endl;
-    # endif
-
     //- project vertices onto the plane
     const vector& pNormal = surfaceEngine_.pointNormals()[bpI];
     if (magSqr(pNormal) < VSMALL)
@@ -427,10 +370,6 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newEdgePositionLaplacian
     if (edgePoints.size() != 2)
         return points[bPoints[bpI]];
 
-    # ifdef DEBUGSearch
-    Info<< "Edge points " << edgePoints << endl;
-    # endif
-
     vector pos(vector::zero);
     forAll(edgePoints, epI)
         pos += points[edgePoints[epI]];
@@ -452,56 +391,13 @@ inline void Foam::Module::meshSurfaceOptimizer::lockBoundaryFaces
     const faceList::subList& bFaces = surfaceEngine_.boundaryFaces();
     const labelList& bp = surfaceEngine_.bp();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 20)
-    # endif
     forAll(lockedSurfaceFaces_, lfI)
     {
         const face& bf = bFaces[lockedSurfaceFaces_[lfI]];
 
         forAll(bf, pI)
             vertexType_[bp[bf[pI]]] |= LOCKED;
-    }
-
-    if (Pstream::parRun())
-    {
-        const Map<label>& globalToLocal =
-            surfaceEngine_.globalToLocalBndPointAddressing();
-        const VRWGraph& bpAtProcs = surfaceEngine_.bpAtProcs();
-        const DynList<label>& bpNeiProcs = surfaceEngine_.bpNeiProcs();
-
-        std::map<label, labelLongList> exchangeData;
-        forAll(bpNeiProcs, i)
-            exchangeData[bpNeiProcs[i]].clear();
-
-        //- prepare data which will be sent to other processors
-        forAllConstIters(globalToLocal, it)
-        {
-            const label bpI = it();
-
-            if (vertexType_[bpI] & LOCKED)
-            {
-                forAllRow(bpAtProcs, bpI, i)
-                {
-                    const label neiProc = bpAtProcs(bpI, i);
-
-                    if (neiProc == Pstream::myProcNo())
-                        continue;
-
-                    exchangeData[neiProc].append(it.key());
-                }
-            }
-        }
-
-        labelLongList receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            const label bpI = globalToLocal[receivedData[i]];
-
-            vertexType_[bpI] |= LOCKED;
-        }
     }
 }
 
@@ -512,64 +408,19 @@ inline void Foam::Module::meshSurfaceOptimizer::lockBoundaryPoints
     const labelListType& l
 )
 {
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(l, i)
     {
         const label bpI = l[i];
 
         vertexType_[bpI] |= LOCKED;
     }
-
-    if (Pstream::parRun())
-    {
-        const Map<label>& globalToLocal =
-            surfaceEngine_.globalToLocalBndPointAddressing();
-        const VRWGraph& bpAtProcs = surfaceEngine_.bpAtProcs();
-        const DynList<label>& bpNeiProcs = surfaceEngine_.bpNeiProcs();
-
-        std::map<label, labelLongList> exchangeData;
-        forAll(bpNeiProcs, i)
-            exchangeData[bpNeiProcs[i]].clear();
-
-        //- prepare data which will be sent to other processors
-        forAllConstIters(globalToLocal, it)
-        {
-            const label bpI = it();
-
-            if (vertexType_[bpI] & LOCKED)
-            {
-                forAllRow(bpAtProcs, bpI, i)
-                {
-                    const label neiProc = bpAtProcs(bpI, i);
-
-                    if (neiProc == Pstream::myProcNo())
-                        continue;
-
-                    exchangeData[neiProc].append(it.key());
-                }
-            }
-        }
-
-        labelLongList receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            const label bpI = globalToLocal[receivedData[i]];
-
-            vertexType_[bpI] |= LOCKED;
-        }
-    }
 }
 
 
 inline void Foam::Module::meshSurfaceOptimizer::lockFeatureEdges()
 {
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(vertexType_, bpI)
         if (vertexType_[bpI] & (EDGE | CORNER))
             vertexType_[bpI] |= LOCKED;

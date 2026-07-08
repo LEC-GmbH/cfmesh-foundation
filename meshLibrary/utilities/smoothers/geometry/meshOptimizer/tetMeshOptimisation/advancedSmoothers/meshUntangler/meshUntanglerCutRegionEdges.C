@@ -31,16 +31,10 @@ License
 #include "demandDrivenData.H"
 #include "meshUntangler.H"
 
-//#define DEBUGSmooth
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::meshUntangler::cutRegion::findNewEdges()
 {
-    #ifdef DEBUGSmooth
-    Info<< "Creating new edgesPtr_" << endl;
-    #endif
-
     cEdgesPtr_ = new DynList<edge, 128>();
     DynList<edge, 128>& cEdges = *cEdgesPtr_;
 
@@ -89,24 +83,7 @@ void Foam::Module::meshUntangler::cutRegion::findNewEdges()
             const point newP = (1.0 - t)*pts[end] + t*pts[start];
             cPtsPtr_->append(newP);
         }
-
-        # ifdef DEBUGSmooth
-        if (newEdgeLabel_[eI] != -1)
-        {
-            Info<< nl << "Edge " << eI << "consisting of " << e
-                << " has been replaced with edge " << newEdgeLabel_[eI] << "  "
-                << cEdges[newEdgeLabel_[eI]] << endl;
-        }
-        else
-        {
-            Info<< "Edge " << e << " has been deleted!" << endl;
-        }
-        # endif
     }
-
-    #ifdef DEBUGSmooth
-    Info<< "Found " << cEdges.size() << " new edges" << endl;
-    #endif
 }
 
 

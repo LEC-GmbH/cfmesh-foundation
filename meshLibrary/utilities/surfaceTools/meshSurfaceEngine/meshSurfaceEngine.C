@@ -54,19 +54,7 @@ Foam::Module::meshSurfaceEngine::meshSurfaceEngine(polyMeshGen& mesh)
     faceFacesPtr_(nullptr),
     pointNormalsPtr_(nullptr),
     faceNormalsPtr_(nullptr),
-    faceCentresPtr_(nullptr),
-
-    globalBoundaryPointLabelPtr_(nullptr),
-    globalBoundaryPointToLocalPtr_(nullptr),
-    bpProcsPtr_(nullptr),
-    bpNeiProcsPtr_(nullptr),
-    globalBoundaryEdgeLabelPtr_(nullptr),
-    globalBoundaryEdgeToLocalPtr_(nullptr),
-    beProcsPtr_(nullptr),
-    beNeiProcsPtr_(nullptr),
-    otherEdgeFaceAtProcPtr_(nullptr),
-    otherEdgeFacePatchPtr_(nullptr),
-    globalBoundaryFaceLabelPtr_(nullptr)
+    faceCentresPtr_(nullptr)
 {
     calculateBoundaryFaces();
     calculateBoundaryNodes();
@@ -98,19 +86,7 @@ Foam::Module::meshSurfaceEngine::meshSurfaceEngine
     faceFacesPtr_(nullptr),
     pointNormalsPtr_(nullptr),
     faceNormalsPtr_(nullptr),
-    faceCentresPtr_(nullptr),
-
-    globalBoundaryPointLabelPtr_(nullptr),
-    globalBoundaryPointToLocalPtr_(nullptr),
-    bpProcsPtr_(nullptr),
-    bpNeiProcsPtr_(nullptr),
-    globalBoundaryEdgeLabelPtr_(nullptr),
-    globalBoundaryEdgeToLocalPtr_(nullptr),
-    beProcsPtr_(nullptr),
-    beNeiProcsPtr_(nullptr),
-    otherEdgeFaceAtProcPtr_(nullptr),
-    otherEdgeFacePatchPtr_(nullptr),
-    globalBoundaryFaceLabelPtr_(nullptr)
+    faceCentresPtr_(nullptr)
 {
     calculateBoundaryFaces();
     calculateBoundaryNodes();
@@ -148,17 +124,6 @@ void Foam::Module::meshSurfaceEngine::clearOut()
     deleteDemandDrivenData(edgePatchesPtr_);
     deleteDemandDrivenData(faceFacesPtr_);
 
-    deleteDemandDrivenData(globalBoundaryPointLabelPtr_);
-    deleteDemandDrivenData(globalBoundaryPointToLocalPtr_);
-    deleteDemandDrivenData(bpProcsPtr_);
-    deleteDemandDrivenData(bpNeiProcsPtr_);
-    deleteDemandDrivenData(globalBoundaryEdgeLabelPtr_);
-    deleteDemandDrivenData(globalBoundaryEdgeToLocalPtr_);
-    deleteDemandDrivenData(beProcsPtr_);
-    deleteDemandDrivenData(beNeiProcsPtr_);
-    deleteDemandDrivenData(otherEdgeFaceAtProcPtr_);
-    deleteDemandDrivenData(otherEdgeFacePatchPtr_);
-    deleteDemandDrivenData(globalBoundaryFaceLabelPtr_);
 }
 
 

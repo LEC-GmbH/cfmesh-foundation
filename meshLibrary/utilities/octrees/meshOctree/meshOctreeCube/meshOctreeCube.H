@@ -255,17 +255,8 @@ public:
             LongList<meshOctreeCube*>& leaves
         ) const;
 
-        //- find coordinates of cubes which are located on other processors
-        void findCoordinatesOfMissingCubes
-        (
-            LongList<meshOctreeCubeCoordinates>& coordinates
-        ) const;
-
         //- count number of originating from this cube
         void countChildCubes(label& nCubes) const;
-
-        //- delete boxes which are not local to the given processor
-        bool purgeProcessorCubes(const short procNo);
 
 
     // Member operators

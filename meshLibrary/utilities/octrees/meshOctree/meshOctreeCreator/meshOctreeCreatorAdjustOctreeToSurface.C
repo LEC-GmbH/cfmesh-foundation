@@ -43,12 +43,7 @@ License
 #include "surfaceMeshGeometryModification.H"
 #include "edgeMeshGeometryModification.H"
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
-
-//#define OCTREETiming
-//#define DEBUGSearch
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -65,25 +60,15 @@ void Foam::Module::meshOctreeCreator::refineBoundary()
     {
         changed = false;
 
-        # ifdef OCTREETiming
-        const scalar startIter = omp_get_wtime();
-        # endif
-
         labelList refineCubes(leaves.size(), 0);
         scalarList rThickness(leaves.size(), 0.0);
         bool useNLayers(false);
 
         // select boxes which need to be refined
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 100)
-        # endif
         forAll(leaves, leafI)
         {
             const meshOctreeCube& oc = *leaves[leafI];
-            # ifdef DEBUGSearch
-            Info<< "Checking leaf " << oc << endl;
-            Info<< "Leaf has elements " << oc.hasContainedElements() << endl;
-            # endif
 
             if (oc.hasContainedElements())
             {
@@ -142,8 +127,6 @@ void Foam::Module::meshOctreeCreator::refineBoundary()
 
         // mark additional boxes for refinement to achieve
         // correct refinement distance
-        reduce(useNLayers, maxOp<label>());
-        reduce(changed, maxOp<bool>());
         if (useNLayers && changed)
         {
             octreeModifier.refineSelectedBoxesAndAdditionalLayers
@@ -156,32 +139,6 @@ void Foam::Module::meshOctreeCreator::refineBoundary()
         {
             // refine boxes
             octreeModifier.refineSelectedBoxes(refineCubes, hexRefinement_);
-        }
-
-        # ifdef OCTREETiming
-        const scalar refTime = omp_get_wtime();
-        Info<< "Time for refinement " << (refTime-startIter) << endl;
-        # endif
-
-        if (Pstream::parRun())
-        {
-            if (changed)
-            {
-                octreeModifier.distributeLeavesToProcessors();
-
-                # ifdef OCTREETiming
-                const scalar distTime = omp_get_wtime();
-                Info<< "Time for distributing data to processors "
-                    << (distTime-refTime) << endl;
-                # endif
-
-                loadDistribution();
-
-                # ifdef OCTREETiming
-                Info<< "Time for load distribution "
-                    << (omp_get_wtime()-distTime) << endl;
-                # endif
-            }
         }
 
     } while (changed);
@@ -288,16 +245,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
             << " refinement thickness " << refThickness[i] << endl;
     }
 
-    if (octree_.neiProcs().size())
-    {
-        forAll(refObjects, oI)
-        {
-            label l = refLevels[oI];
-            reduce(l, maxOp<label>());
-            refLevels[oI] = l;
-        }
-    }
-
     // start refining boxes inside the objects
     const boundBox& rootBox = octree_.rootBox();
     meshOctreeModifier octreeModifier(octree_);
@@ -306,10 +253,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
     bool changed;
     do
     {
-        # ifdef OCTREETiming
-        const scalar startIter = omp_get_wtime();
-        # endif
-
         changed = false;
 
         labelList refineCubes(leaves.size(), 0);
@@ -317,10 +260,8 @@ void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
         bool useNLayers(false);
 
         // select boxes which need to be refined
-        # ifdef USE_OMP
         # pragma omp parallel for if (leaves.size() > 1000) \
         schedule(dynamic, 20)
-        # endif
         forAll(leaves, leafI)
         {
             const meshOctreeCube& oc = *leaves[leafI];
@@ -343,11 +284,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
             {
                 if (refObjects[oI].intersectsObject(bb))
                 {
-                    # ifdef DEBUGSearch
-                    Info<< "Marking leaf " << leafI
-                        << " for refinement" << endl;
-                    # endif
-
                     if (oc.level() < refLevels[oI])
                         refine = true;
 
@@ -370,8 +306,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
 
         // mark additional boxes for refinement to achieve
         // correct refinement distance
-        reduce(useNLayers, maxOp<label>());
-        reduce(changed, maxOp<bool>());
         if (useNLayers && changed)
         {
             octreeModifier.refineSelectedBoxesAndAdditionalLayers
@@ -384,32 +318,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
         {
             // refine boxes
             octreeModifier.refineSelectedBoxes(refineCubes, hexRefinement_);
-        }
-
-        # ifdef OCTREETiming
-        const scalar refTime = omp_get_wtime();
-        Info<< "Time for refinement " << (refTime-startIter) << endl;
-        # endif
-
-        if (octree_.neiProcs().size() != 0)
-        {
-            if (changed)
-            {
-                octreeModifier.distributeLeavesToProcessors();
-
-                # ifdef OCTREETiming
-                const scalar distTime = omp_get_wtime();
-                Info<< "Time for distributing data to processors "
-                << (distTime-refTime) << endl;
-                # endif
-
-                loadDistribution(false);
-
-                # ifdef OCTREETiming
-                Info<< "Time for load distribution "
-                << (omp_get_wtime()-distTime) << endl;
-                # endif
-            }
         }
 
     } while (changed);
@@ -493,16 +401,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
         refLevels[surfI] += addLevel;
     }
 
-    if (octree_.neiProcs().size())
-    {
-        forAll(refLevels, oI)
-        {
-            label l = refLevels[oI];
-            reduce(l, maxOp<label>());
-            refLevels[oI] = l;
-        }
-    }
-
     // start refining boxes intersecting triangles in each refinement surface
     const boundBox& rootBox = octree_.rootBox();
     const vector tol = SMALL*rootBox.span();
@@ -513,10 +411,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
     bool changed;
     do
     {
-        # ifdef OCTREETiming
-        const scalar startIter = omp_get_wtime();
-        # endif
-
         changed = false;
 
         labelList refineCubes(leaves.size(), 0);
@@ -533,10 +427,8 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
             const direction surfLevel = refLevels[surfI];
             const scalar sThickness = refThickness[surfI];
 
-            # ifdef USE_OMP
             # pragma omp parallel for \
             reduction(+ : nMarked) schedule(dynamic, 10) private(leavesInBox)
-            # endif
             forAll(surf, triI)
             {
                 // find the bounding box of the current triangle
@@ -565,11 +457,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
 
                     if (oc.intersectsTriangleExact(surf, rootBox, triI))
                     {
-                        # ifdef DEBUGSearch
-                        Info<< "Marking leaf " << leafI
-                            << " with coordinates " << oc
-                            << " for refinement" << endl;
-                        # endif
 
                         if (oc.level() < surfLevel)
                         {
@@ -603,8 +490,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
 
         // mark additional boxes for refinement to achieve
         // correct refinement distance
-        reduce(useNLayers, maxOp<label>());
-        reduce(changed, maxOp<bool>());
 
         if (useNLayers && changed)
         {
@@ -620,32 +505,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
             octreeModifier.refineSelectedBoxes(refineCubes, hexRefinement_);
         }
 
-        # ifdef OCTREETiming
-        const scalar refTime = omp_get_wtime();
-        Info<< "Time for refinement " << (refTime-startIter) << endl;
-        # endif
-
-        if (octree_.neiProcs().size() != 0)
-        {
-            reduce(changed, maxOp<bool>());
-            if (changed)
-            {
-                octreeModifier.distributeLeavesToProcessors();
-
-                # ifdef OCTREETiming
-                const scalar distTime = omp_get_wtime();
-                Info<< "Time for distributing data to processors "
-                << (distTime-refTime) << endl;
-                # endif
-
-                loadDistribution(false);
-
-                # ifdef OCTREETiming
-                Info<< "Time for load distribution "
-                << (omp_get_wtime()-distTime) << endl;
-                # endif
-            }
-        }
     } while (changed);
 
     Info<< "Finished refinement of boxes intersecting surface meshes" << endl;
@@ -721,16 +580,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingEdgeMeshes()
         refLevels[emI] += addLevel;
     }
 
-    if (octree_.neiProcs().size())
-    {
-        forAll(refLevels, oI)
-        {
-            label l = refLevels[oI];
-            reduce(l, maxOp<label>());
-            refLevels[oI] = l;
-        }
-    }
-
     // start refining boxes intersecting triangles in each refinement surface
     const boundBox& rootBox = octree_.rootBox();
     const vector tol = SMALL*rootBox.span();
@@ -743,10 +592,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingEdgeMeshes()
     {
         changed = false;
 
-        # ifdef OCTREETiming
-        const scalar startIter = omp_get_wtime();
-        # endif
-
         labelList refineCubes(leaves.size(), 0);
         scalarList rThickness(leaves.size(), 0.0);
         bool useNLayers(false);
@@ -758,10 +603,8 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingEdgeMeshes()
             const pointField& points = edgeMesh.points();
             const edgeList& edges = edgeMesh.edges();
 
-            # ifdef USE_OMP
             # pragma omp parallel for schedule(dynamic, 10) \
             private(leavesInBox, intersectedLeaves)
-            # endif
             forAll(edges, edgeI)
             {
                 // find the bounding box of the current triangle
@@ -793,11 +636,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingEdgeMeshes()
 
                         if (oc.level() < refLevels[emI])
                         {
-                            # ifdef DEBUGSearch
-                            Info<< "Marking leaf " << leafI
-                                << " with coordinates " << oc
-                                << " for refinement" << endl;
-                            # endif
 
                             refineCubes[leafI] = 1;
                             changed = true;
@@ -822,8 +660,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingEdgeMeshes()
 
         // mark additional boxes for refinement to achieve
         // correct refinement distance
-        reduce(useNLayers, maxOp<label>());
-        reduce(changed, maxOp<bool>());
         if (useNLayers && changed)
         {
             octreeModifier.refineSelectedBoxesAndAdditionalLayers
@@ -838,31 +674,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingEdgeMeshes()
             octreeModifier.refineSelectedBoxes(refineCubes, hexRefinement_);
         }
 
-        # ifdef OCTREETiming
-        const scalar refTime = omp_get_wtime();
-        Info<< "Time for refinement " << (refTime-startIter) << endl;
-        # endif
-
-        if (octree_.neiProcs().size() != 0)
-        {
-            if (changed)
-            {
-                octreeModifier.distributeLeavesToProcessors();
-
-                # ifdef OCTREETiming
-                const scalar distTime = omp_get_wtime();
-                Info<< "Time for distributing data to processors "
-                << (distTime-refTime) << endl;
-                # endif
-
-                loadDistribution(false);
-
-                # ifdef OCTREETiming
-                Info<< "Time for load distribution "
-                << (omp_get_wtime()-distTime) << endl;
-                # endif
-            }
-        }
     } while (changed);
 
     Info<< "Finished refinement of boxes intersecting edge meshes" << endl;
@@ -874,10 +685,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesNearDataBoxes
     const label nLayers
 )
 {
-    # ifdef OCTREETiming
-    const scalar startTime = omp_get_wtime();
-    # endif
-
     const FixedList<meshOctreeCubeCoordinates, 26>& rp =
         octree_.regularityPositions();
 
@@ -887,33 +694,15 @@ void Foam::Module::meshOctreeCreator::refineBoxesNearDataBoxes
     meshOctreeModifier octreeModifier(octree_);
     const LongList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
 
-    # ifdef DEBUGSearch
-    forAll(leaves, leafI)
-    {
-        Info<< "Leaf " << leafI << " is " << *leaves[leafI]
-            << " type " << label(leaves[leafI]->cubeType()) << endl;
-    }
-    # endif
-
     labelList refineBox(leaves.size(), 0);
 
-    labelHashSet transferCoordinates;
-    LongList<meshOctreeCubeCoordinates> checkCoordinates;
-
-    # ifdef USE_OMP
     # pragma omp parallel for if (leaves.size() > 1000) \
     schedule(dynamic, 20)
-    # endif
     forAll(leaves, leafI)
     {
         if (leaves[leafI]->hasContainedElements())
         {
             const meshOctreeCube& oc = *leaves[leafI];
-
-            # ifdef DEBUGSearch
-            Info<< "Refining boxes near box " << leafI
-                << " with coordinates " << oc << endl;
-            # endif
 
             for (label k = 0; k < 26; ++k)
             {
@@ -922,22 +711,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesNearDataBoxes
                     (
                         oc.coordinates() + rp[k]
                     );
-
-                if (neiLabel == meshOctreeCube::OTHERPROC)
-                {
-                    # ifdef USE_OMP
-                    # pragma omp critical
-                    # endif
-                    {
-                        if (!transferCoordinates.found(leafI))
-                        {
-                            transferCoordinates.insert(leafI);
-                            checkCoordinates.append(oc.coordinates());
-                        }
-                    }
-
-                    continue;
-                }
 
                 if (neiLabel == -1)
                 {
@@ -954,57 +727,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesNearDataBoxes
                     continue;
                 }
 
-                # ifdef DEBUGSearch
-                Info<< "Adding neighbour " << *nei << " of type"
-                    << label(nei->cubeType()) << endl;
-                # endif
-
-                refineBox[nei->cubeLabel()] = 1;
-            }
-        }
-    }
-
-    if (octree_.neiProcs().size())
-    {
-        LongList<meshOctreeCubeCoordinates> receivedCoordinates;
-        octree_.exchangeRequestsWithNeighbourProcessors
-        (
-            checkCoordinates,
-            receivedCoordinates
-        );
-
-        # ifdef USE_OMP
-        # pragma omp parallel for if (receivedCoordinates.size() > 1000) \
-        schedule(dynamic, 20)
-        # endif
-        forAll(receivedCoordinates, ccI)
-        {
-            const meshOctreeCubeCoordinates& cc = receivedCoordinates[ccI];
-            for (label k = 0; k < 26; ++k)
-            {
-                const label neiLabel =
-                    octree_.findLeafLabelForPosition(cc + rp[k]);
-
-                if (neiLabel < 0)
-                {
-                    continue;
-                }
-
-                const meshOctreeCube* nei = leaves[neiLabel];
-                if (nei->level() == cc.level())
-                {
-                    continue;
-                }
-                if (nei->cubeType() & meshOctreeCubeBasic::OUTSIDE)
-                {
-                    continue;
-                }
-
-                # ifdef DEBUGSearch
-                Info<< "Adding neighbour " << *nei << " of type"
-                    << label(nei->cubeType()) << endl;
-                # endif
-
                 refineBox[nei->cubeLabel()] = 1;
             }
         }
@@ -1012,26 +734,13 @@ void Foam::Module::meshOctreeCreator::refineBoxesNearDataBoxes
 
     for (label i = 1; i < nLayers; i++)
     {
-        if (Pstream::parRun())
-        {
-            checkCoordinates.clear();
-            transferCoordinates.clear();
-        }
-
-        # ifdef USE_OMP
         # pragma omp parallel for if (leaves.size() > 1000) \
         schedule(dynamic, 20)
-        # endif
         forAll(leaves, leafI)
         {
             if (refineBox[leafI] == i)
             {
                 const meshOctreeCube& oc = *leaves[leafI];
-
-                # ifdef DEBUGSearch
-                Info<< "Refining boxes near box " << leafI
-                    << " with coordinates " << oc << endl;
-                # endif
 
                 for (label k = 0; k < 26; ++k)
                 {
@@ -1040,22 +749,6 @@ void Foam::Module::meshOctreeCreator::refineBoxesNearDataBoxes
                         (
                             oc.coordinates() + rp[k]
                         );
-
-                    if (neiLabel == meshOctreeCube::OTHERPROC)
-                    {
-                        # ifdef USE_OMP
-                        # pragma omp critical
-                        # endif
-                        {
-                            if (!transferCoordinates.found(leafI))
-                            {
-                                transferCoordinates.insert(leafI);
-                                checkCoordinates.append(oc.coordinates());
-                            }
-                        }
-
-                        continue;
-                    }
 
                     if (neiLabel == -1)
                     {
@@ -1072,91 +765,18 @@ void Foam::Module::meshOctreeCreator::refineBoxesNearDataBoxes
                         continue;
                     }
 
-                    # ifdef DEBUGSearch
-                    Info<< "Layer " << label(i) << endl;
-                    Info<< "Adding neighbour " << *nei << " of type"
-                        << label(nei->cubeType()) << endl;
-                    # endif
-
                     refineBox[nei->cubeLabel()] = i + 1;
                 }
             }
         }
 
-        if (octree_.neiProcs().size())
-        {
-            LongList<meshOctreeCubeCoordinates> receivedCoordinates;
-            octree_.exchangeRequestsWithNeighbourProcessors
-            (
-                checkCoordinates,
-                receivedCoordinates
-            );
-
-            # ifdef USE_OMP
-            # pragma omp parallel for if (receivedCoordinates.size() > 1000) \
-            schedule(dynamic, 20)
-            # endif
-            forAll(receivedCoordinates, ccI)
-            {
-                const meshOctreeCubeCoordinates& cc = receivedCoordinates[ccI];
-
-                for (label k = 0; k < 26; ++k)
-                {
-                    const label neiLabel =
-                        octree_.findLeafLabelForPosition(cc + rp[k]);
-
-                    if (neiLabel < 0)
-                    {
-                        continue;
-                    }
-
-                    const meshOctreeCube* nei = leaves[neiLabel];
-                    if (nei->level() == cc.level())
-                    {
-                        continue;
-                    }
-                    if (nei->cubeType() & meshOctreeCubeBasic::OUTSIDE)
-                    {
-                        continue;
-                    }
-
-                    # ifdef DEBUGSearch
-                    Info<< "Adding neighbour " << *nei << " of type"
-                        << label(nei->cubeType()) << endl;
-                    # endif
-
-                    refineBox[nei->cubeLabel()] = i + 1;
-                }
-            }
-        }
     }
 
     // refine cubes
     octreeModifier.refineSelectedBoxes(refineBox, hexRefinement_);
 
-    # ifdef OCTREETiming
-    const scalar refTime = omp_get_wtime();
-    Info<< "Time for refinement " << (refTime-startTime) << endl;
-    # endif
-
-    if (Pstream::parRun())
-    {
-        octreeModifier.distributeLeavesToProcessors();
-        loadDistribution();
-    }
-
-    # ifdef OCTREETiming
-    const scalar distTime = omp_get_wtime();
-    Info<< "Time for load balancing " << (distTime-refTime) << endl;
-    # endif
-
     // set up inside-outside information
     createInsideOutsideInformation();
-
-    # ifdef OCTREETiming
-    Info<< "Time for calculation of inside/outside information "
-        << (omp_get_wtime()-distTime) << endl;
-    # endif
 
     Info<< "Finished refining boxes near DATA boxes" << endl;
 }
@@ -1173,20 +793,14 @@ void Foam::Module::meshOctreeCreator::refineBoxes
 
     do
     {
-        # ifdef OCTREETiming
-        const scalar startIter = omp_get_wtime();
-        # endif
-
         nRefined = 0;
 
         const LongList<meshOctreeCube*>& leaves = octreeMod.leavesAccess();
 
         labelList refineCubes(leaves.size(), direction(0));
 
-        # ifdef USE_OMP
         # pragma omp parallel for if (leaves.size() > 1000) \
         reduction(+ : nRefined) schedule(dynamic, 20)
-        # endif
         forAll(leaves, leafI)
         {
             const meshOctreeCube& oc = *leaves[leafI];
@@ -1200,33 +814,6 @@ void Foam::Module::meshOctreeCreator::refineBoxes
 
         // refine selected cubes
         octreeMod.refineSelectedBoxes(refineCubes, hexRefinement_);
-
-        # ifdef OCTREETiming
-        const scalar refTime = omp_get_wtime();
-        Info<< "Time for refinement " << (refTime-startIter) << endl;
-        # endif
-
-        if (Pstream::parRun())
-        {
-            reduce(nRefined, sumOp<label>());
-            if (nRefined)
-            {
-                octreeMod.distributeLeavesToProcessors();
-
-                # ifdef OCTREETiming
-                const scalar distTime = omp_get_wtime();
-                Info<< "Time for distributing data to processors "
-                    << (distTime-refTime) << endl;
-                # endif
-
-                loadDistribution();
-
-                # ifdef OCTREETiming
-                Info<< "Time for load distribution "
-                    << (omp_get_wtime()-distTime) << endl;
-                # endif
-            }
-        }
 
     } while (nRefined != 0);
 }

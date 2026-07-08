@@ -92,9 +92,7 @@ void Foam::Module::polyMeshGenGeometryModification::modifyGeometry()
 
     pointFieldPMG& pts = mesh_.points();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(pts, pointI)
     {
         pts[pointI] = coordinateModifierPtr_->modifiedPoint(pts[pointI]);
@@ -114,9 +112,7 @@ void Foam::Module::polyMeshGenGeometryModification::revertGeometryModification()
 
     pointFieldPMG& pts = mesh_.points();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(pts, pointI)
     {
         pts[pointI] =

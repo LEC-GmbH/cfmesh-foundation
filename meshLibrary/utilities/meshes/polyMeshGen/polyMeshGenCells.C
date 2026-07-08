@@ -36,9 +36,7 @@ License
 
 #include "labelPair.H"
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * Private member functions * * * * * * * * * * * * * * * //
 
@@ -84,27 +82,16 @@ void Foam::Module::polyMeshGenCells::calculateOwnersAndNeighbours() const
     // start calculating owners and neighbours
     nIntFaces_ = 0;
 
-    # ifdef USE_OMP
     const label nThreads = 3*omp_get_num_procs();
     const label chunkSize = faces_.size() / nThreads + 1;
-    # else
-    const label nThreads = 1;
-    const label chunkSize = faces_.size();
-    # endif
 
     label nInternalFaces(0);
 
     List<List<LongList<labelPair>>> dataForOtherThreads(nThreads);
 
-    # ifdef USE_OMP
     # pragma omp parallel num_threads(nThreads) reduction(+ : nInternalFaces)
-    # endif
     {
-        # ifdef USE_OMP
         const label threadI = omp_get_thread_num();
-        # else
-        const label threadI(0);
-        # endif
 
         const label startingFace = threadI*chunkSize;
         const label endFace =
@@ -119,9 +106,7 @@ void Foam::Module::polyMeshGenCells::calculateOwnersAndNeighbours() const
             nei[faceI] = -1;
         }
 
-        # ifdef USE_OMP
         # pragma omp for schedule(static)
-        # endif
         forAll(cells_, cellI)
         {
             const cell& c = cells_[cellI];
@@ -150,7 +135,7 @@ void Foam::Module::polyMeshGenCells::calculateOwnersAndNeighbours() const
                         Serr << "Neighbour " << nei[faceI] << endl;
                         Serr << "Current cell " << cellI << endl;
                         FatalErrorInFunction
-                            << Pstream::myProcNo() << "Face " << faceI
+                            << "Face " << faceI
                             << " appears in more than 2 cells!!"
                             << abort(FatalError);
                     }
@@ -162,11 +147,9 @@ void Foam::Module::polyMeshGenCells::calculateOwnersAndNeighbours() const
             }
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
 
         # pragma omp critical
-        # endif
         for (label i = 0; i < nThreads; ++i)
         {
             const LongList<labelPair>& data =
@@ -196,7 +179,7 @@ void Foam::Module::polyMeshGenCells::calculateOwnersAndNeighbours() const
                         Serr << "Neighbour " << nei[faceI] << endl;
                         Serr << "Current cell " << cellI << endl;
                         FatalErrorInFunction
-                            << Pstream::myProcNo() << "Face " << faceI
+                            << "Face " << faceI
                             << " appears in more than 2 cells!!"
                             << abort(FatalError);
                     }
@@ -213,7 +196,7 @@ void Foam::Module::polyMeshGenCells::calculateOwnersAndNeighbours() const
                     Serr << "Neighbour " << nei[faceI] << endl;
                     Serr << "Current cell " << cellI << endl;
                     FatalErrorInFunction
-                        << Pstream::myProcNo() << "Face " << faceI
+                        << "Face " << faceI
                         << " appears in more than 2 cells!!"
                         << abort(FatalError);
                 }
@@ -229,14 +212,12 @@ void Foam::Module::polyMeshGenCells::calculateAddressingData() const
 {
     if (!ownerPtr_ || !neighbourPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calculateOwnersAndNeighbours();
     }
@@ -323,14 +304,12 @@ Foam::Module::polyMeshGenCells::addressingData() const
 {
     if (!addressingDataPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calculateAddressingData();
     }

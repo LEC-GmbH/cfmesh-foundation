@@ -67,15 +67,6 @@ class meshOctree
         //- Reference to surface to work on
         const triSurf& surface_;
 
-        //- neighbouring processors which can exchange data with the current one
-        //- this is only used in case of parallel calculations
-        labelList neiProcs_;
-
-        //- this list contains the first the last octree box coordinates on
-        //- a neighbour processor. They are used for parallel runs when the
-        //- leaves are sorted in Morton's Z-order
-        List<Pair<meshOctreeCubeCoordinates>> neiRange_;
-
         //- Root cube of the octree structure
         meshOctreeCube* initialCubePtr_;
         label initialCubeRotation_;
@@ -165,7 +156,6 @@ public:
         //- return leaves of the octree
         inline label numberOfLeaves() const;
         inline const meshOctreeCubeBasic& returnLeaf(const label) const;
-        inline short leafAtProc(const label) const;
         void findBoundaryPatchesForLeaf(const label, DynList<label>&) const;
         inline bool hasContainedTriangles(const label) const;
         inline void containedTriangles(const label, DynList<label>&) const;
@@ -344,25 +334,6 @@ public:
         //- return positions to find the leaves at each cube node
         inline const FixedList<FixedList<meshOctreeCubeCoordinates, 8>, 8>&
         positionsOfLeavesAtNodes() const;
-
-        //- exchange requests with other processors generating the octree
-        void exchangeRequestsWithNeighbourProcessors
-        (
-            const LongList<meshOctreeCubeCoordinates>& dataToSend,
-            LongList<meshOctreeCubeCoordinates>& dataToReceive
-        ) const;
-
-        //- exchange requests with other processors generating the octree
-        void exchangeRequestsWithNeighbourProcessors
-        (
-            const LongList<meshOctreeCubeCoordinates>& dataToSend,
-            const LongList<scalar>& rangesToSend,
-            LongList<meshOctreeCubeCoordinates>& dataToReceive,
-            LongList<scalar>& receivedRanges
-        ) const;
-
-        //- neighbour processors of the current one
-        inline const labelList& neiProcs() const;
 };
 
 

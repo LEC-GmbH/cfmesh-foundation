@@ -40,13 +40,8 @@ License
 #include "polyMeshGenAddressing.H"
 #include "boundBox.H"
 
-#include "helperFunctionsPar.H"
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
-
-//#define DEBUGMapping
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -81,141 +76,6 @@ void Foam::Module::meshSurfaceMapper2D::findMappingDistance
         mIter->second *= 16.0;
     }
 
-    if (Pstream::parRun())
-    {
-        // make sure that corner edges at parallel boundaries
-        // have the same range in which they accept the corners
-        const VRWGraph& beAtProcs = surfaceEngine_.beAtProcs();
-        const labelList& globalEdgeLabel =
-            surfaceEngine_.globalBoundaryEdgeLabel();
-        const Map<label>& globalToLocal =
-            surfaceEngine_.globalToLocalBndEdgeAddressing();
-
-        // create the map for exchanging data
-        std::map<label, DynList<labelledScalar>> exchangeData;
-        const DynList<label>& neiProcs = surfaceEngine_.beNeiProcs();
-        forAll(neiProcs, i)
-            exchangeData.insert
-            (
-                std::make_pair(neiProcs[i], DynList<labelledScalar>()));
-
-        forAll(edgesToMap, eI)
-        {
-            const label beI = edgesToMap[eI];
-
-            forAllRow(beAtProcs, beI, i)
-            {
-                const label neiProc = beAtProcs(beI, i);
-                if (neiProc == Pstream::myProcNo())
-                    continue;
-
-                exchangeData[neiProc].append
-                (
-                    labelledScalar(globalEdgeLabel[beI], mappingDistance[beI])
-                );
-            }
-        }
-
-        // exchange data between processors
-        LongList<labelledScalar> receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        // select the maximum mapping distance for processor points
-        forAll(receivedData, i)
-        {
-            const labelledScalar& ls = receivedData[i];
-
-            const label beI = globalToLocal[ls.scalarLabel()];
-
-            // choose the maximum value for the mapping distance
-            std::map<label, scalar>::iterator mIter = mappingDistance.find(beI);
-            mIter->second = Foam::max(mIter->second, ls.value());
-        }
-    }
-}
-
-
-void Foam::Module::meshSurfaceMapper2D::mapToSmallestDistance
-(
-    LongList<parMapperHelper>& parE
-)
-{
-    if (!Pstream::parRun())
-        return;
-
-    std::map<label, LongList<parMapperHelper>> exchangeData;
-    const DynList<label>& neiProcs = surfaceEngine_.beNeiProcs();
-    forAll(neiProcs, i)
-        exchangeData.insert
-        (
-            std::make_pair(neiProcs[i], LongList<parMapperHelper>())
-        );
-
-    const labelList& bp = surfaceEngine_.bp();
-    const edgeList& edges = surfaceEngine_.edges();
-    const VRWGraph& beAtProcs = surfaceEngine_.beAtProcs();
-    const labelList& globalEdgeLabel =
-        surfaceEngine_.globalBoundaryEdgeLabel();
-    const Map<label>& globalToLocal =
-        surfaceEngine_.globalToLocalBndEdgeAddressing();
-    const pointFieldPMG& points = surfaceEngine_.points();
-
-    Map<label> beToList(parE.size());
-
-    forAll(parE, i)
-    {
-        const label beI = parE[i].globalLabel();
-        beToList.insert(beI, i);
-
-        forAllRow(beAtProcs, beI, procI)
-        {
-            const label neiProc = beAtProcs(beI, procI);
-            if (neiProc == Pstream::myProcNo())
-                continue;
-
-            exchangeData[neiProc].append
-            (
-                parMapperHelper
-                (
-                    parE[i].coordinates(),
-                    parE[i].movingDistance(),
-                    globalEdgeLabel[beI],
-                    parE[i].pointPatch()
-                )
-            );
-        }
-    }
-
-    // exchange data
-    LongList<parMapperHelper> receivedData;
-    help::exchangeMap(exchangeData, receivedData);
-
-    // select the point with the smallest moving distance
-    meshSurfaceEngineModifier surfModifier(surfaceEngine_);
-    forAll(receivedData, i)
-    {
-        const parMapperHelper& ph = receivedData[i];
-
-        const label beI = globalToLocal[ph.globalLabel()];
-
-        parMapperHelper& phOrig = parE[beToList[beI]];
-        if (phOrig.movingDistance() < ph.movingDistance())
-        {
-            const edge& e = edges[beI];
-
-            point newP = ph.coordinates();
-
-            newP.z() = points[e.start()].z();
-            surfModifier.moveBoundaryVertex(bp[e.start()], newP);
-
-            newP.z() = points[e.end()].z();
-            surfModifier.moveBoundaryVertex(bp[e.end()], newP);
-
-            phOrig = ph;
-        }
-    }
-
-    surfModifier.updateVertexNormals();
 }
 
 
@@ -233,9 +93,7 @@ void Foam::Module::meshSurfaceMapper2D::adjustZCoordinates()
     const boolList& minZPoint = mesh2DEngine.zMinPoints();
     const boolList& maxZPoint = mesh2DEngine.zMaxPoints();
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(minZPoint, pointI)
     {
         point newP = points[pointI];
@@ -281,10 +139,6 @@ void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurface
     const labelList& bp = surfaceEngine_.bp();
     const pointFieldPMG& points = surfaceEngine_.points();
 
-    const VRWGraph* beAtProcsPtr(nullptr);
-    if (Pstream::parRun())
-        beAtProcsPtr = &surfaceEngine_.beAtProcs();
-
     labelLongList nodesToMap;
     forAll(edgesToMap, i)
     {
@@ -294,22 +148,14 @@ void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurface
     }
 
     meshSurfaceEngineModifier surfaceModifier(surfaceEngine_);
-    LongList<parMapperHelper> parallelBndEdges;
 
-    # ifdef USE_OMP
     const label size = edgesToMap.size();
-    # pragma omp parallel for if (size > 1000) shared(parallelBndEdges) \
+    # pragma omp parallel for if (size > 1000) \
     schedule(dynamic, Foam::max(1, size/(3*omp_get_max_threads())))
-    # endif
     forAll(edgesToMap, i)
     {
         const label beI = edgesToMap[i];
         const edge& e = edges[beI];
-
-        # ifdef DEBUGMapping
-        Info<< nl << "Mapping edge " << beI << " with nodes "
-             << e << endl;
-        # endif
 
         label patch, nt;
         point mapPoint;
@@ -329,32 +175,9 @@ void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurface
 
         mapPoint.z() = points[e.end()].z();
         surfaceModifier.moveBoundaryVertexNoUpdate(bp[e.end()], mapPoint);
-
-        if (beAtProcsPtr && beAtProcsPtr->sizeOfRow(beI))
-        {
-            # ifdef USE_OMP
-            # pragma omp critical
-            # endif
-            parallelBndEdges.append
-            (
-                parMapperHelper
-                (
-                    mapPoint,
-                    dSq,
-                    beI,
-                    patch
-                )
-            );
-        }
-
-        # ifdef DEBUGMapping
-        Info<< "Mapped edge " << edges[beI] << endl;
-        # endif
     }
 
     surfaceModifier.updateGeometry(nodesToMap);
-
-    mapToSmallestDistance(parallelBndEdges);
 }
 
 
@@ -398,9 +221,7 @@ void Foam::Module::meshSurfaceMapper2D::mapCorners
     // triSurface
     meshSurfaceEngineModifier sMod(surfaceEngine_);
 
-    # ifdef USE_OMP
     # pragma omp parallel for if (edgesToMap.size() > 10)
-    # endif
     forAll(edgesToMap, eI)
     {
         const label beI = edgesToMap[eI];
@@ -519,28 +340,19 @@ void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurfacePatches
     const VRWGraph& edgePatches = surfaceEngine_.edgePatches();
     const labelList& bp = surfaceEngine_.bp();
 
-    const VRWGraph* beAtProcsPtr(nullptr);
-    if (Pstream::parRun())
-        beAtProcsPtr = &surfaceEngine_.beAtProcs();
-
     meshSurfaceEngineModifier surfaceModifier(surfaceEngine_);
-    LongList<parMapperHelper> parallelBndEdges;
     labelLongList selectedCorners;
 
-    # ifdef USE_OMP
     const label size = edgesToMap.size();
-    # pragma omp parallel for if (size > 1000) shared(parallelBndEdges) \
+    # pragma omp parallel for if (size > 1000) \
     schedule(dynamic, Foam::max(50, size/(3*omp_get_max_threads())))
-    # endif
     forAll(edgesToMap, nI)
     {
         const label beI = edgesToMap[nI];
 
         if (edgePatches.sizeOfRow(beI) == 2)
         {
-            # ifdef USE_OMP
             # pragma omp critical
-            # endif
             selectedCorners.append(beI);
 
             continue;
@@ -567,30 +379,7 @@ void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurfacePatches
 
         mapPoint.z() = points[e.end()].z();
         surfaceModifier.moveBoundaryVertexNoUpdate(bp[e.end()], mapPoint);
-
-        if (beAtProcsPtr && beAtProcsPtr->sizeOfRow(beI))
-        {
-            # ifdef USE_OMP
-            # pragma omp critical
-            # endif
-            parallelBndEdges.append
-            (
-                parMapperHelper
-                (
-                    mapPoint,
-                    dSq,
-                    beI,
-                    -1
-                )
-            );
-        }
-
-        # ifdef DEBUGMapping
-        Info<< "Mapped edge " << edges[beI] << endl;
-        # endif
     }
-
-    mapToSmallestDistance(parallelBndEdges);
 
     mapCorners(selectedCorners);
 

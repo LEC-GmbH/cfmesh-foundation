@@ -42,7 +42,6 @@ License
 #include "labelPair.H"
 #include "labelledScalar.H"
 #include "labelledPoint.H"
-#include "refLabelledPoint.H"
 #include "HashSet.H"
 #include "triSurfacePartitioner.H"
 #include "triSurfaceClassifyEdges.H"
@@ -50,8 +49,6 @@ License
 #include "meshSurfaceCheckInvertedVertices.H"
 #include "meshSurfaceCheckEdgeTypes.H"
 #include "demandDrivenData.H"
-
-//#define DEBUGEdgeExtractor
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
@@ -72,48 +69,6 @@ void Foam::Module::edgeExtractor::calculateValence()
             ++pointValence_[bp[bf[pI]]];
     }
 
-    if (Pstream::parRun())
-    {
-        const Map<label>& globalToLocal =
-            mse.globalToLocalBndPointAddressing();
-        const VRWGraph& bpAtProcs = mse.bpAtProcs();
-        const DynList<label>& bpNeiProcs = mse.bpNeiProcs();
-
-        std::map<label, LongList<labelPair>> exchangeData;
-        forAll(bpNeiProcs, i)
-            exchangeData.insert
-            (
-                std::make_pair(bpNeiProcs[i], LongList<labelPair>())
-            );
-
-        forAllConstIters(globalToLocal, iter)
-        {
-            const label bpI = iter();
-
-            forAllRow(bpAtProcs, bpI, i)
-            {
-                const label neiProc = bpAtProcs(bpI, i);
-
-                if (neiProc == Pstream::myProcNo())
-                    continue;
-
-                exchangeData[neiProc].append
-                (
-                    labelPair(iter.key(), pointValence_[bpI])
-                );
-            }
-        }
-
-        LongList<labelPair> receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            const labelPair& lp = receivedData[i];
-
-            pointValence_[globalToLocal[lp.first()]] += lp.second();
-        }
-    }
 }
 
 
@@ -149,9 +104,7 @@ void Foam::Module::edgeExtractor::calculateSingleCellEdge()
     nCellsAtEdge_.setSize(edgeFaces.size());
     nCellsAtEdge_ = 0;
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(cells, cellI)
     {
         const cell& c = cells[cellI];
@@ -180,9 +133,7 @@ void Foam::Module::edgeExtractor::calculateSingleCellEdge()
                     {
                         foundEdge.append(be);
 
-                        # ifdef USE_OMP
                         # pragma omp atomic
-                        # endif
                         ++nCellsAtEdge_[beI];
                     }
                 }
@@ -202,16 +153,12 @@ void Foam::Module::edgeExtractor::findPatchesNearSurfaceFace()
     patchesNearFace_.setSize(bFaces.size());
     labelLongList nPatchesAtFace(bFaces.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel
-    # endif
     {
         labelLongList localData;
         DynList<label> nearFacets;
 
-        # ifdef USE_OMP
         # pragma omp for schedule(dynamic, 40)
-        # endif
         forAll(bFaces, bfI)
         {
             const face& bf = bFaces[bfI];
@@ -238,16 +185,12 @@ void Foam::Module::edgeExtractor::findPatchesNearSurfaceFace()
                 localData.append(nearPatches[i]);
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
 
         # pragma omp master
         patchesNearFace_.setSizeAndRowSize(nPatchesAtFace);
 
         # pragma omp barrier
-        # else
-        patchesNearFace_.setSizeAndRowSize(nPatchesAtFace);
-        # endif
 
         // copy the data to the graph
         label counter(0);
@@ -273,16 +216,12 @@ void Foam::Module::edgeExtractor::findFeatureEdgesNearEdge()
     featureEdgesNearEdge_.setSize(edges.size());
     labelLongList nFeatureEdgesAtEdge(edges.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel
-    # endif
     {
         labelLongList localData;
         DynList<label> nearEdges;
 
-        # ifdef USE_OMP
         # pragma omp for schedule(dynamic, 40)
-        # endif
         forAll(edges, edgeI)
         {
             const edge& e = edges[edgeI];
@@ -307,16 +246,12 @@ void Foam::Module::edgeExtractor::findFeatureEdgesNearEdge()
                 localData.append(nearEdges[i]);
         }
 
-        # ifdef USE_OMP
         # pragma omp barrier
 
         # pragma omp master
         featureEdgesNearEdge_.setSizeAndRowSize(nFeatureEdgesAtEdge);
 
         # pragma omp barrier
-        # else
-        featureEdgesNearEdge_.setSizeAndRowSize(nFeatureEdgesAtEdge);
-        # endif
 
         // copy the data to the graph
         label counter(0);
@@ -345,53 +280,9 @@ void Foam::Module::edgeExtractor::markPatchPoints(boolList& patchPoint)
     patchPoint = true;
 
     std::map<label, label> otherProcPatch;
-    if (Pstream::parRun())
-    {
-        const Map<label>& otherProc = mse.otherEdgeFaceAtProc();
-        const Map<label>& globalToLocal =
-            mse.globalToLocalBndEdgeAddressing();
-
-        // create communication matrix
-        std::map<label, labelLongList> exchangeData;
-        const DynList<label>& neiProcs = mse.beNeiProcs();
-        forAll(neiProcs, procI)
-            exchangeData.insert
-            (
-                std::make_pair(neiProcs[procI], labelLongList())
-            );
-
-        forAllConstIters(globalToLocal, it)
-        {
-            const label beI = it();
-
-            if (edgeFaces.sizeOfRow(beI) == 1)
-            {
-                labelLongList& dts = exchangeData[otherProc[beI]];
-                // send data as follows:
-                // 1. global edge label
-                // 2. patch of the attached boundary face
-                dts.append(it.key());
-                dts.append(facePatch_[edgeFaces(beI, 0)]);
-            }
-        }
-
-        labelLongList receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        label counter(0);
-        while (counter < receivedData.size())
-        {
-            const label beI = globalToLocal[receivedData[counter++]];
-            const label fPatch = receivedData[counter++];
-
-            otherProcPatch[beI] = fPatch;
-        }
-    }
 
     // set the patchPoint to false for all vertices at feature edges
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(edgeFaces, beI)
     {
         if (edgeFaces.sizeOfRow(beI) == 2)
@@ -424,39 +315,6 @@ void Foam::Module::edgeExtractor::markPatchPoints(boolList& patchPoint)
             patchPoint[bp[e.end()]] = false;
         }
     }
-
-    if (Pstream::parRun())
-    {
-        // make sure that the information is spread to all processors
-        const VRWGraph& bpAtProcs = mse.bpAtProcs();
-        const DynList<label>& neiProcs = mse.bpNeiProcs();
-        const labelList& globalPointLabel =
-            mse.globalBoundaryPointLabel();
-        const Map<label>& globalToLocal =
-            mse.globalToLocalBndPointAddressing();
-
-
-        std::map<label, labelLongList> sendData;
-        forAll(neiProcs, i)
-            sendData.insert(std::make_pair(neiProcs[i], labelLongList()));
-
-        forAll(bpAtProcs, bpI)
-        {
-            forAllRow(bpAtProcs, bpI, i)
-            {
-                const label neiProc = bpAtProcs(bpI, i);
-
-                if (neiProc != Pstream::myProcNo())
-                    sendData[neiProc].append(globalPointLabel[bpI]);
-            }
-        }
-
-        labelLongList receivedData;
-        help::exchangeMap(sendData, receivedData);
-
-        forAll(receivedData, i)
-                patchPoint[globalToLocal[receivedData[i]]] = false;
-    }
 }
 
 
@@ -465,9 +323,7 @@ Foam::Module::edgeExtractor::surfaceEngine() const
 {
     if (!surfaceEnginePtr_)
     {
-        # ifdef USE_OMP
         # pragma omp critical
-        # endif
         {
             if (!surfaceEnginePtr_)
             {
@@ -485,9 +341,7 @@ Foam::Module::edgeExtractor::partitioner() const
 {
     if (!surfPartitionerPtr_)
     {
-        # ifdef USE_OMP
         # pragma omp critical
-        # endif
         {
             if (!surfPartitionerPtr_)
             {
@@ -530,11 +384,7 @@ void Foam::Module::edgeExtractor::findFaceCandidates
     bool deleteOtherFacePatchPtr(false);
     if (!otherFacePatchPtr)
     {
-        Map<label>* helperPtr = new Map<label>();
-
-        findOtherFacePatchesParallel(*helperPtr, facePatchPtr);
-
-        otherFacePatchPtr = helperPtr;
+        otherFacePatchPtr = new Map<label>();
         deleteOtherFacePatchPtr = true;
     }
 
@@ -544,14 +394,10 @@ void Foam::Module::edgeExtractor::findFaceCandidates
     const VRWGraph& faceEdges = mse.faceEdges();
     const VRWGraph& edgeFaces = mse.edgeFaces();
 
-    # ifdef USE_OMP
     # pragma omp parallel if (faceEdges.size() > 1000)
-    # endif
     {
-        # ifdef USE_OMP
         labelLongList procCandidates;
         # pragma omp for schedule(dynamic, 40)
-        # endif
         forAll(faceEdges, bfI)
         {
             DynList<label> allNeiPatches;
@@ -576,21 +422,15 @@ void Foam::Module::edgeExtractor::findFaceCandidates
             if (allNeiPatches.size() > 1)
             {
                 // this face is probably near some feature edge
-                # ifdef USE_OMP
                 procCandidates.append(bfI);
-                # else
-                faceCandidates.append(bfI);
-                # endif
             }
         }
 
-        # ifdef USE_OMP
         # pragma omp critical
         {
             forAll(procCandidates, i)
                 faceCandidates.append(procCandidates[i]);
         }
-        # endif
     }
 
     if (deleteOtherFacePatchPtr)
@@ -598,64 +438,6 @@ void Foam::Module::edgeExtractor::findFaceCandidates
 }
 
 
-void Foam::Module::edgeExtractor::findOtherFacePatchesParallel
-(
-    Map<label>& otherFacePatch,
-    const labelList* facePatchPtr
-) const
-{
-    otherFacePatch.clear();
-
-    if (!facePatchPtr)
-        facePatchPtr = &facePatch_;
-
-    const labelList& fPatches = *facePatchPtr;
-
-    if (Pstream::parRun())
-    {
-        const meshSurfaceEngine& mse = this->surfaceEngine();
-        const VRWGraph& edgeFaces = mse.edgeFaces();
-        const Map<label>& otherProc = mse.otherEdgeFaceAtProc();
-        const Map<label>& globalToLocal =
-            mse.globalToLocalBndEdgeAddressing();
-
-        // create communication matrix
-        std::map<label, labelLongList> exchangeData;
-        const DynList<label>& neiProcs = mse.beNeiProcs();
-        forAll(neiProcs, procI)
-            exchangeData.insert
-            (
-                std::make_pair(neiProcs[procI], labelLongList())
-            );
-
-        forAllConstIters(globalToLocal, it)
-        {
-            const label beI = it();
-
-            if (edgeFaces.sizeOfRow(beI) == 1)
-            {
-                labelLongList& dts = exchangeData[otherProc[beI]];
-                // send data as follows:
-                // 1. global edge label
-                // 2. patch of the attached boundary face
-                dts.append(it.key());
-                dts.append(fPatches[edgeFaces(beI, 0)]);
-            }
-        }
-
-        labelLongList receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        label counter(0);
-        while (counter < receivedData.size())
-        {
-            const label beI = globalToLocal[receivedData[counter++]];
-            const label fPatch = receivedData[counter++];
-
-            otherFacePatch.insert(beI, fPatch);
-        }
-    }
-}
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
@@ -722,14 +504,10 @@ void Foam::Module::edgeExtractor::moveVerticesTowardsDiscontinuities
 
     for (label iterI = 0; iterI < nIterations; ++iterI)
     {
-        # ifdef USE_OMP
         # pragma omp parallel
-        # endif
         {
             // find displacements of face centres
-            # ifdef USE_OMP
             # pragma omp for schedule(dynamic, 40)
-            # endif
             forAll(bFaces, bfI)
             {
                 const vector centre = bFaces[bfI].centre(points);
@@ -750,21 +528,15 @@ void Foam::Module::edgeExtractor::moveVerticesTowardsDiscontinuities
             }
 
             // initialise displacements
-            # ifdef USE_OMP
             # pragma omp for schedule(dynamic, 40)
-            # endif
             forAll(pointDisplacements, bpI)
                 pointDisplacements[bpI] = labelledPoint(0, vector::zero);
 
-            # ifdef USE_OMP
             # pragma omp barrier
-            # endif
 
             // calculate displacements of boundary points as the average
             // of face centre displacements
-            # ifdef USE_OMP
             # pragma omp for schedule(dynamic, 40)
-            # endif
             forAll(pointFaces, bpI)
             {
                 forAllRow(pointFaces, bpI, pfI)
@@ -776,53 +548,7 @@ void Foam::Module::edgeExtractor::moveVerticesTowardsDiscontinuities
             }
         }
 
-        if (Pstream::parRun())
-        {
-            const Map<label>& globalToLocal =
-                mse.globalToLocalBndPointAddressing();
-            const DynList<label>& neiProcs = mse.bpNeiProcs();
-            const VRWGraph& bpAtProcs = mse.bpAtProcs();
-
-            std::map<label, LongList<refLabelledPoint>> exchangeData;
-            forAll(neiProcs, i)
-                exchangeData[i] = LongList<refLabelledPoint>();
-
-            forAllConstIters(globalToLocal, iter)
-            {
-                const label bpI = iter();
-
-                forAllRow(bpAtProcs, bpI, i)
-                {
-                    const label neiProc = bpAtProcs(bpI, i);
-
-                    if (neiProc == Pstream::myProcNo())
-                        continue;
-
-                    exchangeData[neiProc].append
-                    (
-                        refLabelledPoint(iter.key(), pointDisplacements[bpI])
-                    );
-                }
-            }
-
-            LongList<refLabelledPoint> receivedData;
-            help::exchangeMap(exchangeData, receivedData);
-
-            forAll(receivedData, i)
-            {
-                const label globalLabel = receivedData[i].objectLabel();
-                const labelledPoint& lp = receivedData[i].lPoint();
-
-                const label bpI = globalToLocal[globalLabel];
-
-                pointDisplacements[bpI].coordinates() += lp.coordinates();
-                pointDisplacements[bpI].pointLabel() += lp.pointLabel();
-            }
-        }
-
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 40)
-        # endif
         forAll(pointDisplacements, bpI)
         {
             const labelledPoint& lp = pointDisplacements[bpI];
@@ -876,9 +602,7 @@ void Foam::Module::edgeExtractor::distributeBoundaryFaces()
     // find patches to which the surface points are mapped to
     pointPatch_.setSize(bPoints.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(bPoints, bpI)
     {
         const point& bp = points[bPoints[bpI]];
@@ -904,9 +628,7 @@ void Foam::Module::edgeExtractor::distributeBoundaryFaces()
 
     // find the patch for face by finding the patch nearest
     // to the face centre
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40)
-    # endif
     forAll(bFaces, bfI)
     {
         const face& bf = bFaces[bfI];
@@ -959,28 +681,14 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
         // allocate a copy of boundary patches
         labelList newBoundaryPatches(facePatch_);
 
-        // check whether there exist situations where a boundary face
-        // is surrounded by more faces in different patches than the
-        // faces in the current patch
-        if (Pstream::parRun())
-        {
-            findOtherFacePatchesParallel
-            (
-                otherProcNewPatch,
-                &facePatch_
-            );
-        }
-
         // find the faces which have neighbouring faces in other patches
         labelLongList candidates;
         findFaceCandidates(candidates, &facePatch_, &otherProcNewPatch);
 
         // go through the list of faces and check if they shall remain
         // in the current patch
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 40) \
         reduction(+ : nCorrected)
-        # endif
         forAll(candidates, i)
         {
             const label bfI = candidates[i];
@@ -1073,7 +781,6 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
             }
         }
 
-        reduce(nCorrected, sumOp<label>());
 
         if (nCorrected)
         {
@@ -1104,14 +811,11 @@ void Foam::Module::edgeExtractor::findEdgeCandidates()
     const VRWGraph& faceEdges = mse.faceEdges();
 
     Map<label> otherFacePatch;
-    findOtherFacePatchesParallel(otherFacePatch, &facePatch_);
     labelLongList faceCandidates;
     findFaceCandidates(faceCandidates, &facePatch_, &otherFacePatch);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40) \
     if (faceCandidates.size() > 100)
-    # endif
     forAll(faceCandidates, fcI)
     {
         const label bfI = faceCandidates[fcI];
@@ -1131,9 +835,7 @@ void Foam::Module::edgeExtractor::findEdgeCandidates()
     List<List<labelledScalar>> featureEdgesNearPoint(bPoints.size());
 
     DynList<label> containedTriangles;
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40) private(containedTriangles)
-    # endif
     forAll(pEdges, bpI)
     {
         // TODO rewrite for execution on distributed machines
@@ -1226,10 +928,8 @@ void Foam::Module::edgeExtractor::findEdgeCandidates()
 
     List<List<labelledScalar>> edgeGroupAndWeights(edges.size());
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40) \
     if (edges.size() > 1000)
-    # endif
     forAll(edgeType_, edgeI)
     {
         if (edgeType_[edgeI] & CANDIDATE)
@@ -1471,9 +1171,7 @@ bool Foam::Module::edgeExtractor::checkConcaveEdgeCells()
 
         // check whether exist edges of a single cell which shall be projected
         // onto a concave edge
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 40) reduction(+ : nChanged)
-        # endif
         forAll(edgeType_, beI)
         {
             if (!(edgeType_[beI] & SINGLECELLEDGE))
@@ -1626,8 +1324,6 @@ bool Foam::Module::edgeExtractor::checkConcaveEdgeCells()
             }
         }
 
-        if (Pstream::parRun())
-            reduce(nChanged, sumOp<label>());
 
         if (nChanged)
             changed = true;
@@ -1657,33 +1353,10 @@ bool Foam::Module::edgeExtractor::checkFacePatchesTopology()
     label nIter(0);
     do
     {
-        # ifdef DEBUGEdgeExtractor
-        {
-            const triSurf* surfPtr = surfaceWithPatches();
-            surfPtr->writeSurface
-            (
-                "surfaceTopologyIter_" + Foam::name(nIter) + ".stl"
-            );
-            delete surfPtr;
-        }
-        # endif
-
         nCorrected = 0;
 
         // allocate a copy of boundary patches
         labelList newBoundaryPatches(facePatch_);
-
-        // check whether there exist situations where a boundary face
-        // is surrounded by more faces in different patches than the
-        // faces in the current patch
-        if (Pstream::parRun())
-        {
-            findOtherFacePatchesParallel
-            (
-                otherProcNewPatch,
-                &facePatch_
-            );
-        }
 
         // find the faces which have neighbouring faces in other patches
         labelLongList candidates;
@@ -1691,10 +1364,8 @@ bool Foam::Module::edgeExtractor::checkFacePatchesTopology()
 
         // go through the list of faces and check if they shall remain
         // in the current patch
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 40) \
         reduction(+ : nCorrected)
-        # endif
         forAll(candidates, i)
         {
             const label bfI = candidates[i];
@@ -1798,16 +1469,13 @@ bool Foam::Module::edgeExtractor::checkFacePatchesTopology()
         }
 
         // evaluate the new situation and ensure that no oscillation occur
-        reduce(nCorrected, sumOp<label>());
         if (nCorrected)
         {
             faceEvaluator faceEvaluator(*this);
 
             faceEvaluator.setNewBoundaryPatches(newBoundaryPatches);
 
-            # ifdef USE_OMP
             # pragma omp parallel for schedule(dynamic, 50)
-            # endif
             forAll(candidates, i)
             {
                 const label bfI = candidates[i];
@@ -1877,48 +1545,6 @@ class featureEdgesNeiOp
                 ++nFeatureEdgesAtPoint_[bp[e.end()]];
             }
 
-            if (Pstream::parRun())
-            {
-                const Map<label>& globalToLocal =
-                    mse_.globalToLocalBndPointAddressing();
-                const DynList<label>& neiProcs = mse_.bpNeiProcs();
-                const VRWGraph& bpAtProcs = mse_.bpAtProcs();
-
-                std::map<label, DynList<labelPair>> exchangeData;
-                forAll(neiProcs, i)
-                    exchangeData[neiProcs[i]].clear();
-
-                // fill the data from sending
-                forAllConstIters(globalToLocal, it)
-                {
-                    const label bpI = it();
-
-                    forAllRow(bpAtProcs, bpI, i)
-                    {
-                        const label neiProc = bpAtProcs(bpI, i);
-
-                        if (neiProc == Pstream::myProcNo())
-                            continue;
-
-                        exchangeData[neiProc].append
-                        (
-                            labelPair(it.key(), nFeatureEdgesAtPoint_[bpI])
-                        );
-                    }
-                }
-
-                // exchange the data between the procesors
-                LongList<labelPair> receivedData;
-                help::exchangeMap(exchangeData, receivedData);
-
-                forAll(receivedData, i)
-                {
-                    const labelPair& lp = receivedData[i];
-
-                    nFeatureEdgesAtPoint_[globalToLocal[lp.first()]] +=
-                        lp.second();
-                }
-            }
         }
 
 public:
@@ -1981,69 +1607,6 @@ public:
         }
     }
 
-    template<class labelListType>
-    void collectGroups
-    (
-        std::map<label, DynList<label>>& neiGroups,
-        const labelListType& elementInGroup,
-        const DynList<label>& localGroupLabel
-    ) const
-    {
-        const Map<label>& globalToLocal = mse_.globalToLocalBndPointAddressing();
-        const VRWGraph& bpAtProcs = mse_.bpAtProcs();
-        const VRWGraph& bpEdges = mse_.boundaryPointEdges();
-
-        const DynList<label>& neiProcs = mse_.beNeiProcs();
-
-        std::map<label, DynList<labelPair>> exchangeData;
-        forAll(neiProcs, i)
-            exchangeData[neiProcs[i]].clear();
-
-        forAllConstIters(globalToLocal, it)
-        {
-            const label bpI = it();
-
-            if (nFeatureEdgesAtPoint_[bpI] != 2)
-                continue;
-
-            forAllRow(bpEdges, bpI, i)
-            {
-                const label beI = bpEdges(bpI, i);
-
-                if (!isFeatureEdge_[beI])
-                    continue;
-
-                const label groupI = elementInGroup[beI];
-
-                forAllRow(bpAtProcs, bpI, ppI)
-                {
-                    const label neiProc = bpAtProcs(bpI, ppI);
-
-                    if (neiProc == Pstream::myProcNo())
-                        continue;
-
-                    exchangeData[neiProc].append
-                    (
-                        labelPair(it.key(), localGroupLabel[groupI])
-                    );
-                }
-            }
-        }
-
-        LongList<labelPair> receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            const labelPair& lp = receivedData[i];
-            const label groupI = elementInGroup[globalToLocal[lp.first()]];
-
-            DynList<label>& ng = neiGroups[localGroupLabel[groupI]];
-
-            // store the connection over the inter-processor boundary
-            ng.appendUniq(lp.second());
-        }
-    }
 };
 
 
@@ -2101,17 +1664,6 @@ bool Foam::Module::edgeExtractor::checkFacePatchesGeometry()
 
     do
     {
-        # ifdef DEBUGEdgeExtractor
-        {
-            const triSurf* surfPtr = surfaceWithPatches();
-            surfPtr->writeSurface
-            (
-                "surfaceIter_" + Foam::name(iter) + ".stl"
-            );
-            delete surfPtr;
-        }
-        # endif
-
         // create feature edges and corners information
         meshSurfacePartitioner mPart(mse, facePatch_);
 
@@ -2132,7 +1684,7 @@ bool Foam::Module::edgeExtractor::checkFacePatchesGeometry()
         meshSurfaceCheckInvertedVertices surfCheck(mPart, activePoints);
         const labelHashSet& invertedPoints = surfCheck.invertedVertices();
 
-        if (returnReduce(invertedPoints.size(), sumOp<label>()) == 0 )
+        if (invertedPoints.size() == 0 )
             return false;
 
         WarningInFunction
@@ -2156,18 +1708,6 @@ bool Foam::Module::edgeExtractor::checkFacePatchesGeometry()
         nCorrected = 0;
         newBoundaryPatches = facePatch_;
 
-        // check whether there exist situations where a boundary face
-        // is surrounded by more faces in different patches than the
-        // faces in the current patch
-        if (Pstream::parRun())
-        {
-            findOtherFacePatchesParallel
-            (
-                otherProcNewPatch,
-                &facePatch_
-            );
-        }
-
         // find the faces which have neighbouring faces in other patches
         labelLongList candidates;
         forAll(bFaces, bfI)
@@ -2182,9 +1722,7 @@ bool Foam::Module::edgeExtractor::checkFacePatchesGeometry()
                 }
         }
 
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 5) reduction(+ : nCorrected)
-        # endif
         forAll(candidates, i)
         {
             const label bfI = candidates[i];
@@ -2226,7 +1764,6 @@ bool Foam::Module::edgeExtractor::checkFacePatchesGeometry()
         }
 
         // check if any faces are re-assigned to some other patch
-        reduce(nCorrected, sumOp<label>());
         if (nCorrected == 0)
             break;
 
@@ -2252,8 +1789,6 @@ bool Foam::Module::edgeExtractor::checkFacePatchesGeometry()
         }
 
         nCorrected = changedFaces.size();
-
-        reduce(nCorrected, sumOp<label>());
 
         if (nCorrected)
         {
@@ -2288,59 +1823,9 @@ void Foam::Module::edgeExtractor::projectDeterminedFeatureVertices()
             pointPatches[bp[bf[pI]]].appendUniq(facePatch_[bfI]);
     }
 
-    if (Pstream::parRun())
-    {
-        const Map<label>& globalToLocal =
-            mse.globalToLocalBndPointAddressing();
-        const VRWGraph& bpAtProcs = mse.bpAtProcs();
-        const DynList<label>& bpNeiProcs = mse.bpNeiProcs();
-
-        std::map<label, LongList<labelPair>> exchangeData;
-        forAll(bpNeiProcs, i)
-            exchangeData.insert
-            (
-                std::make_pair(bpNeiProcs[i], LongList<labelPair>())
-            );
-
-        // collect the data distributed to others
-        forAllConstIters(globalToLocal, it)
-        {
-            const label bpI = it();
-
-            const DynList<label, 5>& pPatches = pointPatches[bpI];
-
-            forAllRow(bpAtProcs, bpI, i)
-            {
-                const label neiProc = bpAtProcs(bpI, i);
-
-                if (neiProc == Pstream::myProcNo())
-                    continue;
-
-                LongList<labelPair>& data = exchangeData[neiProc];
-
-                forAll(pPatches, ppI)
-                    data.append(labelPair(it.key(), pPatches[ppI]));
-            }
-        }
-
-        // exchange information
-        LongList<labelPair> receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        // unify the data
-        forAll(receivedData, i)
-        {
-            const labelPair& lp = receivedData[i];
-
-            pointPatches[globalToLocal[lp.first()]].appendUniq(lp.second());
-        }
-    }
-
     meshSurfaceEngineModifier surfMod(mse);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 10)
-    # endif
     forAll(pointPatches, bpI)
     {
         if (pointPatches[bpI].size() < 2)
@@ -2404,7 +1889,6 @@ void Foam::Module::edgeExtractor::projectDeterminedFeatureVertices()
         surfMod.moveBoundaryVertexNoUpdate(bpI, newP);
     }
 
-    surfMod.syncVerticesAtParallelBoundaries();
     surfMod.updateGeometry();
 }
 
@@ -2428,24 +1912,10 @@ void Foam::Module::edgeExtractor::extractEdges()
 
     distributeBoundaryFacesNormalAlignment();
 
-    # ifdef DEBUGEdgeExtractor
-    const triSurf* sPtr = surfaceWithPatches();
-    sPtr->writeSurface("initialDistributionOfPatches.stl");
-    deleteDemandDrivenData(sPtr);
-    # endif
-
     Info<< "Starting topological adjustment of patches" << endl;
     if (checkFacePatchesTopology())
     {
         Info<< "Finished topological adjustment of patches" << endl;
-
-        # ifdef DEBUGEdgeExtractor
-        Info<< "Changes due to face patches" << endl;
-        fileName sName("checkFacePatches" + Foam::name(nIter) + ".stl");
-        sPtr = surfaceWithPatches();
-        sPtr->writeSurface(sName);
-        deleteDemandDrivenData(sPtr);
-        # endif
     }
     else
     {
@@ -2461,13 +1931,6 @@ void Foam::Module::edgeExtractor::extractEdges()
     {
         Info<< "No geometrical adjustment was needed" << endl;
     }
-
-    # ifdef DEBUGEdgeExtractor
-    const triSurf* sPtr = surfaceWithPatches();
-    sPtr->writeSurface("finalDistributionOfPatches.stl");
-    deleteDemandDrivenData(sPtr);
-    # endif
-
 }
 
 

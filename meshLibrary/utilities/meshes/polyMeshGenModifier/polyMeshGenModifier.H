@@ -80,10 +80,6 @@ class polyMeshGenModifier
             pointFaces.reverseAddressing(mesh_.points().size(), faces);
         }
 
-        //- re-order positions of processor boundary faces
-        //- they should comea immediately after the internal faces
-        void reorderProcBoundaryFaces();
-
 
 protected:
 
@@ -139,12 +135,6 @@ public:
             return mesh_.cells_;
         }
 
-        //- access to processor boundary data
-        inline PtrList<processorBoundaryPatch>& procBoundariesAccess()
-        {
-            return mesh_.procBoundaries_;
-        }
-
         //- access to boundary data
         inline PtrList<boundaryPatch>& boundariesAccess()
         {
@@ -184,23 +174,6 @@ public:
             const labelLongList& faceOwners,
             const labelLongList& facePatches
         );
-
-        //- add additional faces into processor patches
-        void addProcessorFaces
-        (
-            const VRWGraph& procFaces,
-            const labelLongList& facePatches
-        );
-
-        //- add new processor patch and return its label
-        label addProcessorPatch(const label otherProcLabel);
-
-        //- remove empty processor patch
-        bool removeEmptyProcessorPatches();
-
-        //- add buffer cells needed for exporting the mesh in the format
-        //- required by some solvers
-        void addBufferCells();
 
         //- zip up topologically open cells
         void zipUpCells();

@@ -42,129 +42,12 @@ License
 #include "labelPair.H"
 #include "labelledScalar.H"
 #include "labelledPoint.H"
-#include "refLabelledPoint.H"
 #include "HashSet.H"
 #include "triSurfacePartitioner.H"
 #include "triSurfaceClassifyEdges.H"
 #include "demandDrivenData.H"
 
-//#define DEBUGEdgeExtractor
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
-
-void Foam::Module::edgeExtractor::faceEvaluator::calculateNeiPatchesParallel()
-{
-    otherFacePatch_.clear();
-
-    const labelList& fPatches = extractor_.facePatch_;
-
-    if (Pstream::parRun())
-    {
-        const meshSurfaceEngine& mse = extractor_.surfaceEngine();
-        const VRWGraph& edgeFaces = mse.edgeFaces();
-        const Map<label>& otherProc = mse.otherEdgeFaceAtProc();
-        const Map<label>& globalToLocal =
-            mse.globalToLocalBndEdgeAddressing();
-
-        // create communication matrix
-        std::map<label, labelLongList> exchangeData;
-        const DynList<label>& neiProcs = mse.beNeiProcs();
-        forAll(neiProcs, procI)
-            exchangeData.insert
-            (
-                std::make_pair(neiProcs[procI], labelLongList())
-            );
-
-        forAllConstIters(globalToLocal, it)
-        {
-            const label beI = it();
-
-            if (edgeFaces.sizeOfRow(beI) == 1)
-            {
-                labelLongList& dts = exchangeData[otherProc[beI]];
-                // send data as follows:
-                // 1. global edge label
-                // 2. patch of the attached boundary face
-                dts.append(it.key());
-                dts.append(fPatches[edgeFaces(beI, 0)]);
-            }
-        }
-
-        labelLongList receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        label counter(0);
-        while (counter < receivedData.size())
-        {
-            const label beI = globalToLocal[receivedData[counter++]];
-            const label fPatch = receivedData[counter++];
-
-            otherFacePatch_.insert(beI, fPatch);
-        }
-    }
-}
-
-
-void Foam::Module::edgeExtractor::faceEvaluator::
-calculateNeiPatchesParallelNewPatches()
-{
-    if (newOtherFacePatchPtr_)
-        return;
-
-    if (!newBoundaryPatchesPtr_)
-        FatalErrorInFunction
-            << "newBoundaryPatchesPtr_ are not set" << exit(FatalError);
-
-    newOtherFacePatchPtr_ = new Map<label>();
-    Map<label>& otherFacePatch = *newOtherFacePatchPtr_;
-
-    const labelList& fPatches = *newBoundaryPatchesPtr_;
-
-    if (Pstream::parRun())
-    {
-        const meshSurfaceEngine& mse = extractor_.surfaceEngine();
-        const VRWGraph& edgeFaces = mse.edgeFaces();
-        const Map<label>& otherProc = mse.otherEdgeFaceAtProc();
-        const Map<label>& globalToLocal =
-            mse.globalToLocalBndEdgeAddressing();
-
-        // create communication matrix
-        std::map<label, labelLongList> exchangeData;
-        const DynList<label>& neiProcs = mse.beNeiProcs();
-        forAll(neiProcs, procI)
-            exchangeData.insert
-            (
-                std::make_pair(neiProcs[procI], labelLongList())
-            );
-
-        forAllConstIters(globalToLocal, it)
-        {
-            const label beI = it();
-
-            if (edgeFaces.sizeOfRow(beI) == 1)
-            {
-                labelLongList& dts = exchangeData[otherProc[beI]];
-                // send data as follows:
-                // 1. global edge label
-                // 2. patch of the attached boundary face
-                dts.append(it.key());
-                dts.append(fPatches[edgeFaces(beI, 0)]);
-            }
-        }
-
-        labelLongList receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        label counter(0);
-        while (counter < receivedData.size())
-        {
-            const label beI = globalToLocal[receivedData[counter++]];
-            const label fPatch = receivedData[counter++];
-
-            otherFacePatch.insert(beI, fPatch);
-        }
-    }
-}
 
 
 void Foam::Module::edgeExtractor::faceEvaluator::neiFacesOverEdges
@@ -198,41 +81,10 @@ void Foam::Module::edgeExtractor::faceEvaluator::neiFacesOverEdges
 }
 
 
-void Foam::Module::edgeExtractor::faceEvaluator::neiFacesProcs
-(
-    const label bfI,
-    DynList<label>& neiProcs
-) const
-{
-    const meshSurfaceEngine& mse = extractor_.surfaceEngine();
-
-    const VRWGraph& faceEdges = mse.faceEdges();
-
-    neiProcs.setSize(faceEdges.sizeOfRow(bfI));
-    neiProcs = Pstream::myProcNo();
-
-    if (Pstream::parRun())
-    {
-        const Map<label>& otherFaceProc = mse.otherEdgeFaceAtProc();
-
-        forAllRow(faceEdges, bfI, feI)
-        {
-            const label beI = faceEdges(bfI, feI);
-
-            const Map<label>::const_iterator it = otherFaceProc.find(beI);
-
-            if (it != otherFaceProc.end())
-                neiProcs[feI] = it();
-        }
-    }
-}
-
-
 void Foam::Module::edgeExtractor::faceEvaluator::neiPatchesOverEdges
 (
     const label bfI,
     const labelList& fPatches,
-    const Map<label>& otherFacePatch,
     DynList<label> &neiPatches
 ) const
 {
@@ -254,10 +106,6 @@ void Foam::Module::edgeExtractor::faceEvaluator::neiPatchesOverEdges
                 nei = edgeFaces(beI, 1);
 
             neiPatches[feI] = fPatches[nei];
-        }
-        else if (Pstream::parRun() && (edgeFaces.sizeOfRow(beI) == 1))
-        {
-            neiPatches[feI] = otherFacePatch[beI];
         }
     }
 }
@@ -336,21 +184,14 @@ Foam::Module::edgeExtractor::faceEvaluator::faceEvaluator
 )
 :
     extractor_(ee),
-    otherFacePatch_(),
-    newBoundaryPatchesPtr_(nullptr),
-    newOtherFacePatchPtr_(nullptr)
-{
-    if (Pstream::parRun())
-        calculateNeiPatchesParallel();
-}
+    newBoundaryPatchesPtr_(nullptr)
+{}
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
 
 Foam::Module::edgeExtractor::faceEvaluator::~faceEvaluator()
-{
-    deleteDemandDrivenData(newOtherFacePatchPtr_);
-}
+{}
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
@@ -361,9 +202,6 @@ void Foam::Module::edgeExtractor::faceEvaluator::setNewBoundaryPatches
 )
 {
     newBoundaryPatchesPtr_ = &newBoudaryPatches;
-
-    if (Pstream::parRun())
-        calculateNeiPatchesParallelNewPatches();
 }
 
 
@@ -377,7 +215,6 @@ void Foam::Module::edgeExtractor::faceEvaluator::neiPatchesOverEdges
     (
         bfI,
         extractor_.facePatch_,
-        otherFacePatch_,
         neiPatches
     );
 }
@@ -394,7 +231,6 @@ Foam::label Foam::Module::edgeExtractor::faceEvaluator::bestPatchTopological
     (
         bfI,
         extractor_.facePatch_,
-        otherFacePatch_,
         neiPatches
     );
 
@@ -417,7 +253,6 @@ Foam::Module::edgeExtractor::faceEvaluator::bestPatchAfterModification
         (
             bfI,
             *newBoundaryPatchesPtr_,
-            *newOtherFacePatchPtr_,
             newNeiPatches
         );
 
@@ -425,13 +260,11 @@ Foam::Module::edgeExtractor::faceEvaluator::bestPatchAfterModification
         (
             bfI,
             extractor_.facePatch_,
-            otherFacePatch_,
             oldNeiPatches
         );
 
-        DynList<label> neiFaces, neiProcs;
+        DynList<label> neiFaces;
         neiFacesOverEdges(bfI, neiFaces);
-        neiFacesProcs(bfI, neiProcs);
 
         forAll(neiFaces, eI)
         {
@@ -443,184 +276,12 @@ Foam::Module::edgeExtractor::faceEvaluator::bestPatchAfterModification
                 if (newPatchI != origPatchI)
                     newNeiPatches[eI] = origPatchI;
             }
-            else if (neiFaces[eI] < 0)
-            {
-                if (neiProcs[eI] > Pstream::myProcNo())
-                    newNeiPatches[eI] = origPatchI;
-            }
         }
 
         return bestPatchTopological(newNeiPatches, patchI);
     }
 
     return patchI;
-}
-
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
-
-void Foam::Module::edgeExtractor::cornerEvaluator::createParallelAddressing()
-{
-    const labelHashSet& corners = partitioner_.corners();
-
-    const labelList& facePatch = extractor_.facePatch_;
-
-    typedef Map<label> mapType;
-
-    const meshSurfaceEngine& mse = extractor_.surfaceEngine();
-    const faceList::subList& bFaces = mse.boundaryFaces();
-    const pointFieldPMG& points = mse.points();
-    const labelList& bp = mse.bp();
-    const VRWGraph& pointFaces = mse.pointFaces();
-    const labelList& globalLabel = mse.globalBoundaryPointLabel();
-    const mapType& globalToLocal = mse.globalToLocalBndPointAddressing();
-    const VRWGraph& bpAtProcs = mse.bpAtProcs();
-    const DynList<label>& neiProcs = mse.bpNeiProcs();
-
-    typedef std::map<label, LongList<labelledPoint>> exchangeMapType;
-    exchangeMapType exchangeData;
-    forAll(neiProcs, i)
-        exchangeData[neiProcs[i]].clear();
-
-    faceMap_.clear();
-    faceAtProc_.clear();
-    facePatches_.clear();
-
-    forAllConstIters(globalToLocal, it)
-    {
-        const label bpI = it();
-
-        if (corners.found(bpI))
-        {
-            forAllRow(bpAtProcs, bpI, i)
-            {
-                const label neiProc = bpAtProcs(bpI, i);
-
-                if (neiProc == Pstream::myProcNo())
-                    continue;
-
-                LongList<labelledPoint>& dts = exchangeData[neiProc];
-
-                // data is send in the ollowing form
-                // 1. globsl label of the current point
-                // 2. number of faces attached to the point
-                // 3. for each face send its patch, number of points and point
-                dts.append(labelledPoint(it.key(), vector::zero));
-                dts.append
-                (
-                    labelledPoint(pointFaces.sizeOfRow(bpI), vector::zero)
-                );
-                forAllRow(pointFaces, bpI, i)
-                {
-                    const face& bf = bFaces[pointFaces(bpI, i)];
-                    dts.append
-                    (
-                        labelledPoint
-                        (
-                            facePatch[pointFaces(bpI, i)],
-                            vector::zero
-                        )
-                    );
-                    dts.append(labelledPoint(bf.size(), vector::zero));
-
-                    DynList<labelledPoint> lpf;
-                    forAll(bf, pI)
-                    {
-                        const labelledPoint lp
-                        (
-                            globalLabel[bp[bf[bpI]]],
-                            points[bf[pI]]
-                        );
-
-                        dts.append(lp);
-                        lpf.append(lp);
-                    }
-
-                    faceMap_[bpI].append(lpf);
-                    faceAtProc_[bpI].append(Pstream::myProcNo());
-                    facePatches_[bpI].append(facePatch[pointFaces(bpI, i)]);
-                }
-            }
-        }
-    }
-
-    std::map<label, List<labelledPoint>> receivedDataMap;
-    help::exchangeMap(exchangeData, receivedDataMap);
-
-    forAllConstIters(receivedDataMap, it)
-    {
-        const label procI = it->first;
-        const List<labelledPoint>& receivedData = it->second;
-
-        for (label i = 0; i < receivedData.size(); /*nil*/ )
-        {
-            const label bpI = globalToLocal[receivedData[i++].pointLabel()];
-
-            const label nFaces = receivedData[i++].pointLabel();
-
-            for (label fI = 0; fI < nFaces; ++fI)
-            {
-                const label patchI = receivedData[i++].pointLabel();
-                const label size = receivedData[i++].pointLabel();
-
-                DynList<labelledPoint> lpf(size);
-                forAll(lpf, pI)
-                {
-                    lpf[pI] = receivedData[i++];
-                }
-
-                faceMap_[bpI].append(lpf);
-                faceAtProc_[bpI].append(procI);
-                facePatches_[bpI].append(patchI);
-            }
-        }
-    }
-
-    // sort the faces in the counter-clockwise order
-    forAllIters(faceAtProc_, it)
-    {
-        const label bpI = it->first;
-
-        DynList<label>& faceProc = it->second;
-        DynList<label>& fPatches = facePatches_[bpI];
-        DynList<DynList<labelledPoint, 6>>& pFaces = faceMap_[bpI];
-
-        forAll(pFaces, i)
-        {
-            const DynList<labelledPoint, 6>& lpf = pFaces[i];
-
-            label pos(-1);
-            forAll(lpf, pI)
-            {
-                if (lpf[i].pointLabel() == globalLabel[bpI])
-                {
-                    pos = pI;
-                    break;
-                }
-            }
-
-            for (label j = i + 2; j < pFaces.size(); ++j)
-            {
-                const DynList<labelledPoint, 6>& olpf = pFaces[j];
-
-                if (olpf.found(lpf[lpf.rcIndex(pos)]))
-                {
-                    label helper = faceProc[j];
-                    faceProc[j] = faceProc[i + 1];
-                    faceProc[i + 1] = helper;
-
-                    helper = fPatches[j];
-                    fPatches[j] = fPatches[i + 1];
-                    fPatches[i + 1] = helper;
-
-                    DynList<labelledPoint, 6> lpfHelper;
-                    lpfHelper = pFaces[j];
-                    pFaces[j] = pFaces[i + 1];
-                    pFaces[i + 1] = lpfHelper;
-                }
-            }
-        }
-    }
 }
 
 
@@ -666,14 +327,8 @@ Foam::Module::edgeExtractor::cornerEvaluator::cornerEvaluator
 )
 :
     extractor_(ee),
-    partitioner_(mPart),
-    faceMap_(),
-    facePatches_(),
-    faceAtProc_()
-{
-    if (Pstream::parRun())
-        createParallelAddressing();
-}
+    partitioner_(mPart)
+{}
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *//
@@ -696,7 +351,6 @@ void Foam::Module::edgeExtractor::cornerEvaluator::improveCorners
     {
         const point& p = points[bPoints[corneri]];
 
-        if (faceMap_.find(corneri) == faceMap_.end())
         {
             const labelList& facePatch = extractor_.facePatch_;
             Info<< "Checking corner " << corneri << endl;
@@ -813,9 +467,6 @@ void Foam::Module::edgeExtractor::cornerEvaluator::improveCorners
                     newBoundaryPatches[pFaces[i]] = newFacePatches[i];
             }
         }
-        else
-        {
-        }
     }
 }
 
@@ -866,54 +517,8 @@ bool Foam::Module::edgeExtractor::findCornerCandidates()
         }
     }
 
-    if (Pstream::parRun())
-    {
-        const VRWGraph& bpAtProcs = mse.beAtProcs();
-        const DynList<label>& bpNeiProcs = mse.bpNeiProcs();
-        const Map<label>& globalToLocal =
-            mse.globalToLocalBndPointAddressing();
-
-        std::map<label, LongList<labelledScalar>> exchangeData;
-        forAll(bpNeiProcs, i)
-            exchangeData.insert
-            (
-                std::make_pair(bpNeiProcs[i], LongList<labelledScalar>())
-            );
-
-        forAllConstIters(globalToLocal, iter)
-        {
-            const label bpI = iter();
-
-            forAllRow(bpAtProcs, bpI, i)
-            {
-                const label neiProc = bpAtProcs(bpI, i);
-
-                if (neiProc == Pstream::myProcNo())
-                    continue;
-
-                exchangeData[neiProc].append
-                (
-                    labelledScalar(iter.key(), searchRange[bpI])
-                );
-            }
-        }
-
-        LongList<labelledScalar> receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        forAll(receivedData, i)
-        {
-            const label bpI = globalToLocal[receivedData[i].scalarLabel()];
-
-            searchRange[bpI] =
-                Foam::max(searchRange[bpI], receivedData[i].value());
-        }
-    }
-
     DynList<label> containedTriangles;
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 40) private(containedTriangles)
-    # endif
     forAll(bPoints, bpI)
     {
         const point& p = points[bPoints[bpI]];
@@ -940,9 +545,7 @@ bool Foam::Module::edgeExtractor::findCornerCandidates()
                 if (nearestPoint[cornerI].value() > d)
                 {
                     // update the nearest point to the found corner
-                    # ifdef USE_OMP
                     # pragma omp critical
-                    # endif
                     {
                         nearestPoint[cornerI] = labelledScalar(bpI, d);
                     }
@@ -951,10 +554,6 @@ bool Foam::Module::edgeExtractor::findCornerCandidates()
         }
     }
 
-    # ifdef DEBUGEdgeExtractor
-    Info<< "Nearest points to corners " << nearestPoint << endl;
-    # endif
-
     return changed;
 }
 
@@ -962,12 +561,6 @@ bool Foam::Module::edgeExtractor::findCornerCandidates()
 bool Foam::Module::edgeExtractor::checkCorners()
 {
     bool changed(false);
-
-    # ifdef DEBUGEdgeExtractor
-    const triSurf* surfPtr = surfaceWithPatches();
-    surfPtr->writeSurface("checkCornersBefore.fms");
-    deleteDemandDrivenData(surfPtr);
-    # endif
 
     const pointFieldPMG& points = mesh_.points();
     const meshSurfaceEngine& mse = this->surfaceEngine();
@@ -995,18 +588,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
         nCorrected = 0;
         newBoundaryPatches = facePatch_;
 
-        // check whether there exist situations where a boundary face
-        // is surrounded by more faces in different patches than the
-        // faces in the current patch
-        if (Pstream::parRun())
-        {
-            findOtherFacePatchesParallel
-            (
-                otherProcNewPatch,
-                &newBoundaryPatches
-            );
-        }
-
         // update the information which edges are assigned as feature edges
         meshSurfacePartitioner mPart(mse, newBoundaryPatches);
 
@@ -1019,10 +600,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
 
         mapType cornerIndex;
         distMapType nearestToCorner;
-
-        # ifdef DEBUGEdgeExtractor
-        Info<< "Finding corners " << endl;
-        # endif
 
         // find nearest corners in the surface mesh
         for (const label bpI : corners)
@@ -1060,21 +637,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
             }
         }
 
-        # ifdef DEBUGEdgeExtractor
-        forAllConstIters(bpMappedAtSurfaceCorner, mIt)
-        {
-            if (mIt->second.size() > 1)
-            {
-                Info<< "Surface corner " << mIt->first
-                    << " mapped mesh points " << mIt->second << endl;
-            }
-        }
-        # endif
-
         // for all edge nodes find their nearest counterparts in the surface
-        # ifdef DEBUGEdgeExtractor
-        Info<< "Finding nearest edges" << endl;
-        # endif
 
         const labelHashSet& featureEdge = mPart.featureEdges();
 
@@ -1150,13 +713,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
             const bool validConnection =
                 patchPatches[mIt->first.first].found(mIt->first.second);
 
-            # ifdef DEBUGEdgeExtractor
-            Info<< "Patches " << mIt->first.first
-                 << " and " << mIt->first.second
-                 << " share " << mIt->second
-                 << " edges " << validConnection << endl;
-            # endif
-
             if (!validConnection)
             {
                 // find surface facets in the vicinity of the edge
@@ -1169,11 +725,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
                     invalidFeatureEdges.insert(invalidEdges[i]);
             }
         }
-
-        # ifdef DEBUGEdgeExtractor
-        Info<< "Invalid feature edges " << invalidFeatureEdges << endl;
-        ::exit(0);
-        # endif
 
         // check the vicinity of the corner point and check whether
         // it shall be replaced by some other point in the vicinity
@@ -1197,15 +748,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
                 }
             }
 
-            # ifdef DEBUGEdgeExtractor
-            for (const label pointi : nearPoints)
-            {
-                Info<< "Near point " << pointi << endl;
-                Info<< "Faces containing near point are "
-                     << facesContainingPoint[pointi] << endl;
-            }
-            # endif
-
             // find the nearest point to the location where the corner
             // shall be mapped onto the surface mesh
             label bestPoint(-1);
@@ -1225,23 +767,8 @@ bool Foam::Module::edgeExtractor::checkCorners()
 
             if (bestPoint == bPoints[bpI])
             {
-                # ifdef DEBUGEdgeExtractor
-                Info<< "Current corner is nearest" << endl;
-                # endif
-
                 continue;
             }
-
-            # ifdef DEBUGEdgeExtractor
-            surfPtr = surfaceWithPatches(bpI);
-            surfPtr->writeSurface
-            (
-                "corner_" + Foam::name(bpI)
-              + "_iter_" + Foam::name(nIteration) +".fms"
-            );
-            deleteDemandDrivenData(surfPtr);
-            Info<< "Best candidate " << bestPoint << endl;
-            # endif
 
             // sort faces and edges at the corner in counter-clockwise order
             DynList<label> pFaces, pEdges;
@@ -1272,18 +799,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
 
                 front.append(pointFaces.find(bpI, nei));
             }
-
-            # ifdef DEBUGEdgeExtractor
-            Info<< "Boundary point " << bpI
-                 << " pFaces " << pFaces
-                 << " pEdges " << pEdges << endl;
-            forAll(pFaces, i)
-            {
-                Info<< "Face " << pFaces[i] << " has nodes " << bFaces[pFaces[i]] << endl;
-                Info<< "Face " << pFaces[i] << " is in patch " << facePatch_[pFaces[i]] << endl;
-                Info<< "Edge " << pEdges[i] << " has nodes " << edges[pEdges[i]] << endl;
-            }
-            # endif
 
             // find the best fitting edge to move towards the corner
             label bestEdge(-1);
@@ -1336,11 +851,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
                 }
             }
 
-            # ifdef DEBUGEdgeExtractor
-            Info<< "Best edge " << bestEdge
-                << " has alignment " << bestAlignment << endl;
-            # endif
-
             // find groups of sorted faces at this corner which are bounded by
             // existing feature edges and the new candidate
             DynList<label> faceInGroup(pFaces.size(), -1);
@@ -1385,10 +895,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
                 ++groupI;
             }
 
-            # ifdef DEBUGEdgeExtractor
-            Info<< "faceInGroup " << faceInGroup << endl;
-            # endif
-
             // check which group of faces shall change patch in order to make
             // the best fitting edge a feature edge
             DynList<labelPair> groupPairs, groupPatches;
@@ -1418,12 +924,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
                     groupPatches.append(lpp);
                 }
             }
-
-            # ifdef DEBUGEdgeExtractor
-            Info<< "group pairs " << groupPairs << endl;
-            Info<< "Group patches " << groupPatches << endl;
-            Info<< "Groups for changing " << groupsForChanging << endl;
-            # endif
 
             // check which groups shall change their patch
             // desired patches at the best edge are determined by finding
@@ -1457,10 +957,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
                 }
             }
 
-            # ifdef DEBUGEdgeExtractor
-            Info<< "Best groups of patches " << bestGroupsOfPatches << endl;
-            # endif
-
             // assign new patches
             FixedList<label, 2> newPatchForGroup(-1);
             DynList<labelPair>& newPatchForFace = facesAtCornerNewPatches[bpI];
@@ -1491,10 +987,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
                         forAllRow(faceEdges, bfI, feI)
                         {
                             const label beI = faceEdges(bfI, feI);
-
-                            # ifdef DEBUGEdgeExtractor
-                            Info<< "2. beI " << beI << endl;
-                            # endif
 
                             const point& ps = points[edges[beI].start()];
                             const point& pe = points[edges[beI].end()];
@@ -1588,10 +1080,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
                             }
                         }
                     }
-
-                    # ifdef DEBUGEdgeExtractor
-                    Info<< "1. Eold " << Eold << " Enew " << Enew << endl;
-                    # endif
 
                     if (Enew <= Eold)
                     {
@@ -1629,10 +1117,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
                         {
                             const label beI = faceEdges(bfI, feI);
 
-                            # ifdef DEBUGEdgeExtractor
-                            Info<< "2. beI " << beI << endl;
-                            # endif
-
                             const point& ps = points[edges[beI].start()];
                             const point& pe = points[edges[beI].end()];
                             const scalar magE = edges[beI].mag(points) + VSMALL;
@@ -1727,10 +1211,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
                         }
                     }
 
-                    # ifdef DEBUGEdgeExtractor
-                    Info<< "2. Eold " << Eold << " Enew " << Enew << endl;
-                    # endif
-
                     if (Enew <= Eold)
                     {
                         newPatchForGroup[1] = otherPatch;
@@ -1749,10 +1229,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
                 }
             }
 
-            # ifdef DEBUGEdgeExtractor
-            Info<< "New patches for boundary faces "
-                 << newPatchForFace << endl;
-            # endif
         }
 
         labelHashSet changedPatch;
@@ -1772,8 +1248,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
             }
         }
 
-        reduce(nCorrected, sumOp<label>());
-
         if (nCorrected)
         {
             changed = true;
@@ -1785,15 +1259,6 @@ bool Foam::Module::edgeExtractor::checkCorners()
             Info<< "Too many iterations" << endl;
             break;
         }
-
-        # ifdef DEBUGEdgeExtractor
-        surfPtr = surfaceWithPatches();
-        surfPtr->writeSurface
-        (
-            "checkCornersAfterIteration_" + Foam::name(nIteration) + ".fms"
-        );
-        deleteDemandDrivenData(surfPtr);
-        # endif
 
     } while (nCorrected != 0);
 

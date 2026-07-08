@@ -68,16 +68,6 @@ void Foam::Module::meshOctreeCube::leavesInBox
                         leaves
                     );
                 }
-                else if (Pstream::parRun())
-                {
-                    meshOctreeCubeCoordinates cc = refineForPosition(scI);
-
-                    boundBox bb;
-                    cc.cubeBox(rootBox, bb.min(), bb.max());
-
-                    if (bb.overlaps(searchingBox))
-                        leaves.append(this);
-                }
             }
         }
     }
@@ -116,14 +106,6 @@ void Foam::Module::meshOctreeCube::leavesInSphere
                         r,
                         containedLeaves
                     );
-                }
-                else if (Pstream::parRun())
-                {
-                    meshOctreeCubeCoordinates cc = refineForPosition(scI);
-                    const point sc = cc.centre(rootBox);
-
-                    if (magSqr(sc - c) < sqr(r + size))
-                        containedLeaves.append(meshOctreeCube::OTHERPROC);
                 }
             }
         }
@@ -166,16 +148,6 @@ void Foam::Module::meshOctreeCube::markLeavesInSphere
                         atProcessorBnd
                     );
                 }
-                else if (Pstream::parRun())
-                {
-                    meshOctreeCubeCoordinates cc = refineForPosition(scI);
-                    const point sc = cc.centre(rootBox);
-
-                    if (magSqr(sc - c) < sqr(r + size))
-                    {
-                        atProcessorBnd = true;
-                    }
-                }
             }
         }
     }
@@ -208,30 +180,6 @@ void Foam::Module::meshOctreeCube::findLeaves
 }
 
 
-void Foam::Module::meshOctreeCube::findCoordinatesOfMissingCubes
-(
-    LongList<meshOctreeCubeCoordinates>& coordinates
-) const
-{
-    if (this->isLeaf())
-        return;
-
-    for (label scI = 0; scI < 8; ++scI)
-    {
-        meshOctreeCube* scPtr = subCubesPtr_[scI];
-
-        if (scPtr)
-        {
-            scPtr->findCoordinatesOfMissingCubes(coordinates);
-        }
-        else
-        {
-            coordinates.append(this->refineForPosition(scI));
-        }
-    }
-}
-
-
 void Foam::Module::meshOctreeCube::countChildCubes(label& counter) const
 {
     ++counter;
@@ -251,54 +199,6 @@ void Foam::Module::meshOctreeCube::countChildCubes(label& counter) const
 }
 
 
-bool Foam::Module::meshOctreeCube::purgeProcessorCubes(const short procNo)
-{
-    if (this->procNo() == ALLPROCS)
-    {
-        this->setProcNo(procNo);
-    }
-
-    if (this->isLeaf())
-    {
-        if (this->procNo() != procNo)
-        {
-            return true;
-        }
-
-        return false;
-    }
-    else
-    {
-        label mergedSubcubes = 0;
-        for (label scI = 0; scI < 8; ++scI)
-        {
-            if (!subCubesPtr_[scI])
-            {
-                mergedSubcubes |= 1 << scI;
-                continue;
-            }
-
-            if (subCubesPtr_[scI]->purgeProcessorCubes(procNo))
-            {
-                subCubesPtr_[scI] = nullptr;
-                mergedSubcubes |= 1 << scI;
-            }
-        }
-
-        if (mergedSubcubes == 255)
-        {
-            subCubesPtr_ = nullptr;
-
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    return false;
-}
 
 
 // ************************************************************************* //

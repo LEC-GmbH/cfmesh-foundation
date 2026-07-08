@@ -123,23 +123,15 @@ class meshOptimizer
                 void laplacian(const labelLongList&, const label);
                 void laplacianSurface(const labelLongList&, const label);
 
-                void laplacianParallel
-                (
-                    const labelLongList& procPoints,
-                    const bool smoothOnlySurfaceNodes = false
-                );
-
                 //- smooth the node using the laplacian smoother
                 //- new position is the average of the centres of faces attached
                 //- to the vertex
                 void laplacianPC(const labelLongList&, const label);
-                void laplacianPCParallel(const labelLongList& procPoints);
 
                 //- smooth the node using the laplacian smoother
                 //- new position is the average of the centres of faces attached
                 //- to the vertex
                 void laplacianWPC(const labelLongList&, const label);
-                void laplacianWPCParallel(const labelLongList& procPoints);
 
                 //- update geometry after smoothing
                 void updateMeshGeometry(const labelLongList& smoothPoints);
@@ -211,7 +203,6 @@ class meshOptimizer
             BOUNDARY = 2,
             EDGE = 4,
             CORNER = 8,
-            PARALLELBOUNDARY = 16,
             LOCKED = 32
         };
 

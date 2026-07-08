@@ -186,8 +186,6 @@ bool Foam::Module::workflowControls::stopAfterCurrentStep() const
             writeSuccess = false;
         }
 
-        returnReduce(writeSuccess, minOp<bool>());
-
         if (!writeSuccess)
             FatalErrorInFunction
                 << "Mesh was not written on disk" << exit(FatalError);

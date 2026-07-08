@@ -35,8 +35,6 @@ License
 #include "meshSurfacePartitioner.H"
 #include "triangle.H"
 
-//#define DEBUGLayer
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 bool Foam::Module::triangulateNonPlanarBaseFaces::findNonPlanarBoundaryFaces()
@@ -51,9 +49,7 @@ bool Foam::Module::triangulateNonPlanarBaseFaces::findNonPlanarBoundaryFaces()
 
     bool hasInvalid(false);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 50)
-    # endif
     forAll(bFaces, bfI)
     {
         const face& bf = bFaces[bfI];
@@ -98,8 +94,6 @@ bool Foam::Module::triangulateNonPlanarBaseFaces::findNonPlanarBoundaryFaces()
             }
         }
     }
-
-    reduce(hasInvalid, maxOp<bool>());
 
     return hasInvalid;
 }

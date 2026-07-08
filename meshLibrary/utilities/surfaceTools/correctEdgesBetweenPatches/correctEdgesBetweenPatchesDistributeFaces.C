@@ -36,7 +36,6 @@ License
 #include "meshSurfaceCheckEdgeTypes.H"
 #include "meshSurfacePartitioner.H"
 #include "helperFunctions.H"
-#include "helperFunctionsPar.H"
 
 #include <map>
 
@@ -65,61 +64,6 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeProblematicFaces()
             featureBndEdge[beI] = true;
     }
 
-    if (Pstream::parRun())
-    {
-        // find feature edges at parallel boundaries and propagate the
-        // information to all processors
-        const Map<label>& globalToLocalEdge =
-            mse.globalToLocalBndEdgeAddressing();
-        const VRWGraph& beAtProcs = mse.beAtProcs();
-        const Map<label>& otherProcPatch = mse.otherEdgeFacePatch();
-        forAllConstIters(globalToLocalEdge, it)
-        {
-            const label beI = it();
-
-            if (edgeFaces.sizeOfRow(beI) != 1)
-                continue;
-            if (facePatches[edgeFaces(beI, 0)] != otherProcPatch[beI])
-                featureBndEdge[beI] = true;
-        }
-
-        // propagate information to all processors that need this information
-        std::map<label, labelLongList> exchangeData;
-        forAll(mse.beNeiProcs(), i)
-            exchangeData.insert
-            (
-                std::make_pair(mse.beNeiProcs()[i], labelLongList())
-            );
-
-        // append labels of feature edges that need to be sent to other
-        // processors sharing that edge
-        forAllConstIters(globalToLocalEdge, it)
-        {
-            const label beI = it();
-
-            if (featureBndEdge[beI])
-            {
-                forAllRow(beAtProcs, beI, i)
-                {
-                    const label procI = beAtProcs(beI, i);
-                    if (procI == Pstream::myProcNo())
-                        continue;
-
-                    exchangeData[procI].append(it.key());
-                }
-            }
-        }
-
-        labelLongList receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        label counter(0);
-        while (counter < receivedData.size())
-        {
-            featureBndEdge[globalToLocalEdge[receivedData[counter++]]] = true;
-        }
-    }
-
     const polyMeshGen& mesh = mse.mesh();
     const faceListPMG& faces = mesh.faces();
     const labelList& owner = mesh.owner();
@@ -130,9 +74,7 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeProblematicFaces()
 
     // decompose internal faces with more than one feature edge
     const label nIntFaces = mesh.nInternalFaces();
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(guided) reduction(+ : nDecomposedFaces)
-    # endif
     for (label faceI = 0; faceI < nIntFaces; ++faceI)
     {
         const face& f = faces[faceI];
@@ -169,9 +111,7 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeProblematicFaces()
 
     // decompose boundary faces in case the feature edges are not connected
     // into a single open chain of edges
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(guided) reduction(+ : nDecomposedFaces)
-    # endif
     forAll(faceEdges, bfI)
     {
         boolList featureEdge(faceEdges.sizeOfRow(bfI), false);
@@ -187,59 +127,6 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeProblematicFaces()
             decomposeCell_[owner[nIntFaces + bfI]] = true;
         }
     }
-
-    if (Pstream::parRun())
-    {
-        // decompose processor faces having more than one feature edge
-        const PtrList<processorBoundaryPatch>& procBoundaries =
-            mesh.procBoundaries();
-
-        forAll(procBoundaries, patchI)
-        {
-            const label start = procBoundaries[patchI].patchStart();
-            const label end = start + procBoundaries[patchI].patchSize();
-
-            # ifdef USE_OMP
-            # pragma omp parallel for schedule(guided) \
-            reduction(+ : nDecomposedFaces)
-            # endif
-            for (label faceI = start; faceI < end; ++faceI)
-            {
-                const face& f = faces[faceI];
-
-                label nFeatureEdges(0);
-
-                forAll(f, eI)
-                {
-                    const edge e = f.faceEdge(eI);
-
-                    const label bs = bp[e[0]];
-                    const label be = bp[e[1]];
-                    if ((bs != -1) && (be != -1))
-                    {
-                        // check if this edge is a boundary edge
-                        // and a feature edge
-                        forAllRow(pointEdges, bs, i)
-                        {
-                            const label beI = pointEdges(bs, i);
-
-                            if ((edges[beI] == e) && featureBndEdge[beI])
-                                ++nFeatureEdges;
-                        }
-                    }
-                }
-
-                if (nFeatureEdges > 1)
-                {
-                    ++nDecomposedFaces;
-                    decomposeFace[faceI] = true;
-                    decomposeCell_[owner[faceI]] = true;
-                }
-            }
-        }
-    }
-
-    reduce(nDecomposedFaces, sumOp<label>());
 
     if (nDecomposedFaces != 0)
     {
@@ -280,9 +167,7 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeConcaveFaces()
     problematicTypes |= meshSurfaceCheckEdgeTypes::CONCAVEEDGE;
     problematicTypes |= meshSurfaceCheckEdgeTypes::UNDETERMINED;
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100)
-    # endif
     forAll(edgeType, eI)
     {
         if (edgeType[eI] & meshSurfaceCheckEdgeTypes::PATCHEDGE)
@@ -302,56 +187,6 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeConcaveFaces()
         }
     }
 
-    if (Pstream::parRun())
-    {
-        const Map<label>& globalToLocal =
-            mse.globalToLocalBndEdgeAddressing();
-        const VRWGraph& beAtProcs = mse.beAtProcs();
-
-        std::map<label, labelLongList> exchangeData;
-        forAll(mse.beNeiProcs(), i)
-            exchangeData[mse.beNeiProcs()[i]].clear();
-
-        forAllConstIters(globalToLocal, it)
-        {
-            const label beI = it();
-
-            if (edgeInPatch[beI] < 0)
-                continue;
-
-            forAllRow(beAtProcs, beI, i)
-            {
-                const label neiProc = beAtProcs(beI, i);
-
-                if (neiProc == Pstream::myProcNo())
-                    continue;
-
-                labelLongList& dts = exchangeData[neiProc];
-
-                dts.append(it.key());
-                dts.append(edgeInPatch[beI]);
-            }
-        }
-
-        labelLongList receivedData;
-        help::exchangeMap(exchangeData, receivedData);
-
-        for (label i = 0; i < receivedData.size(); )
-        {
-            const label beI = globalToLocal[receivedData[i++]];
-            const label patchI = receivedData[i++];
-            if (edgeInPatch[beI] == -1)
-            {
-                edgeInPatch[beI] = patchI;
-            }
-            else if (edgeInPatch[beI] != patchI)
-            {
-                FatalErrorInFunction
-                    << "Invalid patch!" << abort(FatalError);
-            }
-        }
-    }
-
     // decompose internal faces attached to concave vertices which have two
     // or more edges at the boundary
     const faceListPMG& faces = mesh_.faces();
@@ -361,10 +196,8 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeConcaveFaces()
     boolList decomposeFace(faces.size(), false);
     label nDecomposed(0);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(dynamic, 100) \
     reduction(+ : nDecomposed)
-    # endif
     for (label faceI = 0; faceI < mesh_.nInternalFaces(); ++faceI)
     {
         const face& f = faces[faceI];
@@ -415,7 +248,7 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeConcaveFaces()
     }
 
     // finally, perform decomposition of marked faces
-    if (returnReduce(nDecomposed, sumOp<label>()) != 0)
+    if (nDecomposed != 0)
     {
         Info<< "Decomposing " << nDecomposed << " internal faces" << endl;
         decomposeFaces(mesh_).decomposeMeshFaces(decomposeFace);
@@ -464,9 +297,7 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
     // set flags for feature edges
     boolList featureEdge(edgeFaces.size(), false);
 
-    # ifdef USE_OMP
     # pragma omp parallel for schedule(guided)
-    # endif
     forAll(edgeFaces, eI)
     {
         if (edgeFaces.sizeOfRow(eI) != 2)
@@ -474,20 +305,6 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
 
         if (facePatches[edgeFaces(eI, 0)] != facePatches[edgeFaces(eI, 1)])
             featureEdge[eI] = true;
-    }
-
-    if (Pstream::parRun())
-    {
-        // set flags for edges at parallel boundaries
-        const Map<label>& otherProcPatch = mse.otherEdgeFacePatch();
-
-        forAllConstIters(otherProcPatch, it)
-        {
-            if (facePatches[edgeFaces(it.key(), 0)] != it())
-            {
-                featureEdge[it.key()] = true;
-            }
-        }
     }
 
     // decompose bad faces into triangles
@@ -572,9 +389,7 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
         }
     }
 
-    reduce(decompose_, maxOp<bool>());
-
-    if (returnReduce(nDecomposedFaces, sumOp<label>()) != 0)
+    if (nDecomposedFaces != 0)
     {
         replaceBoundary();
         clearMeshSurface();

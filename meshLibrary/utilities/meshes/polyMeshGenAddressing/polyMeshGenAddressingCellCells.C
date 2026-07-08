@@ -31,9 +31,7 @@ License
 #include "polyMeshGenAddressing.H"
 #include "VRWGraphSMPModifier.H"
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
@@ -58,25 +56,17 @@ void Foam::Module::polyMeshGenAddressing::calcCellCells() const
 
         labelList nNei(cells.size());
 
-        # ifdef USE_OMP
         const label nThreads = 3*omp_get_num_procs();
-        # endif
 
-        # ifdef USE_OMP
         # pragma omp parallel num_threads(nThreads)
-        # endif
         {
-            # ifdef USE_OMP
             # pragma omp for schedule(static)
-            # endif
             forAll(nNei, i)
             {
                 nNei[i] = 0;
             }
 
-            # ifdef USE_OMP
             # pragma omp for schedule(static)
-            # endif
             forAll(cells, cellI)
             {
                 const cell& c = cells[cellI];
@@ -100,19 +90,15 @@ void Foam::Module::polyMeshGenAddressing::calcCellCells() const
                 nNei[cellI] = neiCells.size();
             }
 
-            # ifdef USE_OMP
             # pragma omp barrier
 
             # pragma omp master
-            # endif
             VRWGraphSMPModifier(cellCellAddr).setSizeAndRowSize(nNei);
 
-            # ifdef USE_OMP
             # pragma omp barrier
 
             // fill the graph with data
             # pragma omp for schedule(static)
-            # endif
             forAll(cells, cellI)
             {
                 const cell& c = cells[cellI];
@@ -147,14 +133,12 @@ Foam::Module::polyMeshGenAddressing::cellCells() const
 {
     if (!ccPtr_)
     {
-        # ifdef USE_OMP
         if (omp_in_parallel())
         {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
         }
-        # endif
 
         calcCellCells();
     }

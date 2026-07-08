@@ -61,7 +61,6 @@ Foam::Module::polyMeshGenFaces::polyMeshGenFaces(const Time& runTime)
         ),
         0
     ),
-    procBoundaries_(),
     boundaries_(),
     faceSubsets_(),
     nIntFaces_(0),
@@ -89,7 +88,6 @@ Foam::Module::polyMeshGenFaces::polyMeshGenFaces
         ),
         faces
     ),
-    procBoundaries_(),
     boundaries_(),
     faceSubsets_(),
     nIntFaces_(0),
@@ -120,19 +118,12 @@ Foam::Module::polyMeshGenFaces::polyMeshGenFaces
         ),
         faces
     ),
-    procBoundaries_(),
     boundaries_(),
     faceSubsets_(),
     nIntFaces_(0),
     ownerPtr_(nullptr),
     neighbourPtr_(nullptr)
 {
-    if (Pstream::parRun())
-    {
-        FatalErrorInFunction
-            << "Cannot do this in parallel!" << exit(FatalError);
-    }
-
     boundaries_.setSize(patchNames.size());
     forAll(patchNames, patchI)
     {
@@ -160,39 +151,6 @@ Foam::Module::polyMeshGenFaces::~polyMeshGenFaces()
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-Foam::label Foam::Module::polyMeshGenFaces::faceIsInProcPatch
-(
-    const label faceLabel
-) const
-{
-    const label i = procBoundaries_.size() - 1;
-    if
-    (
-        (i < 0) ||
-        (
-            faceLabel >=
-            (
-                procBoundaries_[i].patchStart() +
-                procBoundaries_[i].patchSize()
-            )
-        )
-    )
-    {
-        return -1;
-    }
-
-    forAllReverse(procBoundaries_, patchI)
-    {
-        if (faceLabel >= procBoundaries_[patchI].patchStart())
-        {
-            return patchI;
-        }
-    }
-
-    return -1;
-}
-
 
 Foam::label Foam::Module::polyMeshGenFaces::faceIsInPatch
 (
@@ -423,53 +381,20 @@ void Foam::Module::polyMeshGenFaces::read()
         )
     );
 
-    label i(0);
+    boundaries_.setSize(patches.size());
     forAll(patches, patchI)
     {
-        if (patches[patchI].type() == "processor")
-        {
-            ++i;
-        }
-    }
-
-    procBoundaries_.setSize(i);
-    boundaries_.setSize(patches.size()-i);
-
-    i = 0;
-    forAll(patches, patchI)
-    {
-        if (patches[patchI].type() != "processor")
-        {
-            boundaries_.set
+        boundaries_.set
+        (
+            patchI,
+            new boundaryPatch
             (
-                i,
-                new boundaryPatch
-                (
-                    patches[patchI].patchName(),
-                    patches[patchI].patchType(),
-                    patches[patchI].patchSize(),
-                    patches[patchI].patchStart()
-                )
-            );
-            ++i;
-        }
-    }
-
-    i = 0;
-    forAll(patches, patchI)
-    {
-        if (patches[patchI].type() == "processor")
-        {
-            procBoundaries_.set
-            (
-                i++,
-                new processorBoundaryPatch
-                (
-                    patches[patchI].patchName(),
-                    patches[patchI].dict()
-                )
-            );
-        }
+                patches[patchI].patchName(),
+                patches[patchI].patchType(),
+                patches[patchI].patchSize(),
+                patches[patchI].patchStart()
+            )
+        );
     }
 
     nIntFaces_ = boundaries_[0].patchStart();
@@ -510,14 +435,8 @@ void Foam::Module::polyMeshGenFaces::write() const
     neighbourPtr_->write();
 
     // write boundary data
-    PtrList<boundaryPatchBase> ptchs
-    (
-        procBoundaries_.size() + boundaries_.size()
-    );
+    PtrList<boundaryPatchBase> ptchs(boundaries_.size());
 
-    label i(0);
-
-    // ordinary patches come first
     forAll(boundaries_, patchI)
     {
         dictionary dict;
@@ -526,25 +445,11 @@ void Foam::Module::polyMeshGenFaces::write() const
         dict.add("startFace", boundaries_[patchI].patchStart());
         ptchs.set
         (
-            i++,
+            patchI,
             boundaryPatchBase::New
             (
                 boundaries_[patchI].patchName(),
                 dict
-            )
-        );
-    }
-
-    // processor patches are at the end
-    forAll(procBoundaries_, patchI)
-    {
-        ptchs.set
-        (
-            i++,
-            boundaryPatchBase::New
-            (
-                procBoundaries_[patchI].patchName(),
-                procBoundaries_[patchI].dict()
             )
         );
     }

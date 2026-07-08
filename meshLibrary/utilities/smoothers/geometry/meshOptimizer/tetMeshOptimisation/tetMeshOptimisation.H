@@ -41,7 +41,6 @@ SourceFiles
 #define tetMeshOptimisation_H
 
 #include "DynList.H"
-#include "parPartTet.H"
 #include "boundBox.H"
 #include "labelLongList.H"
 #include "boolList.H"
@@ -69,27 +68,6 @@ class tetMeshOptimisation
 
         //- reference to the tet mesh
         partTetMesh& tetMesh_;
-
-
-    // Private member functions needed for parallel runs
-
-        //- make sure that all processors have the same points
-        //- marked as negativeNode
-        void unifyNegativePoints(boolList& negativeNode) const;
-
-        //- exchange data with other processors
-        void exchangeData
-        (
-            std::map<label, DynList<parPartTet>>& m,
-            boolList* negativeNodePtr = nullptr
-        );
-
-        //- update buffer layer points
-        void updateBufferLayerPoints();
-
-        //- make sure that coordinates of moved points remain the same
-        //- on all processor containing those points
-        void unifyCoordinatesParallel(const boolList* negativeNodePtr = nullptr);
 
 
 public:

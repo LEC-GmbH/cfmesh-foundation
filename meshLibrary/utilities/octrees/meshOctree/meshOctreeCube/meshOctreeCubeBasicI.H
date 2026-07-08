@@ -35,8 +35,7 @@ License
 inline Foam::Module::meshOctreeCubeBasic::meshOctreeCubeBasic()
 :
     meshOctreeCubeCoordinates(),
-    cubeType_(UNKNOWN),
-    procNo_(ALLPROCS)
+    cubeType_(UNKNOWN)
 {}
 
 
@@ -46,21 +45,18 @@ inline Foam::Module::meshOctreeCubeBasic::meshOctreeCubeBasic
 )
 :
     meshOctreeCubeCoordinates(cc),
-    cubeType_(UNKNOWN),
-    procNo_(ALLPROCS)
+    cubeType_(UNKNOWN)
 {}
 
 
 inline Foam::Module::meshOctreeCubeBasic::meshOctreeCubeBasic
 (
     const meshOctreeCubeCoordinates& cc,
-    const direction cubeType,
-    const short procNo
+    const direction cubeType
 )
 :
     meshOctreeCubeCoordinates(cc),
-    cubeType_(cubeType),
-    procNo_(procNo)
+    cubeType_(cubeType)
 {}
 
 
@@ -75,18 +71,6 @@ inline void Foam::Module::meshOctreeCubeBasic::setCubeType(const direction ct)
 inline Foam::direction Foam::Module::meshOctreeCubeBasic::cubeType() const
 {
     return cubeType_;
-}
-
-
-inline short Foam::Module::meshOctreeCubeBasic::procNo() const
-{
-    return procNo_;
-}
-
-
-inline void Foam::Module::meshOctreeCubeBasic::setProcNo(const short n)
-{
-    procNo_ = n;
 }
 
 
@@ -106,7 +90,6 @@ inline Foam::Ostream& Foam::Module::operator<<
     os << token::BEGIN_LIST;
 
     os << ocb.cubeType_ << token::SPACE;
-    os << ocb.procNo_ << token::SPACE;
     os << static_cast<const meshOctreeCubeCoordinates&>(ocb);
 
     os << token::END_LIST;
@@ -128,8 +111,6 @@ inline Foam::Istream& Foam::Module::operator>>
     label l;
     is >> l;
     ocb.cubeType_ = l;
-    is >> l;
-    ocb.procNo_ = l;
     is >> static_cast<meshOctreeCubeCoordinates&>(ocb);
 
     // Read end of meshOctreeCubeBasic

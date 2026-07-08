@@ -93,12 +93,6 @@ void Foam::Module::cartesianMeshExtractor::createMesh()
         << mesh_.faces().size() << " faces" << nl
         << mesh_.cells().size() << " cells" << endl;
 
-    if (Pstream::parRun())
-    {
-        label nCells = mesh_.cells().size();
-        reduce(nCells, sumOp<label>());
-        Info<< "Total number of cells " << nCells << endl;
-    }
     if (mesh_.cells().size() == 0)
     {
         FatalErrorInFunction

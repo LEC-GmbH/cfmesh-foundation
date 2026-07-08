@@ -33,7 +33,6 @@ License
 #include "demandDrivenData.H"
 
 #include "labelledPoint.H"
-#include "helperFunctionsPar.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -152,83 +151,6 @@ void Foam::Module::meshSurfaceEngineModifier::moveBoundaryVertex
 }
 
 
-void Foam::Module::meshSurfaceEngineModifier::syncVerticesAtParallelBoundaries()
-{
-    if (!Pstream::parRun())
-        return;
-
-    const Map<label>& globalToLocal =
-        surfaceEngine_.globalToLocalBndPointAddressing();
-    labelLongList syncNodes;
-    forAllConstIters(globalToLocal, it)
-    {
-        syncNodes.append(it());
-    }
-
-    syncVerticesAtParallelBoundaries(syncNodes);
-}
-
-
-void Foam::Module::meshSurfaceEngineModifier::syncVerticesAtParallelBoundaries
-(
-    const labelLongList& syncNodes
-)
-{
-    if (!Pstream::parRun())
-        return;
-
-    const VRWGraph& bpAtProcs = surfaceEngine_.bpAtProcs();
-    const labelList& globalLabel =
-        surfaceEngine_.globalBoundaryPointLabel();
-    const Map<label>& globalToLocal =
-        surfaceEngine_.globalToLocalBndPointAddressing();
-    const DynList<label>& neiProcs = surfaceEngine_.bpNeiProcs();
-    const labelList& bPoints = surfaceEngine_.boundaryPoints();
-    const pointFieldPMG& points = surfaceEngine_.mesh().points();
-
-    std::map<label, LongList<labelledPoint>> exchangeData;
-    forAll(neiProcs, i)
-        exchangeData.insert
-        (
-            std::make_pair(neiProcs[i], LongList<labelledPoint>())
-        );
-
-    // construct the map
-    forAll(syncNodes, snI)
-    {
-        const label bpI = syncNodes[snI];
-
-        if (bpAtProcs.sizeOfRow(bpI) == 0)
-            continue;
-
-        point p = points[bPoints[bpI]] / bpAtProcs.sizeOfRow(bpI);
-        moveBoundaryVertexNoUpdate(bpI, p);
-
-        forAllRow(bpAtProcs, bpI, i)
-        {
-            const label neiProc = bpAtProcs(bpI, i);
-            if (neiProc == Pstream::myProcNo())
-                continue;
-
-            exchangeData[neiProc].append(labelledPoint(globalLabel[bpI], p));
-        }
-    }
-
-    // exchange the data with other processors
-    LongList<labelledPoint> receivedData;
-    help::exchangeMap(exchangeData, receivedData);
-
-    // adjust the coordinates
-    forAll(receivedData, i)
-    {
-        const labelledPoint& lp = receivedData[i];
-        const label bpI = globalToLocal[lp.pointLabel()];
-        const point newP = points[bPoints[bpI]] + lp.coordinates();
-        moveBoundaryVertexNoUpdate(bpI, newP);
-    }
-}
-
-
 void Foam::Module::meshSurfaceEngineModifier::updateGeometry
 (
     const labelLongList& updateBndNodes
@@ -240,9 +162,7 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
     const labelList& bp = surfaceEngine_.bp();
 
     boolList updateFaces(bFaces.size(), false);
-    # ifdef USE_OMP
     # pragma omp parallel for if (updateBndNodes.size() > 1000)
-    # endif
     forAll(updateBndNodes, i)
     {
         const label bpI = updateBndNodes[i];
@@ -254,10 +174,8 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
     {
         vectorField& faceCentres = *surfaceEngine_.faceCentresPtr_;
 
-        # ifdef USE_OMP
         # pragma omp parallel for if (updateFaces.size() > 1000) \
         schedule(dynamic, 100)
-        # endif
         forAll(updateFaces, bfI)
         {
             if (updateFaces[bfI])
@@ -269,10 +187,8 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
     {
         vectorField& faceNormals = *surfaceEngine_.faceNormalsPtr_;
 
-        # ifdef USE_OMP
         # pragma omp parallel for if (updateFaces.size() > 1000) \
         schedule(dynamic, 100)
-        # endif
         forAll(updateFaces, bfI)
         {
             if (updateFaces[bfI])
@@ -285,9 +201,7 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
         const vectorField& faceNormals = surfaceEngine_.faceNormals();
 
         boolList updateBndPoint(pFaces.size(), false);
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 50)
-        # endif
         forAll(updateBndNodes, i)
         {
             const label bpI = updateBndNodes[i];
@@ -302,9 +216,7 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
         }
 
         vectorField& pn = *surfaceEngine_.pointNormalsPtr_;
-        # ifdef USE_OMP
         # pragma omp parallel for schedule(dynamic, 100)
-        # endif
         forAll(updateBndPoint, bpI)
         {
             if (!updateBndPoint[bpI])
@@ -326,106 +238,6 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
 
             pn[bpI] = n;
         }
-
-        if (Pstream::parRun())
-        {
-            // update point normals at inter-processor boundaries
-            const Map<label>& globalToLocal =
-                surfaceEngine_.globalToLocalBndPointAddressing();
-            const VRWGraph& bpAtProcs = surfaceEngine_.bpAtProcs();
-            const DynList<label>& neiProcs = surfaceEngine_.bpNeiProcs();
-
-            // make sure that the points ar updated on all processors
-            std::map<label, labelLongList> exchangeNodeLabels;
-            forAll(neiProcs, i)
-                exchangeNodeLabels[neiProcs[i]].clear();
-
-            forAllConstIters(globalToLocal, it)
-            {
-                const label bpI = it();
-
-                if (updateBndPoint[bpI])
-                {
-                    forAllRow(bpAtProcs, bpI, i)
-                    {
-                        const label neiProc = bpAtProcs(bpI, i);
-
-                        if (neiProc == Pstream::myProcNo())
-                            continue;
-
-                        exchangeNodeLabels[neiProc].append(it.key());
-                    }
-                }
-            }
-
-            labelLongList receivedNodes;
-            help::exchangeMap(exchangeNodeLabels, receivedNodes);
-
-            forAll(receivedNodes, i)
-                updateBndPoint[globalToLocal[receivedNodes[i]]] = true;
-
-
-            // start updating point normals
-            std::map<label, LongList<labelledPoint>> exchangeData;
-            forAll(neiProcs, i)
-                exchangeData[neiProcs[i]].clear();
-
-            // prepare data for sending
-            forAllConstIters(globalToLocal, iter)
-            {
-                const label bpI = iter();
-
-                if (!updateBndPoint[bpI])
-                    continue;
-
-                vector& n = pn[bpI];
-                n = vector::zero;
-
-                forAllRow(pFaces, bpI, pfI)
-                    n += faceNormals[pFaces(bpI, pfI)];
-
-                forAllRow(bpAtProcs, bpI, procI)
-                {
-                    const label neiProc = bpAtProcs(bpI, procI);
-                    if (neiProc == Pstream::myProcNo())
-                        continue;
-
-                    exchangeData[neiProc].append(labelledPoint(iter.key(), n));
-                }
-            }
-
-            // exchange data with other procs
-            LongList<labelledPoint> receivedData;
-            help::exchangeMap(exchangeData, receivedData);
-
-            forAll(receivedData, i)
-            {
-                const label bpI = globalToLocal[receivedData[i].pointLabel()];
-                pn[bpI] += receivedData[i].coordinates();
-            }
-
-            // normalize vectors
-            forAllConstIters(globalToLocal, it)
-            {
-                const label bpI = it();
-
-                if (!updateBndPoint[bpI])
-                    continue;
-
-                vector normal = pn[bpI];
-                const scalar d = mag(normal);
-                if (d > VSMALL)
-                {
-                    normal /= d;
-                }
-                else
-                {
-                    normal = vector::zero;
-                }
-
-                pn[bpI] = normal;
-            }
-        }
     }
 }
 
@@ -434,9 +246,7 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry()
 {
     labelLongList updateBndNodes(surfaceEngine_.boundaryPoints().size());
 
-    # ifdef USE_OMP
     # pragma omp parallel for if (updateBndNodes.size() > 10000)
-    # endif
     forAll(updateBndNodes, bpI)
         updateBndNodes[bpI] = bpI;
 

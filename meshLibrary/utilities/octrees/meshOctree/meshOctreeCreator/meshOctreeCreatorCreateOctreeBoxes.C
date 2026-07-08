@@ -35,9 +35,7 @@ License
 #include "triSurf.H"
 #include "meshOctreeAutomaticRefinement.H"
 
-# ifdef USE_OMP
 #include <omp.h>
-# endif
 
 // * * * * * * * * * * * * Private member functions  * * * * * * * * * * * * //
 
@@ -105,14 +103,6 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
         }
     } while (!finished);
 
-    // exchange data
-    if (Pstream::parRun())
-    {
-        label l = globalRefLevel_;
-        reduce(l, maxOp<label>());
-        globalRefLevel_ = l;
-    }
-
     Info<< "Root box " << rootBox << endl;
     Info<< "Requested cell size corresponds to octree level "
         << label(globalRefLevel_) << endl;
@@ -154,14 +144,6 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
         } while (!finished);
 
         boundaryRefLevel_ += addLevel;
-
-        // exchange data
-        if (Pstream::parRun())
-        {
-            label l = boundaryRefLevel_;
-            reduce(l, maxOp<label>());
-            boundaryRefLevel_ = l;
-        }
 
         Info<< "Requested boundary cell size corresponds to octree level "
             << label(boundaryRefLevel_) << endl;
@@ -259,11 +241,6 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
                 }
             } while (!finished);
 
-            if (Pstream::parRun())
-            {
-                reduce(addLevel, maxOp<label>());
-            }
-
             const direction level = globalRefLevel_ + addLevel;
 
             std::pair<direction, scalar> pp(level, 0.0);
@@ -343,11 +320,6 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
                     ++addLevel;
                 }
             } while (!finished);
-
-            if (Pstream::parRun())
-            {
-                reduce(addLevel, maxOp<label>());
-            }
 
             labelLongList subsetFaces;
             surface.facetsInSubset(subsetID, subsetFaces);
@@ -502,7 +474,6 @@ void Foam::Module::meshOctreeCreator::createOctreeBoxes()
     refineBoxesIntersectingEdgeMeshes();
 
     // perform automatic octree refinement
-    if (!Pstream::parRun())
     {
         Info<< "Performing automatic refinement" << endl;
         meshOctreeAutomaticRefinement autoRef(octree_, *meshDictPtr_, false);
@@ -527,13 +498,6 @@ void Foam::Module::meshOctreeCreator::createOctreeBoxes()
     // make sure that INSIDE and UNKNOWN neighbours of DATA boxes
     // have the same or higher refinement level
     refineBoxesNearDataBoxes(1);
-
-    // distribute octree such that each processor has the same number
-    // of leaf boxes which will be used as mesh cells
-    if (Pstream::parRun())
-    {
-        loadDistribution(true);
-    }
 }
 
 
@@ -557,19 +521,11 @@ void Foam::Module::meshOctreeCreator::createOctreeWithRefinedBoundary
 
         label nMarked(0);
 
-        # ifdef USE_OMP
         # pragma omp parallel reduction(+ : nMarked)
-        # endif
         {
-            # ifdef USE_OMP
             meshOctreeSlot* slotPtr = &slots[omp_get_thread_num()];
-            # else
-            meshOctreeSlot* slotPtr = &slots[0];
-            # endif
 
-            # ifdef USE_OMP
             # pragma omp for schedule(dynamic, 20)
-            # endif
             forAll(leaves, leafI)
             {
                 meshOctreeCube& oc = *leaves[leafI];

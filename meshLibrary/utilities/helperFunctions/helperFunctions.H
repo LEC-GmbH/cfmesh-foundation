@@ -41,7 +41,6 @@ Description
 
 #include "helperFunctionsGeometryQueries.H"
 #include "helperFunctionsTopologyManipulation.H"
-#include "helperFunctionsPar.H"
 #include "helperFunctionsFrontalMarking.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

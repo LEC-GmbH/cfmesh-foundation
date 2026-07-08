@@ -51,10 +51,6 @@ Foam::Module::triSurfaceCleanupDuplicates::triSurfaceCleanupDuplicates
 
 void Foam::Module::triSurfaceCleanupDuplicates::mergeIdentities()
 {
-    if (Pstream::parRun())
-        FatalError << "Material detection does not run in parallel"
-            << exit(FatalError);
-
     if (done_)
     {
         WarningInFunction

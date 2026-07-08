@@ -66,10 +66,6 @@ Foam::Module::partTetMeshSimplex::partTetMeshSimplex
             }
         }
 
-        # ifdef DEBUGSmooth
-        Info<< "Tet " << tetI << " is " << tet << endl;
-        # endif
-
         const label pos = tet.whichPosition(pI);
         switch(pos)
         {
@@ -121,96 +117,6 @@ Foam::Module::partTetMeshSimplex::partTetMeshSimplex
             {
                 FatalErrorInFunction
                     << "Point " << pI << " is not present in tet" << tet
-                    << abort(FatalError);
-            }
-        }
-    }
-}
-
-
-Foam::Module::partTetMeshSimplex::partTetMeshSimplex
-(
-    const DynList<parPartTet>& pt,
-    const label gpI
-)
-:
-    pts_(),
-    tets_()
-{
-    tets_.setSize(pt.size());
-    label pI(0);
-
-    Map<label> addr;
-    forAll(pt, tetI)
-    {
-        const parPartTet& tet = pt[tetI];
-
-        label pos(-1);
-        for (label i = 0; i < 4; ++i)
-        {
-            if (!addr.found(tet[i].pointLabel()))
-            {
-                addr.insert(tet[i].pointLabel(), pI);
-                pts_.append(tet[i].coordinates());
-                ++pI;
-            }
-
-            if (tet[i].pointLabel() == gpI)
-            {
-                pos = i;
-            }
-        }
-
-        switch(pos)
-        {
-            case 0:
-            {
-                tets_[tetI] =
-                    partTet
-                    (
-                        addr[tet[1].pointLabel()],
-                        addr[tet[3].pointLabel()],
-                        addr[tet[2].pointLabel()],
-                        addr[tet[0].pointLabel()]
-                    );
-            } break;
-            case 1:
-            {
-                tets_[tetI] =
-                    partTet
-                    (
-                        addr[tet[0].pointLabel()],
-                        addr[tet[2].pointLabel()],
-                        addr[tet[3].pointLabel()],
-                        addr[tet[1].pointLabel()]
-                    );
-            } break;
-            case 2:
-            {
-                tets_[tetI] =
-                    partTet
-                    (
-                        addr[tet[0].pointLabel()],
-                        addr[tet[3].pointLabel()],
-                        addr[tet[1].pointLabel()],
-                        addr[tet[2].pointLabel()]
-                    );
-            } break;
-            case 3:
-            {
-                tets_[tetI] =
-                    partTet
-                    (
-                        addr[tet[0].pointLabel()],
-                        addr[tet[1].pointLabel()],
-                        addr[tet[2].pointLabel()],
-                        addr[tet[3].pointLabel()]
-                    );
-            } break;
-            default:
-            {
-                FatalErrorInFunction
-                    << "Point " << gpI << " is not present in tet" << tet
                     << abort(FatalError);
             }
         }

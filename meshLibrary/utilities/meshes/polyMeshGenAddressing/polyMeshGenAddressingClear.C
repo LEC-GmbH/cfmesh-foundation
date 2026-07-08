@@ -157,27 +157,10 @@ void Foam::Module::polyMeshGenAddressing::clearAddressing()
 }
 
 
-void Foam::Module::polyMeshGenAddressing::clearParallelAddressing()
-{
-    deleteDemandDrivenData(globalPointLabelPtr_);
-    deleteDemandDrivenData(globalFaceLabelPtr_);
-    deleteDemandDrivenData(globalCellLabelPtr_);
-    deleteDemandDrivenData(globalEdgeLabelPtr_);
-
-    deleteDemandDrivenData(pProcsPtr_);
-    deleteDemandDrivenData(globalToLocalPointAddressingPtr_);
-    deleteDemandDrivenData(pointNeiProcsPtr_);
-    deleteDemandDrivenData(eProcsPtr_);
-    deleteDemandDrivenData(globalToLocalEdgeAddressingPtr_);
-    deleteDemandDrivenData(edgeNeiProcsPtr_);
-}
-
-
 void Foam::Module::polyMeshGenAddressing::clearOut()
 {
     clearGeom();
     clearAddressing();
-    clearParallelAddressing();
 }
 
 
@@ -185,7 +168,6 @@ void Foam::Module::polyMeshGenAddressing::clearAll()
 {
     clearGeom();
     clearAddressing();
-    clearParallelAddressing();
 }
 
 

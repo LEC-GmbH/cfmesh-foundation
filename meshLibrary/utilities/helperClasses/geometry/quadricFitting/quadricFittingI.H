@@ -190,13 +190,6 @@ void Foam::Module::quadricFitting::calculateBestFit()
             break;
         }
     }
-
-    # ifdef DEBUGQuadric
-    Info<< "Other points " << otherPoints_ << endl;
-    Info<< "Transformed points " << transformedPoints_ << endl;
-    Info<< "normal " << normal_ << endl;
-    Info<< "Coefficients " << coefficients_ << endl;
-    # endif
 }
 
 

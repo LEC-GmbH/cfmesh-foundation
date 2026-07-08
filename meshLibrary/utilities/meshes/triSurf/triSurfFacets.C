@@ -97,14 +97,6 @@ Foam::labelList Foam::Module::triSurfFacets::findPatches
     const labelList patchIDs =
         findMatchingStrings(regExp(patchName), patchNames());
 
-    # ifdef DEBUGtriSurf
-    if (patchIDs.empty())
-    {
-        WarningInFunction
-            << "Cannot find any patch names matching " << patchName << endl;
-    }
-    # endif
-
     return patchIDs;
 }
 

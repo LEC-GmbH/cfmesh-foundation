@@ -32,8 +32,6 @@ License
 #include "meshOctree.H"
 #include "triSurface.H"
 
-//#define DEBUGTets
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::tetCreatorOctree::selectElements()
@@ -165,15 +163,6 @@ void Foam::Module::tetCreatorOctree::createPointsAndAddressing()
     }
 
     createFaceCentreLabels();
-
-    # ifdef DEBUGTets
-    forAll(nodeLabels, leafI)
-    {
-        forAllRow(nodeLabels, leafI, nlI)
-            if (leafI != pointLeaves(nodeLabels(leafI, nlI), (7 - nlI)) )
-                FatalErrorInFunction << "Error" << abort(FatalError);
-    }
-    # endif
 }
 
 
@@ -185,11 +174,6 @@ void Foam::Module::tetCreatorOctree::createFaceCentreLabels()
     const FRWGraph<label, 8>& pointLeaves = octreeCheck_.nodeLeaves();
     const meshOctree& octree = octreeCheck_.octree();
 
-
-    # ifdef DEBUGTets
-    Info<< "Node labels " << nodeLabels << endl;
-    # endif
-
     List<direction> nodeLevel(pointLeaves.size(), direction(0));
     forAll(nodeLabels, leafI)
     {
@@ -198,10 +182,6 @@ void Foam::Module::tetCreatorOctree::createFaceCentreLabels()
         forAllRow(nodeLabels, leafI, nlI)
         {
             const label nLabel = nodeLabels(leafI, nlI);
-            # ifdef DEBUGTets
-            Info<< "Node label[" << leafI << "][" << nlI << "] "
-                << nLabel << endl;
-            # endif
 
             if (nodeLevel[nLabel] < level)
                 nodeLevel[nLabel] = level;
