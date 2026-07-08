@@ -120,7 +120,7 @@ void Foam::Module::findCellsIntersectingSurface::findIntersectedCells()
         // remove triangles which do not intersect the bounding box
         labelHashSet reasonableCandidates;
 
-        for (const label triIdx : triangles)
+        for (const label triIdx : triangles.toc())
         {
             const labelledTri& tri = surf[triIdx];
 
@@ -146,7 +146,7 @@ void Foam::Module::findCellsIntersectingSurface::findIntersectedCells()
 
         // check if any of the surface vertices is contained within the cell
         labelHashSet nodes, facetsInCell;
-        for (const label triIdx : triangles)
+        for (const label triIdx : triangles.toc())
         {
             const labelledTri& tri = surf[triIdx];
 
@@ -157,7 +157,7 @@ void Foam::Module::findCellsIntersectingSurface::findIntersectedCells()
         }
 
         // check which surface nodes are within the cell
-        for (const label nodei : nodes)
+        for (const label nodei : nodes.toc())
         {
             const point& p = sp[nodei];
 
@@ -242,7 +242,7 @@ void Foam::Module::findCellsIntersectingSurface::findIntersectedCells()
 
         // check if any triangle in the surface mesh
         // intersects any of the cell's faces
-        for (const label triIdx : triangles)
+        for (const label triIdx : triangles.toc())
         {
             if (facetsInCell.found(triIdx))
             {

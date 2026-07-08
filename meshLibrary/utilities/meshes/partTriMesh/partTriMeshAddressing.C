@@ -168,7 +168,7 @@ void Foam::Module::partTriMesh::createPointsAndTrias
     }
 
     // set CORNER and FEATUREEDGE flags to surface points
-    for (const label corneri : mPart_.corners())
+    for (const label corneri : mPart_.corners().toc())
     {
         if (meshSurfacePointLabelInTriMesh_[corneri] != -1)
         {
@@ -176,7 +176,7 @@ void Foam::Module::partTriMesh::createPointsAndTrias
         }
     }
 
-    for (const label edgei : mPart_.edgePoints())
+    for (const label edgei : mPart_.edgePoints().toc())
     {
         const label pI = meshSurfacePointLabelInTriMesh_[edgei];
         if (pI != -1)

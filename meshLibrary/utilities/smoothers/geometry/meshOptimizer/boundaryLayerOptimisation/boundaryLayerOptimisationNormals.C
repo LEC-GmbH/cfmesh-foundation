@@ -92,14 +92,14 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectors
     // finally, calculate normal vectors
     # pragma omp parallel
     # pragma omp single nowait
-    forAllIters(pointPatchNormal, it)
+    forAllIter(pointNormalsType, pointPatchNormal, it)
     {
         # pragma omp task firstprivate(it)
         {
 
         patchNormalType& patchNormal = it->second;
 
-        forAllIters(patchNormal, pIt)
+        forAllIter(patchNormalType, patchNormal, pIt)
         {
             pIt->second.first /= pIt->second.second;
             //pIt->second.first /= (mag(pIt->second.first) + VSMALL);
@@ -293,7 +293,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairVectorsAtTheBoundary
                 forAllRow(edgeFaces, beI, befI)
                 {
                     const face& bf = bFaces[edgeFaces(beI, befI)];
-                    const vector fNormal = bf.areaNormal(points);
+                    const vector fNormal = bf.area(static_cast<const pointField&>(points));
 
                     const label pos = bf.which(he.start());
 
@@ -524,7 +524,7 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsInside()
 
                 label counter(0);
                 const patchNormalType& patchNormals = pointPatchNormal[bpI];
-                forAllConstIters(patchNormals, pIt)
+                forAllConstIter(patchNormalType, patchNormals, pIt)
                 {
                     hv -= pIt->second.first;
                     ++counter;

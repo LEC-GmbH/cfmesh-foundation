@@ -48,13 +48,13 @@ void Foam::Module::meshSurfaceOptimizer::classifySurfaceVertices()
     vertexType_ = PARTITION;
 
     // set corners
-    for (const label corneri : corners)
+    for (const label corneri : corners.toc())
     {
         vertexType_[corneri] = CORNER;
     }
 
     // set edges
-    for (const label edgei : edgePoints)
+    for (const label edgei : edgePoints.toc())
     {
         vertexType_[edgei] = EDGE;
     }

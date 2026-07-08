@@ -98,7 +98,7 @@ void Foam::Module::triSurfAddressing::calculateEdges() const
                 }
             }
 
-            forAllConstIters(edgesAtPoint, it)
+            for (std::set<std::pair<label, label>>::const_iterator it = edgesAtPoint.cbegin(); it != edgesAtPoint.cend(); ++it)
             {
                 edgesHelper.append(edge(it->first, it->second));
             }
@@ -216,7 +216,7 @@ void Foam::Module::triSurfAddressing::calculateFacetFacetsEdges() const
         facetFacetsEdgesPtr_->setRowSize(facetI, fLabels.size());
 
         label counter(0);
-        for (const label facei : fLabels)
+        for (const label facei : fLabels.toc())
         {
             facetFacetsEdgesPtr_->operator()(facetI, counter++) = facei;
         }
@@ -264,7 +264,7 @@ void Foam::Module::triSurfAddressing::calculateFacetNormals() const
     # pragma omp parallel for schedule(dynamic, 40)
     forAll(facets_, fI)
     {
-        vector v = facets_[fI].unitNormal(points_);
+        vector v = facets_[fI].normal(points_);
         (*facetNormalsPtr_)[fI] = v;
     }
 }

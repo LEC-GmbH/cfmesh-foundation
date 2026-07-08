@@ -312,7 +312,7 @@ void Foam::Module::refineBoundaryLayers::activateSpecialMode()
 void Foam::Module::refineBoundaryLayers::refineLayers()
 {
     bool refinePatch(false);
-    forAllConstIters(numLayersForPatch_, it)
+    for (std::map<word, label>::const_iterator it = numLayersForPatch_.cbegin(); it != numLayersForPatch_.cend(); ++it)
     {
         if (it->second > 1)
         {
@@ -499,7 +499,7 @@ void Foam::Module::refineBoundaryLayers::readSettings
 
                     if
                     (
-                        patchDict.getOrDefault<bool>
+                        patchDict.lookupOrDefault<bool>
                         (
                             "allowDiscontinuity",
                             false

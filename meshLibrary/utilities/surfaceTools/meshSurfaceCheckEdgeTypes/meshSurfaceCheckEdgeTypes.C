@@ -60,7 +60,7 @@ void Foam::Module::meshSurfaceCheckEdgeTypes::classifyEdges()
     meshSurfacePartitioner mPart(surfaceEngine_);
     meshSurfaceCheckInvertedVertices checkInverted(mPart);
     const labelHashSet& invertedPoints = checkInverted.invertedVertices();
-    for (const label pointi : invertedPoints)
+    for (const label pointi : invertedPoints.toc())
     {
         problematicPoint[bp[pointi]] = true;
     }

@@ -309,7 +309,7 @@ void Foam::Module::detectBoundaryLayers::analyseLayers()
         layerAtPatch_[i].clear();
     }
 
-    forAllConstIters(patchToLayer, it)
+    forAllConstIter(patchToLayerType, patchToLayer, it)
     {
         const DynList<label>& layersAtPatch = it->second;
 
@@ -375,7 +375,7 @@ bool Foam::Module::detectBoundaryLayers::findHairsForFace
         {
             const edge e = f.faceEdge(eI);
 
-            label pos = edges.find(e);
+            label pos = findIndex(edges, e);
 
             if (pos < 0)
             {
@@ -432,8 +432,8 @@ bool Foam::Module::detectBoundaryLayers::findHairsForFace
         {
             if
             (
-                edgeFaces[commonEdge].found(otherNextFace)
-             && edgeFaces[commonEdge].found(otherPrevFace)
+                (findIndex(edgeFaces[commonEdge], otherNextFace) != -1)
+             && (findIndex(edgeFaces[commonEdge], otherPrevFace) != -1)
             )
             {
                 break;

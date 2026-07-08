@@ -78,7 +78,7 @@ inline void Foam::Module::polyMeshGenCells::cellInSubsets
 {
     cellSubsets.clear();
 
-    forAllConstIters(cellSubsets_, it)
+    for (std::map<label, meshSubset>::const_iterator it = cellSubsets_.cbegin(); it != cellSubsets_.cend(); ++it)
     {
         if (it->second.found(cellI))
         {
@@ -95,7 +95,7 @@ inline void Foam::Module::polyMeshGenCells::cellSubsetIndices
 {
     indices.clear();
 
-    forAllConstIters(cellSubsets_, it)
+    for (std::map<label, meshSubset>::const_iterator it = cellSubsets_.cbegin(); it != cellSubsets_.cend(); ++it)
     {
         indices.append(it->first);
     }
@@ -127,7 +127,7 @@ inline void Foam::Module::polyMeshGenCells::updateCellSubsets
     const ListType& newCellLabels
 )
 {
-    forAllIters(cellSubsets_, it)
+    for (std::map<label, meshSubset>::iterator it = cellSubsets_.begin(); it != cellSubsets_.end(); ++it)
     {
         it->second.updateSubset(newCellLabels);
     }
@@ -139,7 +139,7 @@ inline void Foam::Module::polyMeshGenCells::updateCellSubsets
     const VRWGraph& newCellsForCell
 )
 {
-    forAllIters(cellSubsets_, it)
+    for (std::map<label, meshSubset>::iterator it = cellSubsets_.begin(); it != cellSubsets_.end(); ++it)
     {
         it->second.updateSubset(newCellsForCell);
     }

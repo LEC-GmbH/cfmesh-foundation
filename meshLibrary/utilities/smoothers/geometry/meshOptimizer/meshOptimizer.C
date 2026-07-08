@@ -148,13 +148,13 @@ void Foam::Module::meshOptimizer::calculatePointLocations()
 
     // mark edge vertices
     meshSurfacePartitioner mPart(mse);
-    for (const label edgei : mPart.edgePoints())
+    for (const label edgei : mPart.edgePoints().toc())
     {
         vertexLocation_[bPoints[edgei]] = EDGE;
     }
 
     // mark corner vertices
-    for (const label corneri : mPart.corners())
+    for (const label corneri : mPart.corners().toc())
     {
         vertexLocation_[bPoints[corneri]] = CORNER;
     }

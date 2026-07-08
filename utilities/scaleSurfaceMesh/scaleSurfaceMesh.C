@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
 
     const fileName inFileName(args[1]);
     const fileName outFileName(args[2]);
-    const scalar scalingFactor(args.get<scalar>(3));
+    const scalar scalingFactor(args.argRead<scalar>(3));
 
     // read the surface mesh
     triSurf surface(inFileName);

@@ -48,7 +48,7 @@ Foam::label Foam::Module::boundaryLayers::findNewNodeLabel
 
         if (m.size() == 2)
         {
-            forAllConstIters(m, mit)
+            for (std::map<std::pair<label, label>, label>::const_iterator mit = m.cbegin(); mit != m.cend(); ++mit)
             {
                 if (mit->first.first != pKey)
                 {
@@ -58,7 +58,7 @@ Foam::label Foam::Module::boundaryLayers::findNewNodeLabel
         }
         else
         {
-            forAllConstIters(m, mit)
+            for (std::map<std::pair<label, label>, label>::const_iterator mit = m.cbegin(); mit != m.cend(); ++mit)
             {
                 if (mit->first.first == pKey)
                 {
@@ -105,7 +105,7 @@ inline void Foam::Module::boundaryLayers::createNewCellFromEdge
     }
     else
     {
-        forAllConstIters(ms, it)
+        for (std::map<std::pair<label, label>, label>::const_iterator it = ms.cbegin(); it != ms.cend(); ++it)
         {
             if
             (
@@ -141,7 +141,7 @@ inline void Foam::Module::boundaryLayers::createNewCellFromEdge
     }
     else
     {
-        forAllConstIters(me, it)
+        for (std::map<std::pair<label, label>, label>::const_iterator it = me.cbegin(); it != me.cend(); ++it)
         {
             if
             (

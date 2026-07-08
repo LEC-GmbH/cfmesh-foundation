@@ -28,6 +28,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
+#include "OSspecific.H"
 #include "checkMeshDict.H"
 #include "patchRefinementList.H"
 #include "PtrList.H"
@@ -254,7 +255,7 @@ void Foam::Module::checkMeshDict::checkObjectRefinements() const
             forAll(refObjects, objectI)
             {
                 const entry& objectEntry =
-                    dict.lookupEntry(objectNames[objectI], keyType::LITERAL);
+                    dict.lookupEntry(objectNames[objectI], false, false);
 
                 refObjects.set
                 (
@@ -317,7 +318,7 @@ void Foam::Module::checkMeshDict::checkAnisotropicSources() const
             forAll(anisotropicObjects, objectI)
             {
                 const entry& objectEntry =
-                    dict.lookupEntry(objectNames[objectI], keyType::LITERAL);
+                    dict.lookupEntry(objectNames[objectI], false, false);
 
                 anisotropicObjects.set
                 (
@@ -1074,7 +1075,7 @@ void Foam::Module::checkMeshDict::updateRenameBoundary
                 // current state of the dictionary
                 const dictionary& patchDicts = dict.subDict("newPatchNames");
 
-                forAllConstIters(patchesFromPatch, it)
+                for (std::map<word, wordList>::const_iterator it = patchesFromPatch.cbegin(); it != patchesFromPatch.cend(); ++it)
                 {
                     const word& pName = it->first;
                     const wordList& newNames = it->second;
@@ -1148,7 +1149,7 @@ void Foam::Module::checkMeshDict::updateRenameBoundary
                     }
                 }
 
-                forAllConstIters(patchesFromPatch, it)
+                for (std::map<word, wordList>::const_iterator it = patchesFromPatch.cbegin(); it != patchesFromPatch.cend(); ++it)
                 {
                     const word& pName = it->first;
                     const wordList& newNames = it->second;
@@ -1179,7 +1180,7 @@ void Foam::Module::checkMeshDict::updateRenameBoundary
             // newPatchNames is not used
             dictionary& newPatchesDict = newDict.subDict("newPatchNames");
 
-            forAllConstIters(patchesFromPatch, it)
+            for (std::map<word, wordList>::const_iterator it = patchesFromPatch.cbegin(); it != patchesFromPatch.cend(); ++it)
             {
                 const wordList& newPatchNames = it->second;
 
@@ -1205,7 +1206,7 @@ void Foam::Module::checkMeshDict::updateRenameBoundary
         // create the dictionary if it has not existed before
         dictionary& newPatchesDict = newDict.subDict("newPatchNames");
 
-        forAllConstIters(patchesFromPatch, it)
+        for (std::map<word, wordList>::const_iterator it = patchesFromPatch.cbegin(); it != patchesFromPatch.cend(); ++it)
         {
             const wordList& newPatchNames = it->second;
 

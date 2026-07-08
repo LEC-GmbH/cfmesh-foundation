@@ -339,7 +339,7 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
 
             // check if the number of inverted points reduces
             bool minimumInStack(false);
-            forAllConstIters(nInvertedHistory, it)
+            forAllConstIter(FIFOStack<label>, nInvertedHistory, it)
             {
                 if (it() == minNumInverted)
                 {
@@ -691,7 +691,7 @@ void Foam::Module::meshSurfaceOptimizer::untangleSurface2D()
         // of active points
         activeBoundaryPoint = false;
         changedFace = false;
-        for (const label facei : badFaces)
+        for (const label facei : badFaces.toc())
         {
             const face& f = faces[facei];
 

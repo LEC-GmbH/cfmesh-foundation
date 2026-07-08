@@ -245,16 +245,16 @@ void Foam::Module::boxScaling::writeDict(Ostream& os, bool subDict) const
     // only write type for derived types
     if (type() != typeName_())
     {
-        os.writeEntry("type", type());
+        writeEntry(os, "type", type());
     }
 
-    os.writeEntry("centre", centre_);
-    os.writeEntry("lengthX", lengthVec_.x());
-    os.writeEntry("lengthY", lengthVec_.y());
-    os.writeEntry("lengthZ", lengthVec_.z());
-    os.writeEntry("scaleX", scaleVec_.x());
-    os.writeEntry("scaleY", scaleVec_.y());
-    os.writeEntry("scaleZ", scaleVec_.z());
+    writeEntry(os, "centre", centre_);
+    writeEntry(os, "lengthX", lengthVec_.x());
+    writeEntry(os, "lengthY", lengthVec_.y());
+    writeEntry(os, "lengthZ", lengthVec_.z());
+    writeEntry(os, "scaleX", scaleVec_.x());
+    writeEntry(os, "scaleY", scaleVec_.y());
+    writeEntry(os, "scaleZ", scaleVec_.z());
 
     if (subDict)
     {
@@ -301,9 +301,9 @@ void Foam::Module::boxScaling::operator=(const dictionary& d)
         lengthVec_.z() = 0.0;
     }
 
-    scaleVec_.x() = dict.getOrDefault<scalar>("scaleX", 1.0);
-    scaleVec_.y() = dict.getOrDefault<scalar>("scaleY", 1.0);
-    scaleVec_.z() = dict.getOrDefault<scalar>("scaleZ", 1.0);
+    scaleVec_.x() = dict.lookupOrDefault<scalar>("scaleX", 1.0);
+    scaleVec_.y() = dict.lookupOrDefault<scalar>("scaleY", 1.0);
+    scaleVec_.z() = dict.lookupOrDefault<scalar>("scaleZ", 1.0);
 
     calculateBndBox();
 }

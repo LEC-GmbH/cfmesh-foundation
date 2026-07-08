@@ -794,7 +794,7 @@ void Foam::Module::refineBoundaryLayers::generateNewFaces()
 
             forAll(currLayers, i)
             {
-                if (neiLayers.found(currLayers[i]))
+                if (findIndex(neiLayers, currLayers[i]) != -1)
                 {
                     foundSame = true;
                     break;

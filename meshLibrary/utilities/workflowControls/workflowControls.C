@@ -280,7 +280,7 @@ bool Foam::Module::workflowControls::runCurrentStep(const word& stepName)
     if
     (
         completedStepsBeforeRestart_.size()
-     && completedStepsBeforeRestart_.found(currentStep_)
+     && (findIndex(completedStepsBeforeRestart_, currentStep_) != -1)
      && restartRequested()
      && !isRestarted_
     )
@@ -305,7 +305,7 @@ bool Foam::Module::workflowControls::runCurrentStep(const word& stepName)
     if (workflowSteps_.find(stepName) == workflowSteps_.end())
     {
         DynList<word> toc;
-        forAllConstIters(workflowSteps_, it)
+        for (std::map<word, label>::const_iterator it = workflowSteps_.cbegin(); it != workflowSteps_.cend(); ++it)
         {
             toc.append(it->first);
         }

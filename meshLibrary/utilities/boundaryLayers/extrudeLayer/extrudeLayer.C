@@ -385,11 +385,11 @@ void Foam::Module::extrudeLayer::movePoints()
                 {
                     const face& f = faces[faceI];
 
-                    normal -= f.areaNormal(points);
+                    normal -= f.area(static_cast<const pointField&>(points));
 
                     if (thickness_ < 0.0)
                     {
-                        const vector c = f.centre(points);
+                        const vector c = f.centre(static_cast<const pointField&>(points));
                         scalar d(VGREAT);
 
                         forAll(f, pI)
@@ -411,7 +411,7 @@ void Foam::Module::extrudeLayer::movePoints()
                 thickness *= 0.4;
             }
 
-            normal.normalise();
+            normal /= mag(normal);
 
             displacements[pI] = normal*thickness;
         }
@@ -831,9 +831,9 @@ void Foam::Module::extrudeLayer::updateBoundary()
             forAllRow(pointPatches, bpI, ppI)
             {
                 const label patchI = pointPatches(bpI, ppI);
-                if (patches.found(patchI))
+                if (findIndex(patches, patchI) != -1)
                 {
-                    ++nAppearances[patches.find(patchI)];
+                    ++nAppearances[findIndex(patches, patchI)];
                 }
                 else
                 {

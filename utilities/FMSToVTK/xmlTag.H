@@ -188,9 +188,9 @@ Ostream& operator<<(Ostream& os, const xmlTag& tag)
     os << indent << '<' << tag.name_;
 
     // Attributes and text
-    forAllConstIters(tag.attributes_, iter)
+    forAllConstIter(HashTable<string>, tag.attributes_, iter)
     {
-        os << token::SPACE << iter.key() << '=' << iter.val();
+        os << token::SPACE << iter.key() << '=' << iter();
     }
 
     if (tag.str().size() || tag.children_.size())

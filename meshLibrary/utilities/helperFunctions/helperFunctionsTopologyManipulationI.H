@@ -345,7 +345,7 @@ inline void Foam::Module::help::findOpenEdges
 
         forAll(edges, eI)
         {
-            const label pos = cellEdges.find(edges[eI]);
+            const label pos = findIndex(cellEdges, edges[eI]);
 
             if (pos == -1)
             {
@@ -587,7 +587,7 @@ inline void Foam::Module::help::zipOpenChain(DynList<edge>& bEdges)
         const edge& e = bEdges[eI];
         forAll(e, pI)
         {
-            const label pos = chainVertices.find(e[pI]);
+            const label pos = findIndex(chainVertices, e[pI]);
 
             if (pos == -1)
             {

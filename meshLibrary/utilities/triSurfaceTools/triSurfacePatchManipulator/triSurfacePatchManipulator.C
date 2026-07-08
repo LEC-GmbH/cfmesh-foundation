@@ -237,7 +237,7 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
 
             label counter(0);
 
-            for (const label it : patchToNewPatches[patchI])
+            for (const label it : patchToNewPatches[patchI].toc())
             {
                 patchesForPatch[pName][counter++] = newPatches[it].name();
             }

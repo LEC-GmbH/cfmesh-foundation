@@ -31,6 +31,7 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
+#include "OSspecific.H"
 #include "polyMeshGen.H"
 #include "meshSurfaceEngine.H"
 #include "OFstream.H"

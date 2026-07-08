@@ -605,7 +605,7 @@ bool Foam::Module::polyMeshGenChecks::checkMinTwist
                         fCentres[faceI]
                     );
 
-                    const vector triArea = triangle.areaNormal();
+                    const vector triArea = triangle.area();
 
                     const scalar magTri = (mag(triArea) + VSMALL);
 
@@ -655,7 +655,7 @@ bool Foam::Module::polyMeshGenChecks::checkMinTwist
                     fCentres[faceI]
                 );
 
-                const vector triArea = triangle.areaNormal();
+                const vector triArea = triangle.area();
 
                 const scalar magTri = mag(triArea);
 
@@ -1023,7 +1023,7 @@ bool Foam::Module::polyMeshGenChecks::checkTriangleTwist
                         fCentres[faceI]
                     );
 
-                    vector prevN = tri.unitNormal();
+                    vector prevN = tri.normal();
 
                     // compare with other possible triangles
                     for (label pJ = pI + 1; pJ < f.size(); ++pJ)
@@ -1035,7 +1035,7 @@ bool Foam::Module::polyMeshGenChecks::checkTriangleTwist
                             fCentres[faceI]
                         );
 
-                        vector triN = tri.unitNormal();
+                        vector triN = tri.normal();
 
                         if ((prevN & triN) < minTwist)
                         {
@@ -1545,7 +1545,7 @@ void Foam::Module::polyMeshGenChecks::checkFaceSkewness
         {
             const vector d = fCentres[faceI] - centres[own[faceI]];
 
-            vector n = faces[faceI].areaNormal(points);
+            vector n = faces[faceI].area(static_cast<const pointField&>(points));
             const scalar magn = mag(n);
             if (magn > VSMALL)
             {

@@ -86,7 +86,7 @@ void Foam::Module::meshSurfaceEngineModifier::moveBoundaryVertex
         {
             const label bfI = pFaces(bpI, pfI);
 
-            faceCentres[bfI] = bFaces[bfI].centre(points);
+            faceCentres[bfI] = bFaces[bfI].centre(static_cast<const pointField&>(points));
         }
     }
 
@@ -100,7 +100,7 @@ void Foam::Module::meshSurfaceEngineModifier::moveBoundaryVertex
         {
             const label bfI = pFaces(bpI, pfI);
 
-            faceNormals[bfI] = bFaces[bfI].areaNormal(points);
+            faceNormals[bfI] = bFaces[bfI].area(static_cast<const pointField&>(points));
         }
     }
 
@@ -179,7 +179,7 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
         forAll(updateFaces, bfI)
         {
             if (updateFaces[bfI])
-                faceCentres[bfI] = bFaces[bfI].centre(points);
+                faceCentres[bfI] = bFaces[bfI].centre(static_cast<const pointField&>(points));
         }
     }
 
@@ -192,7 +192,7 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
         forAll(updateFaces, bfI)
         {
             if (updateFaces[bfI])
-                faceNormals[bfI] = bFaces[bfI].areaNormal(points);
+                faceNormals[bfI] = bFaces[bfI].area(static_cast<const pointField&>(points));
         }
     }
 

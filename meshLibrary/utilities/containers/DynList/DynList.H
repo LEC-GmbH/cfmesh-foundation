@@ -44,7 +44,9 @@ SourceFiles
 #define DynList_H
 
 #include "List.H"
+#include "ListOps.H"
 #include "FixedList.H"
+#include "Swap.H"
 #include <type_traits>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

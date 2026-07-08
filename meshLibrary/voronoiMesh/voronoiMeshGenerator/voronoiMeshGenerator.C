@@ -176,7 +176,7 @@ void Foam::Module::voronoiMeshGenerator::optimiseFinalMesh()
 {
     // untangle the surface if needed
     const bool enforceConstraints =
-        meshDict_.getOrDefault<bool>("enforceGeometryConstraints", false);
+        meshDict_.lookupOrDefault<bool>("enforceGeometryConstraints", false);
 
     if (true)
     {

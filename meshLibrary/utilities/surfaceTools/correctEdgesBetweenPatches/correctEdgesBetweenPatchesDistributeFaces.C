@@ -282,14 +282,14 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
 
     // set corner flags
     const labelHashSet& corners = surfacePartitioner.corners();
-    for (const label corneri : corners)
+    for (const label corneri : corners.toc())
     {
         nodeType[corneri] |= 1;
     }
 
     // set flgs to edge vertices
     const labelHashSet& edgePoints = surfacePartitioner.edgePoints();
-    for (const label pointi : edgePoints)
+    for (const label pointi : edgePoints.toc())
     {
         nodeType[pointi] |= 2;
     }
@@ -337,7 +337,8 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
                     decompose_ = true;
 
                     // decompose into triangles
-                    const point p = bf.centre(mesh_.points());
+                    const point p =
+                        bf.centre(static_cast<const pointField&>(mesh_.points()));
                     triF[2] = mesh_.points().size();
                     mesh_.points().append(p);
 

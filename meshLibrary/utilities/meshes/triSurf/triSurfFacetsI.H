@@ -103,7 +103,7 @@ inline void Foam::Module::triSurfFacets::facetInSubsets
 {
     facetSubsets.clear();
 
-    forAllConstIters(facetSubsets_, it)
+    forAllConstIter(Map<meshSubset>, facetSubsets_, it)
     {
         if (it().found(triI))
         {
@@ -120,7 +120,7 @@ inline void Foam::Module::triSurfFacets::facetSubsetIndices
 {
     indices.clear();
 
-    forAllConstIters(facetSubsets_, it)
+    forAllConstIter(Map<meshSubset>, facetSubsets_, it)
     {
         indices.append(it.key());
     }
@@ -136,7 +136,7 @@ inline void Foam::Module::triSurfFacets::facetsInSubset
 {
     facetsLabels.clear();
 
-    Map<meshSubset>::const_iterator it = facetSubsets_.cfind(setI);
+    Map<meshSubset>::const_iterator it = facetSubsets_.find(setI);
     if (it == facetSubsets_.end())
     {
         return;
@@ -152,7 +152,7 @@ inline void Foam::Module::triSurfFacets::updateFacetsSubsets
     const ListType& newFacetsLabels
 )
 {
-    forAllIters(facetSubsets_, it)
+    forAllIter(Map<meshSubset>, facetSubsets_, it)
     {
         it().updateSubset(newFacetsLabels);
     }

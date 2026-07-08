@@ -78,7 +78,7 @@ removeCellsWithAllVerticesAtTheBoundary()
                 const face& f = faces[c[fI]];
                 forAll(f, eI)
                 {
-                    const label pos = edges.find(f.faceEdge(eI));
+                    const label pos = findIndex(edges, f.faceEdge(eI));
 
                     if (pos == -1)
                     {

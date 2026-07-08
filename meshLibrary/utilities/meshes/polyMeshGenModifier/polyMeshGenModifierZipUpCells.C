@@ -373,7 +373,7 @@ void Foam::Module::polyMeshGenModifier::zipUpCells()
                     // - SLList doesn't define iterator category
 
                     auto& dest = edgesToInsert[nEdgesToInsert];
-                    dest.resize_nocopy(pointChain.size());
+                    dest.setSize(pointChain.size());
 
                     auto iter = dest.begin();
 

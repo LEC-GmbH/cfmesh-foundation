@@ -355,7 +355,7 @@ Foam::scalar Foam::Module::volumeOptimizer::optimiseSteepestDescent
                         points_[tet.c()]
                     );
 
-                    vector n = tri.areaNormal();
+                    vector n = tri.area();
                     const scalar d = mag(n);
 
                     if (d > VSMALL)

@@ -37,7 +37,7 @@ License
 
 Foam::label Foam::Module::faceDecomposition::concaveVertex() const
 {
-    const vector n = f_.unitNormal(points_);
+    const vector n = f_.normal(points_);
 
     const edgeList edges = f_.edges();
 
@@ -47,9 +47,11 @@ Foam::label Foam::Module::faceDecomposition::concaveVertex() const
     {
         const short next = (eI + 1) % f_.size();
 
-        const vector ev = edges[eI].unitVec(points_);
+        const vector evVec = edges[eI].vec(points_);
+        const vector ev = evVec/mag(evVec);
 
-        const vector evn = edges[next].unitVec(points_);
+        const vector evnVec = edges[next].vec(points_);
+        const vector evn = evnVec/mag(evnVec);
 
         const vector prod = (ev ^ evn);
 
@@ -107,7 +109,7 @@ bool Foam::Module::faceDecomposition::isFaceConvex() const
 
 bool Foam::Module::faceDecomposition::isFacePlanar(const scalar tol) const
 {
-    const vector nref = f_.unitNormal(points_);
+    const vector nref = f_.normal(points_);
 
     forAll(f_, pI)
     {

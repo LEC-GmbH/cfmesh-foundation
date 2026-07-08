@@ -83,7 +83,7 @@ Foam::Module::quadricMetric::quadricMetric(partTetMeshSimplex& simplex)
             points_[pt.c()]
         );
 
-        const vector n = tri.areaNormal();
+        const vector n = tri.area();
         const scalar d = mag(n);
 
         if (d > VSMALL)

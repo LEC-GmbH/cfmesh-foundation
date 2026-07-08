@@ -141,7 +141,7 @@ inline void Foam::Module::polyMeshGenFaces::faceInSubsets
 {
     faceSubsets.clear();
 
-    forAllConstIters(faceSubsets_, it)
+    for (std::map<label, meshSubset>::const_iterator it = faceSubsets_.cbegin(); it != faceSubsets_.cend(); ++it)
     {
         if (it->second.found(faceI))
         {
@@ -158,7 +158,7 @@ inline void Foam::Module::polyMeshGenFaces::faceSubsetIndices
 {
     indices.clear();
 
-    forAllConstIters(faceSubsets_, it)
+    for (std::map<label, meshSubset>::const_iterator it = faceSubsets_.cbegin(); it != faceSubsets_.cend(); ++it)
     {
         indices.append(it->first);
     }
@@ -190,7 +190,7 @@ inline void Foam::Module::polyMeshGenFaces::updateFaceSubsets
     const ListType& newFaceLabels
 )
 {
-    forAllIters(faceSubsets_, it)
+    for (std::map<label, meshSubset>::iterator it = faceSubsets_.begin(); it != faceSubsets_.end(); ++it)
     {
         it->second.updateSubset(newFaceLabels);
     }
@@ -202,7 +202,7 @@ inline void Foam::Module::polyMeshGenFaces::updateFaceSubsets
     const VRWGraph& newFacesForFace
 )
 {
-    forAllIters(faceSubsets_, it)
+    for (std::map<label, meshSubset>::iterator it = faceSubsets_.begin(); it != faceSubsets_.end(); ++it)
     {
         it->second.updateSubset(newFacesForFace);
     }

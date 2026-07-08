@@ -123,7 +123,7 @@ Foam::Module::meshOctreeAddressing::meshOctreeAddressing
         dict.readIfPresent("keepCellsIntersectingBoundary", useDATABoxes_);
     }
 
-    if (dict.getOrDefault<bool>("nonManifoldMeshing", false))
+    if (dict.lookupOrDefault<bool>("nonManifoldMeshing", false))
     {
         useDATABoxes_ = true;
     }
@@ -182,7 +182,7 @@ bool Foam::Module::meshOctreeAddressing::isIntersectedFace(const label fI) const
         }
     }
 
-    forAllConstIters(nAppearances, iter)
+    forAllConstIter(Map<label>, nAppearances, iter)
     {
         if (iter() == 2)
         {
@@ -266,7 +266,7 @@ bool Foam::Module::meshOctreeAddressing::isIntersectedEdge(const label eI) const
         }
     }
 
-    forAllConstIters(nAppearances, iter)
+    forAllConstIter(Map<label>, nAppearances, iter)
     {
         if (iter() == edgeCubes.sizeOfRow(eI))
         {
@@ -343,7 +343,7 @@ void Foam::Module::meshOctreeAddressing::edgeIntersections
 
     point intersection(vector::zero);
 
-    forAllConstIters(nAppearances, iter)
+    forAllConstIter(Map<label>, nAppearances, iter)
     {
         if (iter() == edgeCubes.sizeOfRow(eI))
         {

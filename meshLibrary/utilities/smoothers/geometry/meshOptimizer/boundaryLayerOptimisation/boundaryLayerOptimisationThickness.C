@@ -68,7 +68,7 @@ void Foam::Module::boundaryLayerOptimisation::hairEdgesAtBndFace
         {
             const edge e = f.faceEdge(eI);
 
-            label pos = edges.find(e);
+            label pos = findIndex(edges, e);
 
             if (pos < 0)
             {
@@ -108,8 +108,8 @@ void Foam::Module::boundaryLayerOptimisation::hairEdgesAtBndFace
         {
             if
             (
-                edgeFaces[commonEdge].found(otherNextFace)
-             && edgeFaces[commonEdge].found(otherPrevFace)
+                (findIndex(edgeFaces[commonEdge], otherNextFace) != -1)
+             && (findIndex(edgeFaces[commonEdge], otherPrevFace) != -1)
             )
             {
                 break;

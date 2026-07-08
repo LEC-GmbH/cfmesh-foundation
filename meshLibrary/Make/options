@@ -1,21 +1,15 @@
-sinclude $(GENERAL_RULES)/module-path-user
-
-/* Failsafe - user location */
-ifeq (,$(strip $(FOAM_MODULE_LIBBIN)))
-    FOAM_MODULE_LIBBIN = $(FOAM_USER_LIBBIN)
-endif
-
-/* OpenMP is a mandatory build dependency (not optional) */
-COMP_OPENMP += -DUSE_OMP
+# OpenMP is a mandatory build dependency (not optional)
 
 EXE_INC = \
-    $(COMP_OPENMP) \
+    -fopenmp -DUSE_OMP \
     -I$(LIB_SRC)/fileFormats/lnInclude \
     -I$(LIB_SRC)/surfMesh/lnInclude \
-    -I$(LIB_SRC)/meshTools/lnInclude
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/triSurface/lnInclude
 
 LIB_LIBS = \
-    $(LINK_OPENMP) \
+    -fopenmp \
     -lfileFormats \
     -lsurfMesh \
-    -lmeshTools
+    -lmeshTools \
+    -ltriSurface

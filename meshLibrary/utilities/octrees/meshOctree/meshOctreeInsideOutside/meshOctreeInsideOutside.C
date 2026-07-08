@@ -321,7 +321,7 @@ void Foam::Module::meshOctreeInsideOutside::markOutsideCubes()
     } while (keepUpdating);
 
     // set OUTSIDE type to the cubes in OUTSIDE groups
-    forAllConstIters(groupType_, it)
+    for (std::map<label, direction>::const_iterator it = groupType_.cbegin(); it != groupType_.cend(); ++it)
     {
         if (it->first < 0)
             continue;
@@ -415,7 +415,7 @@ void Foam::Module::meshOctreeInsideOutside::markInsideCubes()
     DynList<label> neighbours;
 
     // make INSIDE groups for which it is possible
-    forAllIters(groupType_, it)
+    for (std::map<label, direction>::iterator it = groupType_.begin(); it != groupType_.end(); ++it)
     {
         const label groupI = it->first;
 
@@ -474,7 +474,7 @@ void Foam::Module::meshOctreeInsideOutside::markInsideCubes()
     } while (keepUpdating);
 
     // set INSIDE type to the cubes in INSIDE groups
-    forAllConstIters(groupType_, it)
+    for (std::map<label, direction>::const_iterator it = groupType_.cbegin(); it != groupType_.cend(); ++it)
     {
         if (it->first < 0)
             continue;

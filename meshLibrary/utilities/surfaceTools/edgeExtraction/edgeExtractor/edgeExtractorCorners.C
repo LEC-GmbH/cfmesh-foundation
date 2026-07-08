@@ -134,7 +134,7 @@ Foam::label Foam::Module::edgeExtractor::faceEvaluator::bestPatchTopological
 
     label newPatch = -1;
     label nNeiEdges(0);
-    forAllConstIters(nNeiInPatch, it)
+    forAllConstIter(Map<label>, nNeiInPatch, it)
     {
         if (it() > nNeiEdges)
         {
@@ -347,7 +347,7 @@ void Foam::Module::edgeExtractor::cornerEvaluator::improveCorners
     const pointFieldPMG& points = mse.points();
     const faceList::subList& bFaces = mse.boundaryFaces();
 
-    for (const label corneri : corners)
+    for (const label corneri : corners.toc())
     {
         const point& p = points[bPoints[corneri]];
 
@@ -453,7 +453,7 @@ void Foam::Module::edgeExtractor::cornerEvaluator::improveCorners
             bool allPatchesRemain(true);
             forAll(edgePatches, i)
             {
-                if (!newFacePatches.found(edgePatches[i].first()))
+                if (findIndex(newFacePatches, edgePatches[i].first()) == -1)
                 {
                     allPatchesRemain = false;
                     break;
@@ -506,7 +506,7 @@ bool Foam::Module::edgeExtractor::findCornerCandidates()
     forAll(bFaces, bfI)
     {
         const face& bf = bFaces[bfI];
-        const point c = bf.centre(points);
+        const point c = bf.centre(static_cast<const pointField&>(points));
 
         forAll(bf, pI)
         {
@@ -602,7 +602,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
         distMapType nearestToCorner;
 
         // find nearest corners in the surface mesh
-        for (const label bpI : corners)
+        for (const label bpI : corners.toc())
         {
             const DynList<label> neiPatches = pPatches[bpI];
 
@@ -622,7 +622,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
         }
 
         std::map<label, DynList<label>> bpMappedAtSurfaceCorner;
-        forAllConstIters(cornerIndex, mIt)
+        forAllConstIter(mapType, cornerIndex, mIt)
         {
             if (mIt->second < 0)
             {
@@ -645,7 +645,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
         mapType edgePointIndex;
         std::map<std::pair<label, label>, labelLongList> edgesSharedByPatches;
 
-        for (const label beI : featureEdge)
+        for (const label beI : featureEdge.toc())
         {
             // get the patches bounded by this feature edge
             DynList<label> patches(2);
@@ -708,7 +708,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
         }
 
         labelHashSet invalidFeatureEdges;
-        forAllConstIters(edgesSharedByPatches, mIt)
+        for (std::map<std::pair<label, label>, labelLongList>::const_iterator mIt = edgesSharedByPatches.cbegin(); mIt != edgesSharedByPatches.cend(); ++mIt)
         {
             const bool validConnection =
                 patchPatches[mIt->first.first].found(mIt->first.second);
@@ -729,7 +729,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
         // check the vicinity of the corner point and check whether
         // it shall be replaced by some other point in the vicinity
         std::map<label, DynList<labelPair>> facesAtCornerNewPatches;
-        forAllConstIters(nearestToCorner, it)
+        forAllConstIter(distMapType, nearestToCorner, it)
         {
             const label bpI = it->first;
 
@@ -752,7 +752,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
             // shall be mapped onto the surface mesh
             label bestPoint(-1);
             scalar minDistSq(VGREAT);
-            for (const label pointi : nearPoints)
+            for (const label pointi : nearPoints.toc())
             {
                 const point& p = points[pointi];
 
@@ -794,7 +794,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
                 if (nei == bfI)
                     nei = edgeFaces(beI, 1);
 
-                if (pFaces.found(nei) || (nei < 0))
+                if ((findIndex(pFaces, nei) != -1) || (nei < 0))
                     continue;
 
                 front.append(pointFaces.find(bpI, nei));
@@ -905,18 +905,18 @@ bool Foam::Module::edgeExtractor::checkCorners()
 
                 if (beI == bestEdge)
                 {
-                    label pos = pFaces.find(edgeFaces(beI, 0));
+                    label pos = findIndex(pFaces, edgeFaces(beI, 0));
                     groupsForChanging.first() = faceInGroup[pos];
-                    pos = pFaces.find(edgeFaces(beI, 1));
+                    pos = findIndex(pFaces, edgeFaces(beI, 1));
                     groupsForChanging.second() = faceInGroup[pos];
                 }
                 else if (featureEdge.found(beI))
                 {
                     labelPair lp, lpp;
-                    label pos = pFaces.find(edgeFaces(beI, 0));
+                    label pos = findIndex(pFaces, edgeFaces(beI, 0));
                     lpp.first() = facePatch_[pFaces[pos]];
                     lp.first() = faceInGroup[pos];
-                    pos = pFaces.find(edgeFaces(beI, 1));
+                    pos = findIndex(pFaces, edgeFaces(beI, 1));
                     lpp.second() = facePatch_[pFaces[pos]];
                     lp.second() = faceInGroup[pos];
 
@@ -999,7 +999,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
                             if (nei == bfI)
                                 nei = edgeFaces(beI, 1);
 
-                            const label posNei = pFaces.find(nei);
+                            const label posNei = findIndex(pFaces, nei);
                             if
                             (
                                 (posNei < 0) ||
@@ -1128,7 +1128,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
                             if (nei == bfI)
                                 nei = edgeFaces(beI, 1);
 
-                            const label posNei = pFaces.find(nei);
+                            const label posNei = findIndex(pFaces, nei);
                             if
                             (
                                 (posNei < 0) ||
@@ -1232,7 +1232,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
         }
 
         labelHashSet changedPatch;
-        forAllConstIters(facesAtCornerNewPatches, it)
+        for (std::map<label, DynList<labelPair>>::const_iterator it = facesAtCornerNewPatches.cbegin(); it != facesAtCornerNewPatches.cend(); ++it)
         {
             const DynList<labelPair>& lp = it->second;
             forAll(lp, i)

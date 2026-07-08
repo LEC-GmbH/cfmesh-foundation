@@ -161,10 +161,7 @@ public:
 
 //- Data for labelledPoint are contiguous
 template<>
-struct is_contiguous<Module::labelledPoint>
-:
-    std::true_type
-{};
+inline bool contiguous<Module::labelledPoint>()               {return true;}
 
 
 } // End namespace Foam

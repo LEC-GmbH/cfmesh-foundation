@@ -135,19 +135,19 @@ Foam::point Foam::Module::boundaryLayers::createNewVertex
 
                 if (treatPatches[patchLabel])
                 {
-                    normal += f.areaNormal(points);
+                    normal += f.area(static_cast<const pointField&>(points));
                 }
                 else
                 {
-                    v += f.areaNormal(points);
+                    v += f.area(static_cast<const pointField&>(points));
                 }
             }
 
-            v.normalise();
+            v /= mag(v);
 
             normal -= (normal & v)*v;
 
-            normal.normalise();
+            normal /= mag(normal);
 
             forAllRow(pointPoints, bpI, ppI)
             {
@@ -212,7 +212,7 @@ Foam::point Foam::Module::boundaryLayers::createNewVertex
         forAllRow(pFaces, bpI, pfI)
         {
             const label faceLabel = pFaces(bpI, pfI);
-            if (otherPatches.found(boundaryFacePatches[faceLabel]))
+            if (findIndex(otherPatches, boundaryFacePatches[faceLabel]) != -1)
             {
                 const face& f = bFaces[faceLabel];
                 const label pos = f.which(bPoints[bpI]);
@@ -485,7 +485,7 @@ void Foam::Module::boundaryLayers::createNewVertices
             const std::pair<label, label> pr(pKey, pKey);
             const std::map<std::pair<label, label>, label>::const_iterator it =
                 m.find(pr);
-            if ((it != m.end()) && !usedPatches.found(pKey))
+            if ((it != m.end()) && findIndex(usedPatches, pKey) == -1)
             {
                 usedPatches.append(pKey);
                 newNodeLabel.append(it->second);

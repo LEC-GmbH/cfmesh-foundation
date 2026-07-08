@@ -109,7 +109,7 @@ void Foam::Module::triSurfacePartitioner::edgeGroupsSharedByPatches
     {
         const labelHashSet& eGroups = it->second;
 
-        for (const label groupi : eGroups)
+        for (const label groupi : eGroups.toc())
         {
             edgeGroups.append(groupi);
         }
@@ -138,7 +138,7 @@ void Foam::Module::triSurfacePartitioner::cornersSharedByEdgeGroups
     {
         const labelHashSet& corn = it->second;
 
-        for (const label corni : corn)
+        for (const label corni : corn.toc())
         {
             corners.append(corni);
         }

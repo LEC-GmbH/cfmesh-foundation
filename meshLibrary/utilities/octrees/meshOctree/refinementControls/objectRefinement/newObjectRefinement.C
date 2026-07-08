@@ -49,9 +49,9 @@ Foam::Module::objectRefinement::New
     word refType(typeName_());
     dict.readIfPresent("type", refType);
 
-    auto cstrIter = dictionaryConstructorTablePtr_->cfind(refType);
+    auto cstrIter = dictionaryConstructorTablePtr_->find(refType);
 
-    if (!cstrIter.found())
+    if (cstrIter == dictionaryConstructorTablePtr_->end())
     {
         FatalIOErrorInFunction(dict)
             << "Unknown objectRefinement type " << refType << nl << nl

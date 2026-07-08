@@ -58,7 +58,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
     typedef std::map<label, ltvMap> lltvMap;
     lltvMap pointPatchNormal;
 
-    for (const label bpI : corners)
+    for (const label bpI : corners.toc())
     {
         if (activePointsPtr_ && !activePointsPtr_->operator[](bpI))
             continue;
@@ -81,7 +81,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
         }
     }
 
-    for (const label bpI : edgePoints)
+    for (const label bpI : edgePoints.toc())
     {
         if (activePointsPtr_ && !activePointsPtr_->operator[](bpI))
             continue;
@@ -104,11 +104,11 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
         }
     }
 
-    forAllIters(pointPatchNormal, it)
+    forAllIter(lltvMap, pointPatchNormal, it)
     {
         auto& patchNormal = pointPatchNormal[it->first];
 
-        forAllIters(patchNormal, pIt)
+        forAllIter(ltvMap, patchNormal, pIt)
         {
             const scalar magv = mag(pIt->second) + VSMALL;
 
@@ -145,7 +145,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
                 fCentres[bfI]
             );
 
-            vector nNext = triNext.areaNormal();
+            vector nNext = triNext.area();
             scalar mNext = mag(nNext);
 
             // face has zero area
@@ -194,7 +194,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
                 points[bf.prevLabel(pI)]
             );
 
-            vector nPrev = triPrev.areaNormal();
+            vector nPrev = triPrev.area();
             scalar mPrev = mag(nPrev);
 
             // face has zero area

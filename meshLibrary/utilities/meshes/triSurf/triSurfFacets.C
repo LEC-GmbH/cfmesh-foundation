@@ -111,7 +111,7 @@ Foam::label Foam::Module::triSurfFacets::addFacetSubset(const word& subsetName)
     }
 
     id = 0;
-    forAllConstIters(facetSubsets_, it)
+    forAllConstIter(Map<meshSubset>, facetSubsets_, it)
     {
         id = Foam::max(id, it.key()+1);
     }
@@ -142,7 +142,7 @@ Foam::word Foam::Module::triSurfFacets::facetSubsetName
     const label subsetID
 ) const
 {
-    Map<meshSubset>::const_iterator it = facetSubsets_.cfind(subsetID);
+    Map<meshSubset>::const_iterator it = facetSubsets_.find(subsetID);
     if (it == facetSubsets_.end())
     {
         Warning << "Subset " << subsetID << " is not a facet subset" << endl;
@@ -158,7 +158,7 @@ Foam::label Foam::Module::triSurfFacets::facetSubsetIndex
     const word& subsetName
 ) const
 {
-    forAllConstIters(facetSubsets_, it)
+    forAllConstIter(Map<meshSubset>, facetSubsets_, it)
     {
         if (it().name() == subsetName)
         {

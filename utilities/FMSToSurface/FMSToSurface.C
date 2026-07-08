@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
     origSurf.writeSurface(outFileName);
 
     // export surface subsets as separate surface meshes
-    if (args.found("exportSubsets"))
+    if (args.optionFound("exportSubsets"))
     {
         DynList<label> subsetIDs;
         origSurf.facetSubsetIndices(subsetIDs);
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (args.found("exportFeatureEdges"))
+    if (args.optionFound("exportFeatureEdges"))
     {
         fileName fName = outFileNoExt+"_featureEdges";
         fName += ".vtk";

@@ -129,7 +129,7 @@ void Foam::Module::edgeExtractor::calculateSingleCellEdge()
                     const label beI = bpEdges(bps, i);
                     const edge& be = edges[beI];
 
-                    if ((e == be) && !foundEdge.found(be))
+                    if ((e == be) && findIndex(foundEdge, be) == -1)
                     {
                         foundEdge.append(be);
 
@@ -163,7 +163,7 @@ void Foam::Module::edgeExtractor::findPatchesNearSurfaceFace()
         {
             const face& bf = bFaces[bfI];
 
-            const vector c = bf.centre(points);
+            const vector c = bf.centre(static_cast<const pointField&>(points));
 
             // find a reasonable searching distance comparable to face size
             scalar d(0.0);
@@ -234,7 +234,7 @@ void Foam::Module::edgeExtractor::findFeatureEdgesNearEdge()
             meshOctree_.findEdgesInBox(bb, nearEdges);
             forAllReverse(nearEdges, i)
             {
-                const label pos = nearEdges.find(nearEdges[i]);
+                const label pos = findIndex(nearEdges, nearEdges[i]);
 
                 if (pos < i)
                     nearEdges.removeElement(i);
@@ -510,7 +510,7 @@ void Foam::Module::edgeExtractor::moveVerticesTowardsDiscontinuities
             # pragma omp for schedule(dynamic, 40)
             forAll(bFaces, bfI)
             {
-                const vector centre = bFaces[bfI].centre(points);
+                const vector centre = bFaces[bfI].centre(static_cast<const pointField&>(points));
 
                 point newP;
                 scalar distSq;
@@ -633,7 +633,7 @@ void Foam::Module::edgeExtractor::distributeBoundaryFaces()
     {
         const face& bf = bFaces[bfI];
 
-        const point c = bf.centre(points);
+        const point c = bf.centre(static_cast<const pointField&>(points));
 
         // find the nearest surface patch to face centre
         label fPatch, nTri;
@@ -738,7 +738,7 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
                 scalar dSq(VGREAT);
                 label nearestTriangle;
 
-                point p = bf.centre(points);
+                point p = bf.centre(static_cast<const pointField&>(points));
                 meshOctree_.findNearestSurfacePointInRegion
                 (
                     pMap,
@@ -751,8 +751,8 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
                 maxDSq = Foam::max(dSq, maxDSq);
 
                 // calculate normal vectors
-                vector tn = surf[nearestTriangle].unitNormal(sPoints);
-                vector fn = bf.unitNormal(points);
+                vector tn = surf[nearestTriangle].normal(sPoints);
+                vector fn = bf.normal(static_cast<const pointField&>(points));
 
                 // calculate alignment
                 normalAlignment[i] = mag(tn & fn);
@@ -764,7 +764,12 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
             {
                 const scalar metric
                 (
-                    sqrt(maxDSq/(distanceSq[i] + VSMALL))*normalAlignment[i]
+                    sqrt
+                    (
+                        maxDSq
+                       /(Foam::max(distanceSq[i], SMALL*maxDSq) + VSMALL)
+                    )
+                   *normalAlignment[i]
                 );
 
                 if (metric > maxAlignment)
@@ -1430,7 +1435,7 @@ bool Foam::Module::edgeExtractor::checkFacePatchesTopology()
 
             newPatch = -1;
             label nNeiEdges(0);
-            forAllConstIters(nNeiInPatch, it)
+            forAllConstIter(Map<label>, nNeiInPatch, it)
             {
                 if (it() > nNeiEdges)
                 {
@@ -1695,7 +1700,7 @@ bool Foam::Module::edgeExtractor::checkFacePatchesGeometry()
         // untangle the surface
         activePointLabel.clear();
         activePoints = false;
-        for (const label pointi : invertedPoints)
+        for (const label pointi : invertedPoints.toc())
         {
             activePointLabel.append(bp[pointi]);
             activePoints[bp[pointi]] = true;

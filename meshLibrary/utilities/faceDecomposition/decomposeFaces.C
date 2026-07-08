@@ -104,7 +104,7 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
                 newFacesForFace_.append(faceI, nFaces++);
             }
 
-            p = f.centre(points);
+            p = f.centre(static_cast<const pointField&>(points));
             points[nPoints] = p;
             ++nPoints;
         }
@@ -144,7 +144,7 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
                     newFacesForFace_.append(bfI, nFaces++);
                 }
 
-                p = f.centre(points);
+                p = f.centre(static_cast<const pointField&>(points));
                 points[nPoints++] = p;
             }
             else
@@ -278,7 +278,7 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
                 newFaces.appendList(newF);
             }
 
-            const point fCent = f.centre(points);
+            const point fCent = f.centre(static_cast<const pointField&>(points));
             points.append(fCent);
         }
         else

@@ -285,7 +285,7 @@ void Foam::Module::boundaryLayers::createLayerCells
 
     ppType nodePatches;
 
-    forAllConstIters(otherVrts_, iter)
+    for (std::map<label, std::map<std::pair<label, label>, label>>::const_iterator iter = otherVrts_.cbegin(); iter != otherVrts_.cend(); ++iter)
     {
         if (iter->second.size() == 2)
         {
@@ -333,7 +333,7 @@ void Foam::Module::boundaryLayers::createLayerCells
     }
 
     // create layer cells for corner nodes
-    forAllIters(nodePatches, iter)
+    for (ppType::iterator iter = nodePatches.begin(); iter != nodePatches.end(); ++iter)
     {
         const DynList<label, 3>& patchIDs = iter->second;
         DynList<label, 3> pKeys;

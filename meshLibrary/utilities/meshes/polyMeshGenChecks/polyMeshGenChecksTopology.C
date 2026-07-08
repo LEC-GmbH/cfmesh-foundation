@@ -268,7 +268,7 @@ bool Foam::Module::polyMeshGenChecks::checkCellsZipUp
             {
                 const edge e = f.faceEdge(eI);
 
-                const label pos = cellEdges.find(e);
+                const label pos = findIndex(cellEdges, e);
 
                 if (pos < 0)
                 {

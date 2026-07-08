@@ -66,9 +66,9 @@ Foam::Module::boundaryPatchBase::New
     // all patch types are treated as ordinary patches
     const word type("patch");
 
-    auto cstrIter = dictionaryConstructorTablePtr_->cfind(type);
+    auto cstrIter = dictionaryConstructorTablePtr_->find(type);
 
-    if (!cstrIter.found())
+    if (cstrIter == dictionaryConstructorTablePtr_->end())
     {
         FatalIOErrorInFunction(dict)
             << "Unknown boundaryPatchBase type " << type << nl << nl
@@ -119,9 +119,9 @@ Foam::Module::boundaryPatchBase::boundaryPatchBase
 )
 :
     name_(name),
-    type_(dict.get<word>("type")),
-    nFaces_(dict.get<label>("nFaces")),
-    startFace_(dict.get<label>("startFace"))
+    type_(dict.lookup<word>("type")),
+    nFaces_(dict.lookup<label>("nFaces")),
+    startFace_(dict.lookup<label>("startFace"))
 {}
 
 

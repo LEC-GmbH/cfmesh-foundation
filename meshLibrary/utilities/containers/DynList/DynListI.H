@@ -225,7 +225,7 @@ inline void Foam::Module::DynList<T, SizeMin>::setCapacity
 
     // Update sizing
     capacity_ = UList<T>::size();
-    UList<T>::setAddressableSize(nextFree);
+    UList<T>::shallowCopy(UList<T>(UList<T>::data(), nextFree));
 }
 
 
@@ -275,7 +275,7 @@ template<class T, int SizeMin>
 inline void Foam::Module::DynList<T, SizeMin>::setSize(const label nElem)
 {
     setCapacity(nElem);
-    UList<T>::setAddressableSize(nElem);
+    UList<T>::shallowCopy(UList<T>(UList<T>::data(), nElem));
 }
 
 
@@ -318,7 +318,7 @@ inline void Foam::Module::DynList<T, SizeMin>::resize
 template<class T, int SizeMin>
 inline void Foam::Module::DynList<T, SizeMin>::clear()
 {
-    UList<T>::setAddressableSize(0);
+    UList<T>::shallowCopy(UList<T>(UList<T>::data(), 0));
 }
 
 
@@ -326,7 +326,7 @@ template<class T, int SizeMin>
 inline void Foam::Module::DynList<T, SizeMin>::clearStorage()
 {
     heapList_.clear();
-    UList<T>::setAddressableSize(0);
+    UList<T>::shallowCopy(UList<T>(UList<T>::data(), 0));
     setCapacity(0);  // Also updates UList reference to point to shortList_
 }
 
@@ -337,7 +337,7 @@ inline Foam::label Foam::Module::DynList<T, SizeMin>::expandStorage()
     const label nextFree = UList<T>::size();
 
     // Allow addressing into the entire list
-    UList<T>::setAddressableSize(capacity_);
+    UList<T>::shallowCopy(UList<T>(UList<T>::data(), capacity_));
 
     return nextFree;
 }
@@ -365,7 +365,7 @@ inline void Foam::Module::DynList<T, SizeMin>::append(const T& val)
         setCapacity(newSize);
     }
 
-    UList<T>::setAddressableSize(idx + 1);
+    UList<T>::shallowCopy(UList<T>(UList<T>::data(), idx + 1));
 
 
     this->operator[](idx) = val;
@@ -375,7 +375,7 @@ inline void Foam::Module::DynList<T, SizeMin>::append(const T& val)
 template<class T, int SizeMin>
 inline void Foam::Module::DynList<T, SizeMin>::appendUniq(const T& val)
 {
-    if (!UList<T>::found(val))
+    if (findIndex(*this, val) == -1)
     {
         this->append(val);
 
@@ -396,7 +396,7 @@ inline T Foam::Module::DynList<T, SizeMin>::remove()
 
     const T& val = UList<T>::operator[](idx);
 
-    UList<T>::setAddressableSize(idx);
+    UList<T>::shallowCopy(UList<T>(UList<T>::data(), idx));
 
     return val;
 }
@@ -407,7 +407,7 @@ inline T Foam::Module::DynList<T, SizeMin>::removeElement(const label i)
 {
     // same as DynamicList remove(label, true)
 
-    UList<T>::swapLast(i);
+    Foam::Swap(UList<T>::operator[](i), UList<T>::operator[](UList<T>::size() - 1));
     return this->remove();
 }
 
@@ -462,7 +462,7 @@ inline void Foam::Module::DynList<T, SizeMin>::operator=
 
     const label nElem = list.size();
     setCapacity(nElem);
-    UList<T>::setAddressableSize(nElem);
+    UList<T>::shallowCopy(UList<T>(UList<T>::data(), nElem));
 
 
     for (label i=0; i<nElem; ++i)
@@ -485,7 +485,7 @@ inline void Foam::Module::DynList<T, SizeMin>::operator=
 //
 //     const label nElem = list.size();
 //     setCapacity(nElem);
-//     UList<T>::setAddressableSize(nElem);
+//     UList<T>::shallowCopy(UList<T>(UList<T>::data(), nElem));
 //
 //     # ifdef DEBUG
 //     checkAllocation();

@@ -58,7 +58,7 @@ Foam::label Foam::Module::triSurfPoints::addPointSubset(const word& subsetName)
     }
 
     id = 0;
-    forAllConstIters(pointSubsets_, it)
+    forAllConstIter(Map<meshSubset>, pointSubsets_, it)
     {
         id = Foam::max(id, it.key()+1);
     }
@@ -89,7 +89,7 @@ Foam::word Foam::Module::triSurfPoints::pointSubsetName
     const label subsetID
 ) const
 {
-    Map<meshSubset>::const_iterator it = pointSubsets_.cfind(subsetID);
+    Map<meshSubset>::const_iterator it = pointSubsets_.find(subsetID);
     if (it == pointSubsets_.end())
     {
         Warning << "Subset " << subsetID << " is not a point subset" << endl;
@@ -105,7 +105,7 @@ Foam::label Foam::Module::triSurfPoints::pointSubsetIndex
     const word& subsetName
 ) const
 {
-    forAllConstIters(pointSubsets_, it)
+    forAllConstIter(Map<meshSubset>, pointSubsets_, it)
     {
         if (it().name() == subsetName)
         {

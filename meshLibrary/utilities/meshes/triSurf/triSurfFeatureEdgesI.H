@@ -94,7 +94,7 @@ inline void Foam::Module::triSurfFeatureEdges::edgeInSubsets
 {
     edgeSubsets.clear();
 
-    forAllConstIters(featureEdgeSubsets_, it)
+    forAllConstIter(Map<meshSubset>, featureEdgeSubsets_, it)
     {
         if (it().found(eI))
         {
@@ -111,7 +111,7 @@ inline void Foam::Module::triSurfFeatureEdges::edgeSubsetIndices
 {
     indices.clear();
 
-    forAllConstIters(featureEdgeSubsets_, it)
+    forAllConstIter(Map<meshSubset>, featureEdgeSubsets_, it)
     {
         indices.append(it.key());
     }
@@ -143,7 +143,7 @@ inline void Foam::Module::triSurfFeatureEdges::updateEdgeSubsets
     const ListType& newEdgeLabels
 )
 {
-    forAllIters(featureEdgeSubsets_, it)
+    forAllIter(Map<meshSubset>, featureEdgeSubsets_, it)
     {
         it().updateSubset(newEdgeLabels);
     }

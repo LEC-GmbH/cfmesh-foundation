@@ -254,7 +254,7 @@ Foam::label Foam::Module::polyMeshGenFaces::addFaceSubset(const word& setName)
     }
 
     id = 0;
-    forAllConstIters(faceSubsets_, it)
+    for (std::map<label, meshSubset>::const_iterator it = faceSubsets_.cbegin(); it != faceSubsets_.cend(); ++it)
     {
         id = Foam::max(id, it->first + 1);
     }
@@ -305,7 +305,7 @@ Foam::label Foam::Module::polyMeshGenFaces::faceSubsetIndex
     const word& setName
 ) const
 {
-    forAllConstIters(faceSubsets_, it)
+    for (std::map<label, meshSubset>::const_iterator it = faceSubsets_.cbegin(); it != faceSubsets_.cend(); ++it)
     {
         if (it->second.name() == setName)
         {
@@ -471,7 +471,7 @@ void Foam::Module::polyMeshGenFaces::write() const
     patches.write();
 
     // write face subsets
-    forAllConstIters(faceSubsets_, setIt)
+    for (std::map<label, meshSubset>::const_iterator setIt = faceSubsets_.cbegin(); setIt != faceSubsets_.cend(); ++setIt)
     {
         faceSet set
         (

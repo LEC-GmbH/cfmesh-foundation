@@ -560,7 +560,7 @@ void Foam::Module::meshSurfaceEngine::calculateFaceNormals() const
     {
         const face& bf = bFaces[bfI];
 
-        faceNormalsPtr_->operator[](bfI) = bf.areaNormal(points);
+        faceNormalsPtr_->operator[](bfI) = bf.area(static_cast<const pointField&>(points));
     }
 }
 
@@ -575,7 +575,7 @@ void Foam::Module::meshSurfaceEngine::calculateFaceCentres() const
     # pragma omp parallel for if (bFaces.size() > 1000)
     forAll(bFaces, bfI)
     {
-        faceCentresPtr_->operator[](bfI) = bFaces[bfI].centre(points);
+        faceCentresPtr_->operator[](bfI) = bFaces[bfI].centre(static_cast<const pointField&>(points));
     }
 }
 
@@ -636,7 +636,7 @@ void Foam::Module::meshSurfaceEngine::calculateEdgesAndAddressing() const
                 }
             }
 
-            forAllConstIters(edgesAtPoint, it)
+            for (std::set<std::pair<label, label>>::const_iterator it = edgesAtPoint.cbegin(); it != edgesAtPoint.cend(); ++it)
             {
                 edgesHelper.append(edge(it->first, it->second));
             }

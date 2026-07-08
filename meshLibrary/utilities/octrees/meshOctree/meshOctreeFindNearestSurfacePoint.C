@@ -267,7 +267,7 @@ bool Foam::Module::meshOctree::findNearestEdgePoint
                 {
                     const label facetI = edgeFaces(edgeI, efI);
 
-                    if (!regions.found(surface_[facetI].region()))
+                    if (findIndex(regions, surface_[facetI].region()) == -1)
                     {
                         correctPatches = false;
                         break;
@@ -487,7 +487,7 @@ bool Foam::Module::meshOctree::findNearestCorner
                         nEdges = 0;
                         forAll(patches, i)
                         {
-                            if (nodePatches.found(patches[i]))
+                            if (findIndex(nodePatches, patches[i]) != -1)
                             {
                                 ++nEdges;
                             }

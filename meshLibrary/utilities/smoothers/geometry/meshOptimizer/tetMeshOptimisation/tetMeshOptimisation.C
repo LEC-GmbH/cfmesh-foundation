@@ -372,7 +372,7 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundaryVolumeOptimizer
                             {
                                 edge e(tet[i], tet[(i + 1)%3]);
 
-                                const label pos = bEdges.find(e);
+                                const label pos = findIndex(bEdges, e);
                                 if (pos < 0)
                                 {
                                     bEdges.append(e);
@@ -399,7 +399,7 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundaryVolumeOptimizer
                                 points[nodeI]
                             );
 
-                            vector n = tri.unitNormal();
+                            vector n = tri.normal();
 
                             nt += symm(n*n);
                         }
@@ -501,7 +501,7 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundarySurfaceLaplace
                         for (label i = 0; i < 3; ++i)
                         {
                             const edge e(tet[i], tet[(i + 1)%3]);
-                            const label pos = bndEdges.find(e);
+                            const label pos = findIndex(bndEdges, e);
 
                             if (pos < 0)
                             {

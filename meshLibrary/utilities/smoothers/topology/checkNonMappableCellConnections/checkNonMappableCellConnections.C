@@ -234,7 +234,7 @@ bool Foam::Module::checkNonMappableCellConnections::removeCells()
         if (nRemoved != 0)
         {
             boolList removeCell(mesh_.cells().size(), false);
-            for (const label celli : badCells)
+            for (const label celli : badCells.toc())
             {
                 removeCell[celli] = true;
             }

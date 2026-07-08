@@ -61,8 +61,8 @@ void Foam::Module::symmetryPlaneOptimisation::detectSymmetryPlanes()
             const label end = start + boundaries[patchI].patchSize();
             for (label faceI = start; faceI < end; ++faceI)
             {
-                cs.first += faces[faceI].centre(points);
-                ns.first += faces[faceI].areaNormal(points);
+                cs.first += faces[faceI].centre(static_cast<const pointField&>(points));
+                ns.first += faces[faceI].area(static_cast<const pointField&>(points));
             }
 
             cs.second = ns.second = boundaries[patchI].patchSize();
@@ -70,7 +70,7 @@ void Foam::Module::symmetryPlaneOptimisation::detectSymmetryPlanes()
     }
 
     // create planes corresponding to each symmetry plane
-    forAllConstIters(centreSum, it)
+    forAllConstIter(mapType, centreSum, it)
     {
         const point c = it->second.first/it->second.second;
 
@@ -106,7 +106,7 @@ bool Foam::Module::symmetryPlaneOptimisation::pointInPlanes
             {
                 const face& f = faces[faceI];
 
-                const point c = f.centre(points);
+                const point c = f.centre(static_cast<const pointField&>(points));
                 scalar maxDist(0.0);
                 forAll(f, pI)
                     maxDist = max(maxDist, mag(points[f[pI]] - c));
@@ -228,7 +228,7 @@ void Foam::Module::symmetryPlaneOptimisation::optimizeSymmetryPlanes()
             << "Bad quality or inverted faces found in the mesh" << endl;
 
         const label badFacesId = mesh_.addFaceSubset("invalidFaces");
-        for (const label facei : badFaces)
+        for (const label facei : badFaces.toc())
         {
             mesh_.addFaceToSubset(badFacesId, facei);
         }

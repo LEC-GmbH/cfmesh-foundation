@@ -211,13 +211,13 @@ void Foam::Module::planeScaling::writeDict(Ostream& os, bool subDict) const
     // only write type for derived types
     if (type() != typeName_())
     {
-        os.writeEntry("type", type());
+        writeEntry(os, "type", type());
     }
 
-    os.writeEntry("origin", origin_);
-    os.writeEntry("normal",  normal_);
-    os.writeEntry("scalingDistance", scalingDistance_);
-    os.writeEntry("scalingFactor", scalingFactor_);
+    writeEntry(os, "origin", origin_);
+    writeEntry(os, "normal",  normal_);
+    writeEntry(os, "scalingDistance", scalingDistance_);
+    writeEntry(os, "scalingFactor", scalingFactor_);
 
     if (subDict)
     {

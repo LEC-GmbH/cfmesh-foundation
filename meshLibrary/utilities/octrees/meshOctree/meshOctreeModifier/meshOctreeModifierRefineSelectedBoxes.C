@@ -357,7 +357,7 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
     }
 
     // refine leaves
-    forAllConstIters(leavesMap, it)
+    forAllConstIter(lMap, leavesMap, it)
     {
         const label nLayers = it->first.second;
         const direction levelI = it->first.first;

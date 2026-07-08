@@ -90,7 +90,7 @@ Foam::label Foam::Module::polyMeshGenPoints::addPointSubset
     }
 
     id = 0;
-    forAllConstIters(pointSubsets_, it)
+    for (std::map<label, meshSubset>::const_iterator it = pointSubsets_.cbegin(); it != pointSubsets_.cend(); ++it)
     {
         id = Foam::max(id, it->first + 1);
     }
@@ -142,7 +142,7 @@ Foam::label Foam::Module::polyMeshGenPoints::pointSubsetIndex
     const word& subsetName
 ) const
 {
-    forAllConstIters(pointSubsets_, it)
+    for (std::map<label, meshSubset>::const_iterator it = pointSubsets_.cbegin(); it != pointSubsets_.cend(); ++it)
     {
         if (it->second.name() == subsetName)
         {
@@ -199,7 +199,7 @@ void Foam::Module::polyMeshGenPoints::write() const
     labelLongList containedElements;
 
     // write point selections
-    forAllConstIters(pointSubsets_, setIt)
+    for (std::map<label, meshSubset>::const_iterator setIt = pointSubsets_.cbegin(); setIt != pointSubsets_.cend(); ++setIt)
     {
         pointSet set
         (

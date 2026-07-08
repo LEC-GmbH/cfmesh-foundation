@@ -41,6 +41,7 @@ Author
 #include "triSurfModifier.H"
 #include "demandDrivenData.H"
 #include "Pair.H"
+#include "labelPair.H"
 
 using namespace Foam;
 using namespace Foam::Module;
@@ -261,9 +262,9 @@ autoPtr<triSurf> mergeSurfacePatches
     {
         newPatches[patchCount] = geometricSurfacePatch
         (
+            newPatchType,
             newPatchName,
-            patchCount,
-            newPatchType
+            patchCount
         );
     }
     if (patchAddr[patchAddr.size()-1].size() || keepPatches)
@@ -327,9 +328,9 @@ int main(int argc, char *argv[])
 
     fileName outFileName(inFileName);
 
-    args.readIfPresent("output", outFileName);
+    args.optionReadIfPresent("output", outFileName);
 
-    const bool keepPatches = args.found("keep");
+    const bool keepPatches = args.optionFound("keep");
 
     // Read original surface
     triSurf origSurf(inFileName);
@@ -337,16 +338,16 @@ int main(int argc, char *argv[])
     // Get patch ids
     DynamicList<label> patchIds;
 
-    if (args.found("patchNames"))
+    if (args.optionFound("patchNames"))
     {
-        if (args.found("patchIds"))
+        if (args.optionFound("patchIds"))
         {
             FatalErrorInFunction
                 << "Cannot specify both patch names and ids" << nl
                 << Foam::abort(FatalError);
         }
 
-        wordList patchNames(args.getList<word>("patchNames"));
+        wordList patchNames(args.optionReadList<word>("patchNames"));
 
         getPatchIds
         (
@@ -355,13 +356,14 @@ int main(int argc, char *argv[])
             patchIds
         );
     }
-    else if (args.found("patchIds"))
+    else if (args.optionFound("patchIds"))
     {
-        patchIds.append(args.getList<label>("patchIds"));
+        IStringStream patchIdsIs(args.optionLookup("patchIds"));
+        patchIds.append(labelList(patchIdsIs));
     }
 
     labelPair idRange;
-    if (args.readIfPresent("patchIdRange", idRange))
+    if (args.optionReadIfPresent("patchIdRange", idRange))
     {
         for (label id = idRange.first(); id <= idRange.second(); ++id)
         {

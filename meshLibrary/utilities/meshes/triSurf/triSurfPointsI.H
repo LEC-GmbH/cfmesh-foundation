@@ -90,7 +90,7 @@ inline void Foam::Module::triSurfPoints::pointInSubsets
 {
     pointSubsets.clear();
 
-    forAllConstIters(pointSubsets_, it)
+    forAllConstIter(Map<meshSubset>, pointSubsets_, it)
     {
         if (it().found(pointI))
         {
@@ -107,7 +107,7 @@ inline void Foam::Module::triSurfPoints::pointSubsetIndices
 {
     indices.clear();
 
-    forAllConstIters(pointSubsets_, it)
+    forAllConstIter(Map<meshSubset>, pointSubsets_, it)
     {
         indices.append(it.key());
     }
@@ -123,7 +123,7 @@ inline void Foam::Module::triSurfPoints::pointsInSubset
 {
     pointLabels.clear();
 
-    Map<meshSubset>::const_iterator it = pointSubsets_.cfind(setI);
+    Map<meshSubset>::const_iterator it = pointSubsets_.find(setI);
 
     if (it == pointSubsets_.end())
     {
@@ -140,7 +140,7 @@ inline void Foam::Module::triSurfPoints::updatePointSubsets
     const ListType& newNodeLabels
 )
 {
-    forAllIters(pointSubsets_, it)
+    forAllIter(Map<meshSubset>, pointSubsets_, it)
     {
         it().updateSubset(newNodeLabels);
     }

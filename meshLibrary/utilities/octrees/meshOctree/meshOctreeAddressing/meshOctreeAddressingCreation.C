@@ -319,7 +319,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
             boxType[leafI] |= MESHCELL;
     }
 
-    if (meshDict_.getOrDefault<bool>("nonManifoldMeshing", false))
+    if (meshDict_.lookupOrDefault<bool>("nonManifoldMeshing", false))
     {
         # pragma omp parallel for schedule(dynamic, 40)
         forAll(boxType, leafI)
@@ -376,7 +376,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
             boolList removeFacets(ts.size(), false);
 
             // remove facets in patches
-            for (const word& patchName : patchesToRemove)
+            for (const word& patchName : patchesToRemove.toc())
             {
                 const labelList matchedPatches = ts.findPatches(patchName);
                 boolList activePatch(ts.patches().size(), false);
@@ -395,7 +395,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
             }
 
             // remove facets in subsets
-            for (const word& patchName : patchesToRemove)
+            for (const word& patchName : patchesToRemove.toc())
             {
                 const label subsetID = ts.facetSubsetIndex(patchName);
                 if (subsetID >= 0)
@@ -454,7 +454,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
         boolList keepFacets(ts.size(), false);
 
         // keep facets in patches
-        for (const word& patchName : patchesToKeep)
+        for (const word& patchName : patchesToKeep.toc())
         {
             const labelList matchedPatches = ts.findPatches(patchName);
             boolList activePatch(ts.patches().size(), false);
@@ -473,7 +473,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
         }
 
         // keep facets in subsets
-        for (const word& patchName : patchesToKeep)
+        for (const word& patchName : patchesToKeep.toc())
         {
             const label subsetID = ts.facetSubsetIndex(patchName);
 

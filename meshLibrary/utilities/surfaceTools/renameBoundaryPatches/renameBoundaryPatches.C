@@ -82,7 +82,8 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
                     newPatchNames.lookupEntry
                     (
                         keys[patchI],
-                        keyType::LITERAL
+                        false,
+                        false
                     ).clone()
                 );
         }

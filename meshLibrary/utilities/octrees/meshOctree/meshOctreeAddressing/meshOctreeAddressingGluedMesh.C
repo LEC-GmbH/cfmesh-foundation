@@ -41,7 +41,7 @@ void Foam::Module::meshOctreeAddressing::checkGluedRegions()
     if
     (
         !useDATABoxes_
-     || !meshDict_.getOrDefault<bool>("checkForGluedMesh", false)
+     || !meshDict_.lookupOrDefault<bool>("checkForGluedMesh", false)
     )
     {
         return;
@@ -137,7 +137,7 @@ void Foam::Module::meshOctreeAddressing::checkGluedRegions()
             } while (!finished);
 
             labelHashSet permissibleNeighbours;
-            for (const label nodeI : innerNodes)
+            for (const label nodeI : innerNodes.toc())
             {
                 forAllRow(nodeLeaves, nodeI, nlI)
                 {

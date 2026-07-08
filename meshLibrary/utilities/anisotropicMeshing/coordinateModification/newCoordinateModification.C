@@ -49,9 +49,9 @@ Foam::Module::coordinateModification::New
     word cmType(typeName_());
     dict.readIfPresent("type", cmType);
 
-    auto cstrIter = dictionaryConstructorTablePtr_->cfind(cmType);
+    auto cstrIter = dictionaryConstructorTablePtr_->find(cmType);
 
-    if (!cstrIter.found())
+    if (cstrIter == dictionaryConstructorTablePtr_->end())
     {
         FatalIOErrorInFunction(dict)
             << "Unknown coordinateModification type " << cmType << nl << nl

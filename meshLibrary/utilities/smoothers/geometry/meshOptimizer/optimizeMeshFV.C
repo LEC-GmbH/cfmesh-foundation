@@ -181,7 +181,7 @@ void Foam::Module::meshOptimizer::untangleMeshFV
                 const label subsetId =
                     mesh_.addPointSubset(badPointsSubsetName_);
 
-                for (const label facei : badFaces)
+                for (const label facei : badFaces.toc())
                 {
                     const face& f = faces[facei];
                     forAll(f, pI)
@@ -242,7 +242,7 @@ void Foam::Module::meshOptimizer::untangleMeshFV
         const label badCellsId =
                 mesh_.addCellSubset("badCells");
 
-        for (const label facei : badFaces)
+        for (const label facei : badFaces.toc())
         {
             mesh_.addFaceToSubset(subsetId, facei);
             mesh_.addCellToSubset(badCellsId, owner[facei]);
@@ -369,7 +369,7 @@ void Foam::Module::meshOptimizer::untangleBoundaryLayer()
             const label badBlCellsId =
                 mesh_.addCellSubset("invalidBoundaryLayerCells");
 
-            for (const label facei : badFaces)
+            for (const label facei : badFaces.toc())
             {
                 mesh_.addCellToSubset(badBlCellsId, owner[facei]);
 
@@ -429,7 +429,7 @@ void Foam::Module::meshOptimizer::optimizeLowQualityFaces
             );
 
         changedFace = false;
-        for (const label facei : lowQualityFaces)
+        for (const label facei : lowQualityFaces.toc())
         {
             changedFace[facei] = true;
         }
@@ -551,7 +551,7 @@ void Foam::Module::meshOptimizer::optimizeMeshFVBestQuality
             );
 
         changedFace = false;
-        for (const label facei : lowQualityFaces)
+        for (const label facei : lowQualityFaces.toc())
         {
             changedFace[facei] = true;
         }

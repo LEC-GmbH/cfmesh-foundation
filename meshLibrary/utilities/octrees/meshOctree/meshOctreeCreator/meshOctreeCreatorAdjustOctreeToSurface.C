@@ -170,7 +170,7 @@ void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
         forAll(refObjects, objectI)
         {
             const entry& objectEntry =
-                dict.lookupEntry(objectNames[objectI], keyType::LITERAL);
+                dict.lookupEntry(objectNames[objectI], false, false);
 
             refObjects.set
             (
@@ -392,7 +392,9 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
         }
         else
         {
-            dict.readIfPresent("additionalRefinementLevels", addLevel);
+            label addLevelTmp(addLevel);
+            dict.readIfPresent("additionalRefinementLevels", addLevelTmp);
+            addLevel = direction(addLevelTmp);
         }
 
         dict.readIfPresent("refinementThickness", refThickness[surfI]);
@@ -571,7 +573,9 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingEdgeMeshes()
         }
         else
         {
-            dict.readIfPresent("additionalRefinementLevels", addLevel);
+            label addLevelTmp(addLevel);
+            dict.readIfPresent("additionalRefinementLevels", addLevelTmp);
+            addLevel = direction(addLevelTmp);
         }
 
         dict.readIfPresent("refinementThickness", refThickness[emI]);

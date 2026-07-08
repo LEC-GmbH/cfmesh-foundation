@@ -18,7 +18,7 @@ FoamFile
 
 surfaceFile "multipleOrifices.stl";
 
-minCellSize 1.0;
+//minCellSize 1.0;
 
 maxCellSize 5.0;
 

@@ -29,6 +29,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "polyMeshGen.H"
+#include "OSspecific.H"
 #include "demandDrivenData.H"
 #include "OFstream.H"
 

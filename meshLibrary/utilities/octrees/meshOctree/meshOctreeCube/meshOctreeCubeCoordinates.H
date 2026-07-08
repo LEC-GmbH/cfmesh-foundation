@@ -245,10 +245,7 @@ public:
 
 //- Data for meshOctreeCubeCoordinates are contiguous
 template<>
-struct is_contiguous<Module::meshOctreeCubeCoordinates>
-:
-    std::true_type
-{};
+inline bool contiguous<Module::meshOctreeCubeCoordinates>()               {return true;}
 
 
 } // End namespace Foam

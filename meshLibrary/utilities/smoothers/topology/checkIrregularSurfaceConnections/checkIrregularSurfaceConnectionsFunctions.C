@@ -316,7 +316,7 @@ checkFaceGroupsAtBndVertices
 
         boolList removeCell(mesh_.cells().size(), false);
 
-        for (const label verti : invalidVertices)
+        for (const label verti : invalidVertices.toc())
         {
             forAllRow(pointCells, verti, pcI)
             {

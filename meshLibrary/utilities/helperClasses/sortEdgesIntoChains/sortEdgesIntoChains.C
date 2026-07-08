@@ -163,12 +163,12 @@ void Foam::Module::sortEdgesIntoChains::shrinkEdges
             const edge& e = bEdges_[eI];
             edgesAtPoint_[newNodeLabel_[e.start()]].removeElement
             (
-                edgesAtPoint_[newNodeLabel_[e.start()]].find(eI)
+                findIndex(edgesAtPoint_[newNodeLabel_[e.start()]], eI)
             );
 
             edgesAtPoint_[newNodeLabel_[e.end()]].removeElement
             (
-                edgesAtPoint_[newNodeLabel_[e.end()]].find(eI)
+                findIndex(edgesAtPoint_[newNodeLabel_[e.end()]], eI)
             );
         }
     }

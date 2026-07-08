@@ -96,7 +96,7 @@ inline void Foam::Module::polyMeshGenPoints::pointInSubsets
 {
     pointSubsets.clear();
 
-    forAllConstIters(pointSubsets_, it)
+    for (std::map<label, meshSubset>::const_iterator it = pointSubsets_.cbegin(); it != pointSubsets_.cend(); ++it)
     {
         if (it->second.found(pointI))
         {
@@ -113,7 +113,7 @@ inline void Foam::Module::polyMeshGenPoints::pointSubsetIndices
 {
     indices.clear();
 
-    forAllConstIters(pointSubsets_, it)
+    for (std::map<label, meshSubset>::const_iterator it = pointSubsets_.cbegin(); it != pointSubsets_.cend(); ++it)
     {
         indices.append(it->first);
     }
@@ -145,7 +145,7 @@ inline void Foam::Module::polyMeshGenPoints::updatePointSubsets
     const ListType& newNodeLabels
 )
 {
-    forAllIters(pointSubsets_, it)
+    for (std::map<label, meshSubset>::iterator it = pointSubsets_.begin(); it != pointSubsets_.end(); ++it)
     {
         it->second.updateSubset(newNodeLabels);
     }

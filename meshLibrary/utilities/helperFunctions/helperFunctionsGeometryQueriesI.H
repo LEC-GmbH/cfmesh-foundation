@@ -114,7 +114,7 @@ inline bool Foam::Module::help::isSharedEdgeConvex
 
         forAll(triOwn, pJ)
         {
-            if (!triNei.found(triOwn[pJ]))
+            if (findIndex(triNei, triOwn[pJ]) == -1)
             {
                 tetrahedron<point, point> tet
                 (
@@ -182,7 +182,7 @@ inline Foam::scalar Foam::Module::help::angleBetweenFaces
 
         forAll(triOwn, pJ)
         {
-            if (!triNei.found(triOwn[pJ]))
+            if (findIndex(triNei, triOwn[pJ]) == -1)
             {
                 tetrahedron<point, point> tet
                 (
@@ -277,11 +277,11 @@ inline Foam::faceList Foam::Module::help::mergePatchFaces
 
         for (label nI = 0; nI<(patchFaces.size()-1); nI++)
         {
-            const vector n0 = patchFaces[nI].unitNormal(polyPoints);
+            const vector n0 = patchFaces[nI].normal(polyPoints);
 
             for (label nJ = nI + 1; nJ < patchFaces.size(); nJ++)
             {
-                const vector n1 = patchFaces[nI].unitNormal(polyPoints);
+                const vector n1 = patchFaces[nI].normal(polyPoints);
 
                 if
                 (
@@ -1054,7 +1054,7 @@ inline bool Foam::Module::help::doTrianglesOverlap
         return false;
     }
 
-    vector n0 = tri0.areaNormal();
+    vector n0 = tri0.area();
     const scalar dn0 = mag(n0);
     n0 /= (dn0 + VSMALL);
 
@@ -1063,7 +1063,7 @@ inline bool Foam::Module::help::doTrianglesOverlap
         return false;
     }
 
-    vector n1 = tri1.areaNormal();
+    vector n1 = tri1.area();
     const scalar dn1 = mag(n1);
     n1 /= (dn1 + VSMALL);
 
@@ -1173,34 +1173,34 @@ inline bool Foam::Module::help::doTrianglesOverlap
                 {
                     newPoly2D.append(poly2D[pI]);
 
-                    if (distance.fcValue(pI) < 0.0)
+                    if (distance[distance.fcIndex(pI)] < 0.0)
                     {
                         //- this is very sensitive to floaing point tolerances
                         const point2D newP =
                             (
-                                mag(distance[pI])*poly2D.fcValue(pI) +
-                                mag(distance.fcValue(pI))*poly2D[pI]
+                                mag(distance[pI])*poly2D[poly2D.fcIndex(pI)] +
+                                mag(distance[distance.fcIndex(pI)])*poly2D[pI]
                             ) /
                             (
                                 mag(distance[pI]) +
-                                mag(distance.fcValue(pI)) +
+                                mag(distance[distance.fcIndex(pI)]) +
                                 VSMALL
                             );
 
                         newPoly2D.append(newP);
                     }
                 }
-                else if (distance.fcValue(pI) >= 0.0)
+                else if (distance[distance.fcIndex(pI)] >= 0.0)
                 {
                     //- this is very sensitive to floaing point tolerances
                     const point2D newP =
                         (
-                            mag(distance[pI])*poly2D.fcValue(pI) +
-                            mag(distance.fcValue(pI))*poly2D[pI]
+                            mag(distance[pI])*poly2D[poly2D.fcIndex(pI)] +
+                            mag(distance[distance.fcIndex(pI)])*poly2D[pI]
                         ) /
                         (
                             mag(distance[pI]) +
-                            mag(distance.fcValue(pI)) +
+                            mag(distance[distance.fcIndex(pI)]) +
                             VSMALL
                         );
 
@@ -1331,8 +1331,8 @@ inline bool Foam::Module::help::doTrianglesIntersect
         return false;
     }
 
-    const vector n0 = tri0.unitNormal();
-    const vector n1 = tri1.unitNormal();
+    const vector n0 = tri0.normal();
+    const vector n1 = tri1.normal();
 
     //- distance of the points of the first triangle from the plane
     //- of the second triangle
@@ -1675,7 +1675,7 @@ inline bool Foam::Module::help::isFaceConvexAndOk
 {
     bool valid(true);
 
-    vector normal = f.areaNormal(fp);
+    vector normal = f.area(fp);
     const scalar magN = mag(normal);
 
     //- face has zero area. All points are inverted
@@ -1741,7 +1741,7 @@ inline Foam::scalar Foam::Module::help::tetQuality
         tet.mag()
        /(
             8.0/(9.0*sqrt(3.0))
-           *pow3(min(tet.circumRadius(), GREAT))
+           *pow3(min(tet.circumSphere().second(), GREAT))
           + ROOTVSMALL
         );
 }
@@ -1823,7 +1823,7 @@ inline Foam::label Foam::Module::help::numberOfFaceGroups
 
     labelHashSet triaInRange(containedElements.size());
     const scalar rangeSq = range*range;
-    for (const label elemi : containedElements)
+    for (const label elemi : containedElements.toc())
     {
         const point p = nearestPointOnTheTriangle(elemi, surface, centre);
         if (magSqr(p - centre) < rangeSq)
@@ -1839,7 +1839,7 @@ inline Foam::label Foam::Module::help::numberOfFaceGroups
 
     DynList<label> front;
 
-    for (const label triIdx : triaInRange)
+    for (const label triIdx : triaInRange.toc())
     {
         if (!elGroup.found(triIdx))
         {
@@ -1915,7 +1915,7 @@ inline Foam::label Foam::Module::help::numberOfEdgeGroups
 
     const scalar rangeSq = range*range;
     labelHashSet edgesInRange(containedEdges.size());
-    for (const label edgei : containedEdges)
+    for (const label edgei : containedEdges.toc())
     {
         const edge& e = edges[edgei];
         const point& sp = points[e.start()];
@@ -1935,7 +1935,7 @@ inline Foam::label Foam::Module::help::numberOfEdgeGroups
 
     DynList<label> front;
 
-    for (const label edgei : edgesInRange)
+    for (const label edgei : edgesInRange.toc())
     {
         if (!elGroup.found(edgei))
         {

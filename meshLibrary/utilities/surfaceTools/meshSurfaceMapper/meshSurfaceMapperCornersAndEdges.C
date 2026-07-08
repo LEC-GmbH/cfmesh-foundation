@@ -84,8 +84,8 @@ Foam::scalar Foam::Module::meshSurfaceMapper::faceMetricInPatch
 
     const pointFieldPMG& points = surfaceEngine_.points();
 
-    const point centre = bf.centre(points);
-    const vector area = bf.areaNormal(points);
+    const point centre = bf.centre(static_cast<const pointField&>(points));
+    const vector area = bf.area(static_cast<const pointField&>(points));
 
     point projCentre;
     scalar dSq;
@@ -122,7 +122,7 @@ Foam::scalar Foam::Module::meshSurfaceMapper::faceMetricInPatch
                 projPoints[pI],
                 projPoints[bf.fcIndex(pI)],
                 projCentre
-            ).areaNormal();
+            ).area();
     }
 
     return magSqr(centre - projCentre) + mag(mag(projArea) - mag(area));
@@ -217,7 +217,7 @@ void Foam::Module::meshSurfaceMapper::mapCorners
                 const DynList<label>& cPatches = cornerPatches[scI];
                 forAll(patches, i)
                 {
-                    if (!cPatches.found(patches[i]))
+                    if (findIndex(cPatches, patches[i]) == -1)
                     {
                         store = false;
                         break;
@@ -346,7 +346,7 @@ void Foam::Module::meshSurfaceMapper::mapCornersAndEdges()
     const meshSurfacePartitioner& mPart = meshPartitioner();
     const labelHashSet& cornerPoints = mPart.corners();
     labelLongList selectedPoints;
-    for (const label it : cornerPoints)
+    for (const label it : cornerPoints.toc())
     {
         selectedPoints.append(it);
     }
@@ -355,7 +355,7 @@ void Foam::Module::meshSurfaceMapper::mapCornersAndEdges()
 
     selectedPoints.clear();
     const labelHashSet& edgePoints = mPart.edgePoints();
-    for (const label it : edgePoints)
+    for (const label it : edgePoints.toc())
     {
         selectedPoints.append(it);
     }

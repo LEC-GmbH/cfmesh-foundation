@@ -92,7 +92,7 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
     // patches must be treated together if there exist a corner where
     // more than three patches meet
     const labelHashSet& corners = mPart.corners();
-    for (const label bpI : corners)
+    for (const label bpI : corners.toc())
     {
         if (mPart.numberOfFeatureEdgesAtPoint(bpI) > 3)
         {
@@ -186,7 +186,7 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
         }
     }
 
-    forAllConstIters(edgeClassification, it)
+    for (std::map<std::pair<label, label>, Pair<label>>::const_iterator it = edgeClassification.cbegin(); it != edgeClassification.cend(); ++it)
     {
         const std::pair<label, label>& edgePair = it->first;
         const Pair<label>& nConvexAndConcave = it->second;
@@ -254,12 +254,12 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
             }
         }
 
-        forAllConstIters(commonPatches, it)
+        for (std::set<label>::const_iterator it = commonPatches.cbegin(); it != commonPatches.cend(); ++it)
         {
             const label patchJ = *it;
 
             treatPatchesWithPatch_[patchJ].clear();
-            forAllConstIters(commonPatches, iter)
+            for (std::set<label>::const_iterator iter = commonPatches.cbegin(); iter != commonPatches.cend(); ++iter)
             {
                 treatPatchesWithPatch_[patchJ].append(*iter);
             }

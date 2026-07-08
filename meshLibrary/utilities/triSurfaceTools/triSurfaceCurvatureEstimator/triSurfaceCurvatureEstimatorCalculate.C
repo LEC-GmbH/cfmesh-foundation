@@ -171,11 +171,11 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                     continue;
 
                 otherLabels[regionI].insert(pI);
-                normals[regionI] += surface_[triI].areaNormal(points);
+                normals[regionI] += surface_[triI].area(points);
             }
         }
 
-        forAllConstIters(otherLabels, it)
+        forAllConstIter(Map<labelHashSet>, otherLabels, it)
         {
             const labelHashSet& currLabels = it();
 
@@ -183,7 +183,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                 continue;
 
             labelHashSet additionalPoints;
-            for (const label neiPointI : currLabels)
+            for (const label neiPointI : currLabels.toc())
             {
                 const constRow pTriangles = pointTriangles[neiPointI];
 
@@ -199,18 +199,18 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                 }
             }
 
-            for (const label aIter : additionalPoints)
+            for (const label aIter : additionalPoints.toc())
             {
                 otherLabels[it.key()].insert(aIter);
             }
         }
 
-        forAllIters(normals, nit)
+        forAllIter(Map<vector>, normals, nit)
         {
-            nit().normalise();
+            nit() /= mag(nit());
         }
 
-        forAllConstIters(otherLabels, it)
+        forAllConstIter(Map<labelHashSet>, otherLabels, it)
         {
             const labelHashSet& labels = it();
 
@@ -239,7 +239,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
             // store point coordinates
             DynList<point> op;
 
-            for (const label lit : labels)
+            for (const label lit : labels.toc())
             {
                 op.append(points[lit]);
             }
@@ -324,7 +324,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                         const label neiPointI = neiPoints[i];
 
                         const label pos =
-                            pointPatches[neiPointI].find(cPatch);
+                            findIndex(pointPatches[neiPointI], cPatch);
 
                         minCurv += minCurvature_[neiPointI][pos];
                         maxCurv += maxCurvature_[neiPointI][pos];

@@ -63,7 +63,7 @@ void Foam::Module::cartesian2DMeshGenerator::createCartesianMesh()
 
     if
     (
-        meshDict_.getOrDefault<bool>
+        meshDict_.lookupOrDefault<bool>
         (
             "decomposePolyhedraIntoTetsAndPyrs",
             false

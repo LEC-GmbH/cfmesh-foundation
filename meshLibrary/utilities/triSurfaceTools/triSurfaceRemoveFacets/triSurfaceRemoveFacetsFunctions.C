@@ -48,7 +48,7 @@ void Foam::Module::triSurfaceRemoveFacets::markFacetsForRemoval
 
     forAll(patches, patchI)
     {
-        if (selectedEntities_.found(patches[patchI].name()))
+        if (findIndex(selectedEntities_, patches[patchI].name()) != -1)
         {
             removePatch[patchI] = true;
         }
@@ -71,7 +71,7 @@ void Foam::Module::triSurfaceRemoveFacets::markFacetsForRemoval
     {
         const word fsName = surf_.facetSubsetName(facetSubsetsIDs[i]);
 
-        if (selectedEntities_.found(fsName))
+        if (findIndex(selectedEntities_, fsName) != -1)
         {
             labelLongList containedFacets;
             surf_.facetsInSubset(facetSubsetsIDs[i], containedFacets);

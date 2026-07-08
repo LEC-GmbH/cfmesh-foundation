@@ -60,7 +60,8 @@ int main(int argc, char *argv[])
 
     pmg.writeMesh();
 
-    runTime.printExecutionTime(Info);
+    Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s\n"
+        << "ClockTime = " << runTime.elapsedClockTime() << " s" << endl;
 
     Info<< "End\n" << endl;
     return 0;
