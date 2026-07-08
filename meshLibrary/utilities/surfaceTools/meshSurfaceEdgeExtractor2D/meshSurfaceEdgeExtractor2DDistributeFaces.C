@@ -115,7 +115,7 @@ void Foam::Module::meshSurfaceEdgeExtractor2D::distributeBoundaryFaces()
         else
         {
             // this face is active
-            const point c = f.centre(static_cast<const pointField&>(points));
+            const point c = help::stableFaceCentre(f, points);
 
             // find the patch index of the nearest location on the surface mesh
             point mapPoint;

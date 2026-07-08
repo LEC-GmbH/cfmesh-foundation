@@ -135,11 +135,11 @@ Foam::point Foam::Module::boundaryLayers::createNewVertex
 
                 if (treatPatches[patchLabel])
                 {
-                    normal += f.area(static_cast<const pointField&>(points));
+                    normal += help::stableFaceArea(f, points);
                 }
                 else
                 {
-                    v += f.area(static_cast<const pointField&>(points));
+                    v += help::stableFaceArea(f, points);
                 }
             }
 

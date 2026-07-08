@@ -338,7 +338,7 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
 
                     // decompose into triangles
                     const point p =
-                        bf.centre(static_cast<const pointField&>(mesh_.points()));
+                        help::stableFaceCentre(bf, mesh_.points());
                     triF[2] = mesh_.points().size();
                     mesh_.points().append(p);
 

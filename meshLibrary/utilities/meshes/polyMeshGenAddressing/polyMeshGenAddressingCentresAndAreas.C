@@ -111,7 +111,7 @@ void Foam::Module::polyMeshGenAddressing::makeFaceCentresAndAreas
                 sumAc += a*c;
             }
 
-            fCtrs[faceI] = (1.0/3.0)*sumAc/(sumA + VSMALL);
+            fCtrs[faceI] = (1.0/3.0)*sumAc/Foam::max(sumA, VSMALL);
             fAreas[faceI] = 0.5*sumN;
         }
     }

@@ -43,6 +43,7 @@ SourceFiles
 #include "DynList.H"
 #include "plane.H"
 #include "face.H"
+#include "UIndirectList.H"
 
 #include "triSurf.H"
 #include "triangle.H"
@@ -72,6 +73,19 @@ namespace help
     //- check if a list has inf entries
     template<class ListType>
     bool isinf(const ListType&);
+
+    //- Face centre/area/normal computed via Foam::face::areaAndCentreStabilised
+    //- instead of the plain areaAndCentre. The plain version's degenerate-face
+    //- fallback (sumAn > vSmall) uses an absolute, unscaled epsilon, so a
+    //- near-degenerate face (e.g. two coincident vertices, which can arise
+    //- from very fine local refinement) can pass the check with a
+    //- numerically meaningless sumAn and produce a wildly wrong result even
+    //- though every input point is valid. Use these wherever the face may
+    //- be a real (potentially near-degenerate) mesh face, instead of calling
+    //- face::centre()/area() directly.
+    inline point stableFaceCentre(const face& f, const pointField& points);
+    inline vector stableFaceArea(const face& f, const pointField& points);
+    inline vector stableFaceNormal(const face& f, const pointField& points);
 
     //- check if the faces share a convex edge
     template<class Face1, class Face2>

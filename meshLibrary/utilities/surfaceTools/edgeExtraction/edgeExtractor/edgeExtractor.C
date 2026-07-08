@@ -163,7 +163,7 @@ void Foam::Module::edgeExtractor::findPatchesNearSurfaceFace()
         {
             const face& bf = bFaces[bfI];
 
-            const vector c = bf.centre(static_cast<const pointField&>(points));
+            const vector c = help::stableFaceCentre(bf, points);
 
             // find a reasonable searching distance comparable to face size
             scalar d(0.0);
@@ -510,7 +510,7 @@ void Foam::Module::edgeExtractor::moveVerticesTowardsDiscontinuities
             # pragma omp for schedule(dynamic, 40)
             forAll(bFaces, bfI)
             {
-                const vector centre = bFaces[bfI].centre(static_cast<const pointField&>(points));
+                const vector centre = help::stableFaceCentre(bFaces[bfI], points);
 
                 point newP;
                 scalar distSq;
@@ -633,7 +633,7 @@ void Foam::Module::edgeExtractor::distributeBoundaryFaces()
     {
         const face& bf = bFaces[bfI];
 
-        const point c = bf.centre(static_cast<const pointField&>(points));
+        const point c = help::stableFaceCentre(bf, points);
 
         // find the nearest surface patch to face centre
         label fPatch, nTri;
@@ -738,7 +738,7 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
                 scalar dSq(VGREAT);
                 label nearestTriangle;
 
-                point p = bf.centre(static_cast<const pointField&>(points));
+                point p = help::stableFaceCentre(bf, points);
                 meshOctree_.findNearestSurfacePointInRegion
                 (
                     pMap,
@@ -752,7 +752,7 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
 
                 // calculate normal vectors
                 vector tn = surf[nearestTriangle].normal(sPoints);
-                vector fn = bf.normal(static_cast<const pointField&>(points));
+                vector fn = help::stableFaceNormal(bf, points);
 
                 // calculate alignment
                 normalAlignment[i] = mag(tn & fn);
@@ -767,7 +767,11 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
                     sqrt
                     (
                         maxDSq
-                       /(Foam::max(distanceSq[i], SMALL*maxDSq) + VSMALL)
+                       /Foam::max
+                        (
+                            Foam::max(distanceSq[i], SMALL*maxDSq),
+                            VSMALL
+                        )
                     )
                    *normalAlignment[i]
                 );
@@ -1049,7 +1053,7 @@ Foam::scalar Foam::Module::edgeExtractor::calculateAlignmentForEdge
     meshOctree_.findNearestPointToPatches(mpe, dSqE, pe, patches);
 
     vector fv = mpe - mps;
-    fv /= (mag(fv) + VSMALL);
+    fv /= Foam::max(mag(fv), VSMALL);
 
     val = 0.5*(1.0 + (ev & fv));
 
@@ -1090,7 +1094,7 @@ Foam::scalar Foam::Module::edgeExtractor::calculateDeformationMetricForEdge
     meshOctree_.findNearestPointToPatches(mpe, dSqE, pe, patches);
 
     vector fv = mpe - mps;
-    fv /= (mag(fv) + VSMALL);
+    fv /= Foam::max(mag(fv), VSMALL);
 
     scalar c = min(fv & ev, 1.0);
     c = max(-1.0, c);

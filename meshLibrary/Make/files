@@ -387,6 +387,7 @@ $(objectRefinement)/lineRefinement.C
 $(objectRefinement)/coneRefinement.C
 $(objectRefinement)/boxRefinement.C
 $(objectRefinement)/hollowConeRefinement.C
+$(objectRefinement)/surfaceRefinement.C
 
 $(triSurface2DCheck)/triSurface2DCheck.C
 
@@ -448,4 +449,4 @@ $(writeAsFPMA)/fpmaMesh.C
 
 $(workflowControls)/workflowControls.C
 
-LIB = $(FOAM_USER_LIBBIN)/libmeshLibrary
+LIB = $(FOAM_LIBBIN)/libmeshLibrary

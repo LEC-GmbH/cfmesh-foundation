@@ -33,6 +33,9 @@ License
 #include "demandDrivenData.H"
 
 #include "labelledPoint.H"
+#include "helperFunctionsGeometryQueries.H"
+
+using namespace Foam::Module::help;
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -86,7 +89,7 @@ void Foam::Module::meshSurfaceEngineModifier::moveBoundaryVertex
         {
             const label bfI = pFaces(bpI, pfI);
 
-            faceCentres[bfI] = bFaces[bfI].centre(static_cast<const pointField&>(points));
+            faceCentres[bfI] = stableFaceCentre(bFaces[bfI], points);
         }
     }
 
@@ -100,7 +103,7 @@ void Foam::Module::meshSurfaceEngineModifier::moveBoundaryVertex
         {
             const label bfI = pFaces(bpI, pfI);
 
-            faceNormals[bfI] = bFaces[bfI].area(static_cast<const pointField&>(points));
+            faceNormals[bfI] = stableFaceArea(bFaces[bfI], points);
         }
     }
 
@@ -179,7 +182,7 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
         forAll(updateFaces, bfI)
         {
             if (updateFaces[bfI])
-                faceCentres[bfI] = bFaces[bfI].centre(static_cast<const pointField&>(points));
+                faceCentres[bfI] = stableFaceCentre(bFaces[bfI], points);
         }
     }
 
@@ -192,7 +195,7 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
         forAll(updateFaces, bfI)
         {
             if (updateFaces[bfI])
-                faceNormals[bfI] = bFaces[bfI].area(static_cast<const pointField&>(points));
+                faceNormals[bfI] = stableFaceArea(bFaces[bfI], points);
         }
     }
 

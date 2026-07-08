@@ -437,7 +437,7 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
             newVerticesForSplitEdge_(seI, 0) = e.start();
 
             scalar param = firstThickness;
-            const vector vec = v /(magv + VSMALL);
+            const vector vec = v /Foam::max(magv, VSMALL);
 
             for (label pI = 1; pI < nLayers; ++pI)
             {

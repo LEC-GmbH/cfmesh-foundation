@@ -61,8 +61,8 @@ void Foam::Module::symmetryPlaneOptimisation::detectSymmetryPlanes()
             const label end = start + boundaries[patchI].patchSize();
             for (label faceI = start; faceI < end; ++faceI)
             {
-                cs.first += faces[faceI].centre(static_cast<const pointField&>(points));
-                ns.first += faces[faceI].area(static_cast<const pointField&>(points));
+                cs.first += help::stableFaceCentre(faces[faceI], points);
+                ns.first += help::stableFaceArea(faces[faceI], points);
             }
 
             cs.second = ns.second = boundaries[patchI].patchSize();
@@ -106,7 +106,7 @@ bool Foam::Module::symmetryPlaneOptimisation::pointInPlanes
             {
                 const face& f = faces[faceI];
 
-                const point c = f.centre(static_cast<const pointField&>(points));
+                const point c = help::stableFaceCentre(f, points);
                 scalar maxDist(0.0);
                 forAll(f, pI)
                     maxDist = max(maxDist, mag(points[f[pI]] - c));
@@ -199,7 +199,7 @@ void Foam::Module::symmetryPlaneOptimisation::optimizeSymmetryPlanes()
             const plane::ray il = pl0.planeIntersect(pl1);
 
             vector n = il.dir();
-            n /= (mag(n) + VSMALL);
+            n /= Foam::max(mag(n), VSMALL);
 
             const scalar lProj = (p - il.refPoint()) & n;
 

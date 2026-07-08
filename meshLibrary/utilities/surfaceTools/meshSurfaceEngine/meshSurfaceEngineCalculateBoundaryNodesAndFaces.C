@@ -560,7 +560,7 @@ void Foam::Module::meshSurfaceEngine::calculateFaceNormals() const
     {
         const face& bf = bFaces[bfI];
 
-        faceNormalsPtr_->operator[](bfI) = bf.area(static_cast<const pointField&>(points));
+        faceNormalsPtr_->operator[](bfI) = help::stableFaceArea(bf, points);
     }
 }
 
@@ -575,7 +575,7 @@ void Foam::Module::meshSurfaceEngine::calculateFaceCentres() const
     # pragma omp parallel for if (bFaces.size() > 1000)
     forAll(bFaces, bfI)
     {
-        faceCentresPtr_->operator[](bfI) = bFaces[bfI].centre(static_cast<const pointField&>(points));
+        faceCentresPtr_->operator[](bfI) = help::stableFaceCentre(bFaces[bfI], points);
     }
 }
 

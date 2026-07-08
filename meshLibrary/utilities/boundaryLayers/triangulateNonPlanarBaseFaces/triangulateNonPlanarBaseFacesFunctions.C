@@ -62,7 +62,7 @@ bool Foam::Module::triangulateNonPlanarBaseFaces::findNonPlanarBoundaryFaces()
 
         // calculate min face diagonal
         scalar minDist(VGREAT);
-        const point c = bf.centre(static_cast<const pointField&>(points));
+        const point c = help::stableFaceCentre(bf, points);
         forAll(bf, pI)
         {
             minDist = Foam::min(minDist, Foam::mag(c - points[bf[pI]]));

@@ -395,7 +395,7 @@ bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnCurvature
             }
         }
 
-        if (oc.size(rootBox) > 0.2835 /(maxCurv + SMALL))
+        if (oc.size(rootBox) > 0.2835 /Foam::max(maxCurv, SMALL))
         {
             refineBox[leafI] = 1;
             ++nMarked;

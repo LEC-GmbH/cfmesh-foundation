@@ -143,7 +143,7 @@ Foam::vector Foam::Module::partTriMeshSimplex::normal() const
         magN += magn;
     }
 
-    return (normal/(magN + VSMALL));
+    return (normal/Foam::max(magN, VSMALL));
 }
 
 

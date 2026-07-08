@@ -75,7 +75,7 @@ void Foam::Module::meshSurfaceEdgeExtractorFUN::distributeBoundaryFaces()
     # pragma omp parallel for if (bFaces.size() > 100) schedule(guided)
     forAll(bFaces, bfI)
     {
-        const point c = bFaces[bfI].centre(static_cast<const pointField&>(points));
+        const point c = help::stableFaceCentre(bFaces[bfI], points);
 
         label facePatch, nt;
         point p;

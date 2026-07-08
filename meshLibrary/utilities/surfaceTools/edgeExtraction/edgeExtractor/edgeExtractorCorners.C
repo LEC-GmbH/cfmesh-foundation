@@ -408,7 +408,7 @@ void Foam::Module::edgeExtractor::cornerEvaluator::improveCorners
 
                     // calculate the vector of current edge
                     vector ev = pe - p;
-                    ev /= (mag(ev) + VSMALL);
+                    ev /= Foam::max(mag(ev), VSMALL);
 
                     // project the endpoint onto the feature edge
                     point mpe;
@@ -416,7 +416,7 @@ void Foam::Module::edgeExtractor::cornerEvaluator::improveCorners
                     mo.findNearestPointToPatches(mpe, dSqE, pe, patches);
 
                     vector fv = mpe - mps;
-                    fv /= (mag(fv) + VSMALL);
+                    fv /= Foam::max(mag(fv), VSMALL);
 
                     // calculate alignment metrix between the current edge
                     // and the feature edge
@@ -506,7 +506,7 @@ bool Foam::Module::edgeExtractor::findCornerCandidates()
     forAll(bFaces, bfI)
     {
         const face& bf = bFaces[bfI];
-        const point c = bf.centre(static_cast<const pointField&>(points));
+        const point c = help::stableFaceCentre(bf, points);
 
         forAll(bf, pI)
         {
@@ -805,7 +805,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
             scalar bestAlignment(0.0);
 
             vector dv = it->second.first - points[bPoints[bpI]];
-            dv /= (mag(dv) + VSMALL);
+            dv /= Foam::max(mag(dv), VSMALL);
 
             if (facesContainingPoint[bestPoint].size() == 1)
             {
@@ -824,7 +824,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
                     (
                         points[e.otherVertex(bPoints[bpI])] - points[bPoints[bpI]]
                     );
-                    ev /= (mag(ev) + VSMALL);
+                    ev /= Foam::max(mag(ev), VSMALL);
 
                     const scalar metric = 0.5*(1.0 + (dv & ev));
 
@@ -1032,7 +1032,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
                                     );
 
                                     vector fv = mpe - mps;
-                                    fv /= (mag(fv) + VSMALL);
+                                    fv /= Foam::max(mag(fv), VSMALL);
 
                                     scalar c = min(fv & ev, 1.0);
                                     c = max(-1.0, c);
@@ -1068,7 +1068,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
                                     );
 
                                     vector fv = mpe - mps;
-                                    fv /= (mag(fv) + VSMALL);
+                                    fv /= Foam::max(mag(fv), VSMALL);
 
                                     scalar c = min(fv & ev, 1.0);
                                     c = max(-1.0, c);
@@ -1162,7 +1162,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
                                     );
 
                                     vector fv = mpe - mps;
-                                    fv /= (mag(fv) + VSMALL);
+                                    fv /= Foam::max(mag(fv), VSMALL);
 
                                     scalar c = min(fv & ev, 1.0);
                                     c = max(-1.0, c);
@@ -1198,7 +1198,7 @@ bool Foam::Module::edgeExtractor::checkCorners()
                                     );
 
                                     vector fv = mpe - mps;
-                                    fv /= (mag(fv) + VSMALL);
+                                    fv /= Foam::max(mag(fv), VSMALL);
 
                                     scalar c = min(fv & ev, 1.0);
                                     c = max(-1.0, c);

@@ -385,11 +385,11 @@ void Foam::Module::extrudeLayer::movePoints()
                 {
                     const face& f = faces[faceI];
 
-                    normal -= f.area(static_cast<const pointField&>(points));
+                    normal -= help::stableFaceArea(f, points);
 
                     if (thickness_ < 0.0)
                     {
-                        const vector c = f.centre(static_cast<const pointField&>(points));
+                        const vector c = help::stableFaceCentre(f, points);
                         scalar d(VGREAT);
 
                         forAll(f, pI)

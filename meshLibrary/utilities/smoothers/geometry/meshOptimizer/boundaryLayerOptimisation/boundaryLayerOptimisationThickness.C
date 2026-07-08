@@ -168,7 +168,7 @@ Foam::scalar Foam::Module::boundaryLayerOptimisation::calculateThickness
             Foam::max
             (
                 -1.0,
-                Foam::min(1.0, cosAlpha /(currThickness + VSMALL))
+                Foam::min(1.0, cosAlpha /Foam::max(currThickness, VSMALL))
             )
         );
 
@@ -184,7 +184,7 @@ Foam::scalar Foam::Module::boundaryLayerOptimisation::calculateThickness
             Foam::max
             (
                 -1.0,
-                Foam::min(1.0, cosBeta /(currNeiThickness + VSMALL))
+                Foam::min(1.0, cosBeta /Foam::max(currNeiThickness, VSMALL))
             )
         );
 
@@ -203,7 +203,7 @@ Foam::scalar Foam::Module::boundaryLayerOptimisation::calculateThickness
                 retThickness,
                 featureSizeFactor_*magDv*sinBeta/sinGamma
             );
-        retHeight *= (retThickness /(currThickness + VSMALL));
+        retHeight *= (retThickness /Foam::max(currThickness, VSMALL));
 
         // max allowed neighbour hair thickness
         // and layer height due to curvature
@@ -214,11 +214,12 @@ Foam::scalar Foam::Module::boundaryLayerOptimisation::calculateThickness
                 featureSizeFactor_*magDv*sinAlpha/sinGamma
             );
         suggestedNeiHeight *=
-            (suggestedNeiThickness /(currNeiThickness + VSMALL));
+            (suggestedNeiThickness /Foam::max(currNeiThickness, VSMALL));
     }
 
     // check the height variation
-    const scalar tanVal = (retHeight - suggestedNeiHeight)/(magDv + VSMALL);
+    const scalar tanVal =
+        (retHeight - suggestedNeiHeight)/Foam::max(magDv, VSMALL);
 
     if (tanVal > relThicknessTol_)
     {

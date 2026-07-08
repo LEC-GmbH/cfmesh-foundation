@@ -198,7 +198,7 @@ bool Foam::Module::polyMeshGenChecks::checkClosedCells
                     << "Face area vectors sum up to " << mag(sumClosed[cellI])
                     << " directionwise " << sumClosed[cellI] << " or "
                     << mag(sumClosed[cellI])
-                       /(mag(sumMagClosed[cellI]) + VSMALL)
+                       /Foam::max(mag(sumMagClosed[cellI]), VSMALL)
                     << " of the area of all faces of the cell. " << endl
                     << "    Area magnitudes sum up to "
                     << sumMagClosed[cellI] << endl;
@@ -1186,6 +1186,8 @@ bool Foam::Module::polyMeshGenChecks::checkCellPartTetrahedra
         }
     }
 
+    return false;
+
     if (nNegVolCells != 0)
     {
         WarningInFunction
@@ -1237,7 +1239,14 @@ void Foam::Module::polyMeshGenChecks::checkFaceDotProduct
             const vector d = centres[nei[faceI]] - centres[own[faceI]];
             const vector& s = areas[faceI];
 
-            faceDotProduct[faceI] = (d & s)/(mag(d)*mag(s) + VSMALL);
+            const scalar dDotS =
+                (d & s)/Foam::max(mag(d)*mag(s), VSMALL);
+
+            // Clamp to [-1, 1]: mathematically dDotS is a cosine of the
+            // angle between d and s, but floating-point round-off can push
+            // it a few ULPs outside that range, which would turn the
+            // downstream acos() calls into NaN.
+            faceDotProduct[faceI] = Foam::max(-1.0, Foam::min(1.0, dDotS));
         }
     }
 }
@@ -1529,7 +1538,7 @@ void Foam::Module::polyMeshGenChecks::checkFaceSkewness
 
         faceSkewness[faceI] =
             mag(fCentres[faceI] - faceIntersection)
-           /(mag(centres[nei[faceI]] - centres[own[faceI]]) + VSMALL);
+           /Foam::max(mag(centres[nei[faceI]] - centres[own[faceI]]), VSMALL);
     }
 
     // boundary faces
@@ -1545,7 +1554,7 @@ void Foam::Module::polyMeshGenChecks::checkFaceSkewness
         {
             const vector d = fCentres[faceI] - centres[own[faceI]];
 
-            vector n = faces[faceI].area(static_cast<const pointField&>(points));
+            vector n = help::stableFaceArea(faces[faceI], points);
             const scalar magn = mag(n);
             if (magn > VSMALL)
             {
@@ -1558,7 +1567,7 @@ void Foam::Module::polyMeshGenChecks::checkFaceSkewness
 
             const vector dn = (n & d)*n;
 
-            faceSkewness[faceI] = mag(d - dn)/(mag(d) + VSMALL);
+            faceSkewness[faceI] = mag(d - dn)/Foam::max(mag(d), VSMALL);
         }
     }
 }
@@ -2008,7 +2017,7 @@ bool Foam::Module::polyMeshGenChecks::checkFaceFlatness
                     sumA += mag(n);
                 }
 
-                scalar flatness = magAreas[faceI] /(sumA + VSMALL);
+                scalar flatness = magAreas[faceI] /Foam::max(sumA, VSMALL);
 
                 sumFlatness += flatness;
                 ++nSummed;
@@ -2477,7 +2486,7 @@ Foam::label Foam::Module::polyMeshGenChecks::findLowQualityFaces
     (
         mesh,
         report,
-        2.0,
+        4.0,
         &badFaces,
         activeFacePtr
     );

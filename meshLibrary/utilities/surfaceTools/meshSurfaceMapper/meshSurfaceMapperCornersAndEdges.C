@@ -84,8 +84,8 @@ Foam::scalar Foam::Module::meshSurfaceMapper::faceMetricInPatch
 
     const pointFieldPMG& points = surfaceEngine_.points();
 
-    const point centre = bf.centre(static_cast<const pointField&>(points));
-    const vector area = bf.area(static_cast<const pointField&>(points));
+    const point centre = help::stableFaceCentre(bf, points);
+    const vector area = help::stableFaceArea(bf, points);
 
     point projCentre;
     scalar dSq;

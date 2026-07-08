@@ -118,13 +118,13 @@ void Foam::Module::refineBoundaryLayers::setGlobalNumberOfLayers
             << "refineLayers is already executed" << exit(FatalError);
     }
 
-    if (nLayers < 2)
+    if (nLayers < 1)
     {
         WarningInFunction
-            << "The specified global number of boundary layers is less than 2"
+            << "The specified global number of boundary layers is less than 1"
             << endl;
 
-        return;
+        //return;
     }
 
     globalNumLayers_ = nLayers;
@@ -190,12 +190,12 @@ void Foam::Module::refineBoundaryLayers::setNumberOfLayersForPatch
             << "refineLayers is already executed" << exit(FatalError);
     }
 
-    if (nLayers < 2)
+    if (nLayers < 1)
     {
         WarningInFunction
             << "The specified number of boundary layers for patch "
             << patchName
-            << " is less than 2... boundary layers disabled for this patch!"
+            << " is less than 1... boundary layers disabled for this patch!"
             << endl;
     }
 
@@ -314,13 +314,13 @@ void Foam::Module::refineBoundaryLayers::refineLayers()
     bool refinePatch(false);
     for (std::map<word, label>::const_iterator it = numLayersForPatch_.cbegin(); it != numLayersForPatch_.cend(); ++it)
     {
-        if (it->second > 1)
+        if (it->second > 0)
         {
             refinePatch = true;
         }
     }
 
-    if ((globalNumLayers_ < 2) && !refinePatch)
+    if ((globalNumLayers_ < 1) && !refinePatch)
     {
         return;
     }

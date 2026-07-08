@@ -30,6 +30,7 @@ License
 
 #include "decomposeFaces.H"
 #include "boolList.H"
+#include "helperFunctionsGeometryQueries.H"
 
 // * * * * * * * * * * * * * * * Constructor * * * * * * * * * * * * * * * * //
 
@@ -104,7 +105,7 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
                 newFacesForFace_.append(faceI, nFaces++);
             }
 
-            p = f.centre(static_cast<const pointField&>(points));
+            p = help::stableFaceCentre(f, points);
             points[nPoints] = p;
             ++nPoints;
         }
@@ -144,7 +145,7 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
                     newFacesForFace_.append(bfI, nFaces++);
                 }
 
-                p = f.centre(static_cast<const pointField&>(points));
+                p = help::stableFaceCentre(f, points);
                 points[nPoints++] = p;
             }
             else
@@ -278,7 +279,7 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
                 newFaces.appendList(newF);
             }
 
-            const point fCent = f.centre(static_cast<const pointField&>(points));
+            const point fCent = help::stableFaceCentre(f, points);
             points.append(fCent);
         }
         else

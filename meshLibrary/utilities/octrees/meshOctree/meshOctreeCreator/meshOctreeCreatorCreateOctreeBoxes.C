@@ -34,6 +34,7 @@ License
 #include "boundBox.H"
 #include "triSurf.H"
 #include "meshOctreeAutomaticRefinement.H"
+#include "Tuple2.H"
 
 #include <omp.h>
 
@@ -441,6 +442,141 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
                     {
                         const label triI = facetsInSubset[i];
                         surfRefLevel_[triI].append(rp);
+                    }
+                }
+
+                if (patchDict.found("distLevels"))
+                {
+                    const List<Tuple2<scalar, label>>
+                        distLvls(patchDict.lookup("distLevels"));
+
+                    forAll(distLvls, i)
+                    {
+                        const scalar distance = distLvls[i].first();
+                        const label lvl = distLvls[i].second();
+                        const direction level = globalRefLevel_ + lvl;
+                        std::pair<direction, scalar> rp(level, distance);
+
+                        if
+                        (
+                            i > 0
+                         && ((distLvls[i].first() <= distLvls[i-1].first())
+                         || (distLvls[i].second() > distLvls[i-1].second()))
+                        )
+                        {
+                            FatalErrorInFunction
+                                << "Refinement should be specified in order"
+                                << " of increasing distance"
+                                << " (and decreasing refinement level)." << endl
+                                << "Distance:" << distLvls[i].first()
+                                << " refinementLevel:" << distLvls[i].second()
+                                << exit(FatalError);
+                        }
+                        forAll(matchedPatches, matchI)
+                        {
+                            // patch-based refinement
+                            const label patchI = matchedPatches[matchI];
+
+                            forAll(surface, triI)
+                            {
+                                if (surface[triI].region() == patchI)
+                                {
+                                    surfRefLevel_[triI].append(rp);
+                                }
+                            }
+                        }
+                        if (setToIndex.find(pName) != setToIndex.end())
+                        {
+                            // this is a facet subset
+                            const label subsetId = setToIndex[pName];
+
+                            labelLongList facetsInSubset;
+                            surface.facetsInSubset(subsetId, facetsInSubset);
+
+                            forAll(facetsInSubset, i)
+                            {
+                                const label triI = facetsInSubset[i];
+                                surfRefLevel_[triI].append(rp);
+                            }
+                        }
+                    }
+                }
+
+                if (patchDict.found("distCellSizes"))
+                {
+                    const List<Tuple2<scalar, scalar>>
+                        distSizes(patchDict.lookup("distCellSizes"));
+
+                    forAll(distSizes, i)
+                    {
+                        const scalar distance = distSizes[i].first();
+                        const scalar cs = distSizes[i].second();
+                        label lvl = 0;
+                        bool finished;
+
+                        do
+                        {
+                            finished = false;
+
+                            const scalar lSize =
+                                maxSize/Foam::pow(label(2), lvl);
+                            // Or: const scalar lSize = maxSize/(1L << nLevel);
+
+                            if (lSize <= cs)
+                            {
+                                finished = true;
+                            }
+                            else
+                            {
+                                ++lvl;
+                            }
+                        } while (!finished);
+
+                        const direction level = globalRefLevel_ + lvl;
+                        std::pair<direction, scalar> rp(level, distance);
+
+                        if
+                        (
+                            i > 0
+                         && ((distSizes[i].first() <= distSizes[i-1].first())
+                         || (distSizes[i].second() <= distSizes[i-1].second()))
+                        )
+                        {
+                            FatalErrorInFunction
+                                << "Refinement should be specified in order"
+                                << " of increasing distance"
+                                << " (and increasing cell size)." << endl
+                                << "Distance:" << distSizes[i].first()
+                                << " cellSize:" << distSizes[i].second()
+                                << exit(FatalError);
+                        }
+                        forAll(matchedPatches, matchI)
+                        {
+                            // patch-based refinement
+                            const label patchI = matchedPatches[matchI];
+
+                            forAll(surface, triI)
+                            {
+                                if (surface[triI].region() == patchI)
+                                {
+                                    surfRefLevel_[triI].append(rp);
+                                }
+                            }
+                        }
+                        if (setToIndex.find(pName) != setToIndex.end())
+                        {
+                            // this is a facet subset
+                            const label subsetId = setToIndex[pName];
+
+                            labelLongList facetsInSubset;
+                            surface.facetsInSubset(subsetId, facetsInSubset);
+
+                            forAll(facetsInSubset, i)
+                            {
+                                const label triI = facetsInSubset[i];
+                                surfRefLevel_[triI].append(rp);
+                            }
+                        }
                     }
                 }
             }

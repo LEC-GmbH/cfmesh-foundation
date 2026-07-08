@@ -44,7 +44,7 @@ void Foam::Module::triSurface2DCheck::createCovarianceMatrix()
     forAll(fNormals, tI)
     {
         vector fn = fNormals[tI];
-        fn /= (mag(fn) + VSMALL);
+        fn /= Foam::max(mag(fn), VSMALL);
 
         covarianceMatrix_ += symm(fn*fn);
     }
@@ -137,7 +137,7 @@ void Foam::Module::triSurface2DCheck::createSubsets()
     forAll(fNormals, triI)
     {
         vector fn = fNormals[triI];
-        fn /= (mag(fn) + VSMALL);
+        fn /= Foam::max(mag(fn), VSMALL);
 
         if (mag(fn.z()) > SMALL)
             surf.addFacetToSubset(badFacetsId, triI);

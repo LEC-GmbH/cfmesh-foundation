@@ -101,17 +101,18 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateEdgeCurvature()
             {
                 // calculate the curvature and store it in the map
                 vector e1 = edges[features[0]].vec(points);
-                const scalar d1 = mag(e1) + VSMALL;
+                const scalar d1 = Foam::max(mag(e1), VSMALL);
                 e1 /= d1;
                 vector e2 = edges[features[1]].vec(points);
-                const scalar d2 = mag(e2) + VSMALL;
+                const scalar d2 = Foam::max(mag(e2), VSMALL);
                 e2 /= d2;
 
                 scalar cs = e1 & e2;
                 cs = Foam::min(1.0, cs);
                 cs = Foam::max(-1.0, cs);
 
-                const scalar curv = Foam::acos(cs)/(0.5*(d1 + d2 + VSMALL));
+                const scalar curv =
+                    Foam::acos(cs)/Foam::max(0.5*(d1 + d2), VSMALL);
                 edgePointCurvature_[pI] = Foam::mag(curv);
             }
         }
@@ -418,7 +419,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateGaussianCurvature()
         {
             scalar cs = ev[(pI+2)%3] & ev[pI];
             cs = Foam::min(1.0, cs);
-            cs = Foam::max(1.0, cs);
+            cs = Foam::max(-1.0, cs);
 
             gaussianCurvature_[region][tri[pI]] -= Foam::acos(-1.0*cs);
             magAreas[region][tri[pI]] += A;
@@ -563,7 +564,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateMeanCurvature()
 
         if (A0 > VSMALL || A1 > VSMALL)
         {
-            Hf /= (A0 + A1 + VSMALL);
+            Hf /= Foam::max(A0 + A1, VSMALL);
             Hf *= 3.0;
         }
 

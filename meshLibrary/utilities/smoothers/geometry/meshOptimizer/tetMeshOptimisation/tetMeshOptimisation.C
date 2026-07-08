@@ -414,7 +414,7 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundaryVolumeOptimizer
                             // ordinary surface vertex
                             vector normal = eigenVectors(nt, ev).z();
 
-                            normal /= (mag(normal)+VSMALL);
+                            normal /= Foam::max(mag(normal), VSMALL);
                             disp -= (disp & normal)*normal;
                         }
                         else if (mag(ev[1]) > 0.5*(mag(ev[2]) + mag(ev[0])))
@@ -422,14 +422,14 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundaryVolumeOptimizer
                             // this vertex is on an edge
                             vector normal1 = eigenVectors(nt, ev).y();
 
-                            normal1 /= (mag(normal1)+VSMALL);
+                            normal1 /= Foam::max(mag(normal1), VSMALL);
 
                             vector normal2 = eigenVectors(nt, ev).z();
 
-                            normal2 /= (mag(normal2)+VSMALL);
+                            normal2 /= Foam::max(mag(normal2), VSMALL);
 
                             vector eVec = normal1 ^ normal2;
-                            eVec /= (mag(eVec) + VSMALL);
+                            eVec /= Foam::max(mag(eVec), VSMALL);
 
                             disp = (disp & eVec)*eVec;
                         }

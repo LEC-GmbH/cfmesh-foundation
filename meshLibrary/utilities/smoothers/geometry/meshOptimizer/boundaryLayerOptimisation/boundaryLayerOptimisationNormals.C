@@ -56,7 +56,6 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectors
     // calculate point normals with respect to all patches at a point
     pointPatchNormal.clear();
 
-    # pragma omp parallel for schedule(dynamic, 20)
     forAll(hairEdges_, hairEdgeI)
     {
         if (!(hairEdgeType_[hairEdgeI] & eType))
@@ -64,11 +63,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectors
 
         const label bpI = bp[hairEdges_[hairEdgeI][0]];
 
-        // create an entry in a map
-        patchNormalType* patchNormalPtr(nullptr);
-        # pragma omp critical
-            patchNormalPtr = &pointPatchNormal[bpI];
-        patchNormalType& patchNormal = *patchNormalPtr;
+        patchNormalType patchNormal;
 
         // sum normals of faces attached to a point
         forAllRow(pointFaces, bpI, pfI)
@@ -87,24 +82,18 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectors
                 patchNormal[patchI].second += mag(fNormals[bfI]);
             }
         }
+        pointPatchNormal[bpI] = patchNormal;
     }
 
     // finally, calculate normal vectors
-    # pragma omp parallel
-    # pragma omp single nowait
     forAllIter(pointNormalsType, pointPatchNormal, it)
     {
-        # pragma omp task firstprivate(it)
-        {
-
         patchNormalType& patchNormal = it->second;
 
         forAllIter(patchNormalType, patchNormal, pIt)
         {
             pIt->second.first /= pIt->second.second;
             //pIt->second.first /= (mag(pIt->second.first) + VSMALL);
-        }
-
         }
     }
 }
@@ -129,9 +118,8 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectorsSmother
     const labelList& triPointLabel = triMesh.meshSurfacePointLabelInTriMesh();
     const labelLongList& surfPointLabel = triMesh.pointLabelInMeshSurface();
 
-    Info<< "Calculating normals using smoother " << endl;
+    Info<< "Calculating normals using smoother" << endl;
 
-    # pragma omp parallel for schedule(dynamic, 50)
     forAll(hairEdgeType_, heI)
     {
         if (!(hairEdgeType_[heI] & eType))
@@ -139,15 +127,9 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectorsSmother
 
         const edge& he = hairEdges_[heI];
         const label bpI = bp[he.start()];
-
         const label triPointI = triPointLabel[bpI];
 
-        // create an entry in a map
-        patchNormalType* patchNormalPtr(nullptr);
-        # pragma omp critical
-            patchNormalPtr = &pointPatchNormal[bpI];
-
-        patchNormalType& patchNormal = *patchNormalPtr;
+        patchNormalType patchNormal;
 
         // find patches at this point
         DynList<label> patchesAtPoint;
@@ -225,10 +207,12 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectorsSmother
 
             patchNormal[patchI].first = (n/magN);
             patchNormal[patchI].second = magN;
+
+            pointPatchNormal[bpI] = patchNormal;
         }
     }
 
-    Info<< "Finished calculating normals using smoother " << endl;
+    Info<< "Finished calculating normals using smoother" << endl;
 }
 
 
@@ -293,7 +277,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairVectorsAtTheBoundary
                 forAllRow(edgeFaces, beI, befI)
                 {
                     const face& bf = bFaces[edgeFaces(beI, befI)];
-                    const vector fNormal = bf.area(static_cast<const pointField&>(points));
+                    const vector fNormal = help::stableFaceArea(bf, points);
 
                     const label pos = bf.which(he.start());
 
@@ -309,7 +293,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairVectorsAtTheBoundary
                         const vector ev = fe.vec(points);
 
                         vector hev = fNormal ^ ev;
-                        hev /= (mag(hev) + VSMALL);
+                        hev /= Foam::max(mag(hev), VSMALL);
 
                         hv += hev;
                     }
@@ -319,7 +303,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairVectorsAtTheBoundary
                         const vector ev = fe.vec(points);
 
                         vector hev = fNormal ^ ev;
-                        hev /= (mag(hev) + VSMALL);
+                        hev /= Foam::max(mag(hev), VSMALL);
 
                         hv += hev;
                     }
@@ -339,7 +323,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairVectorsAtTheBoundary
     forAll(hairVecs, hairEdgeI)
     {
         if (hairEdgeType_[hairEdgeI] & BOUNDARY)
-            hairVecs[hairEdgeI] /= (mag(hairVecs[hairEdgeI]) + VSMALL);
+            hairVecs[hairEdgeI] /= Foam::max(mag(hairVecs[hairEdgeI]), VSMALL);
     }
 }
 
@@ -462,9 +446,9 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsAtTheBoundary()
         {
             if (hairEdgeType_[heI] & BOUNDARY)
             {
-                newNormals[heI] /= (mag(newNormals[heI]) + VSMALL);
+                newNormals[heI] /= Foam::max(mag(newNormals[heI]), VSMALL);
                 newNormals[heI] = 0.5*(newNormals[heI] + hairVecs[heI]);
-                newNormals[heI] /= (mag(newNormals[heI]) + VSMALL);
+                newNormals[heI] /= Foam::max(mag(newNormals[heI]), VSMALL);
             }
         }
 
@@ -508,7 +492,7 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsInside()
         // calculate point normals with respect to all patches at a point
         pointNormalsType pointPatchNormal;
         calculateNormalVectors(INSIDE, pointPatchNormal);
-        //calculateNormalVectorsSmother(INSIDE, pointPatchNormal);
+        calculateNormalVectorsSmother(INSIDE, pointPatchNormal);
 
         # pragma omp parallel for schedule(dynamic, 50)
         forAll(hairEdges_, hairEdgeI)
@@ -538,14 +522,14 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsInside()
                         << abort(FatalError);
                 }
 
-                hv /= (mag(hv) + VSMALL);
+                hv /= Foam::max(mag(hv), VSMALL);
             }
             else
             {
                 // initialise boundary hair vectors. They influence internal
                 // hairs connected to them
                 vector hvec = hairEdges_[hairEdgeI].vec(points);
-                hvec /= (mag(hvec) + VSMALL);
+                hvec /= Foam::max(mag(hvec), VSMALL);
                 hairVecs[hairEdgeI] = hvec;
             }
         }
@@ -562,7 +546,7 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsInside()
         {
             // initialise boundary hair vectors.
             vector hvec = hairEdges_[hairEdgeI].vec(points);
-            hvec /= (mag(hvec) + VSMALL);
+            hvec /= Foam::max(mag(hvec), VSMALL);
             hairVecs[hairEdgeI] = hvec;
         }
     }
@@ -605,10 +589,10 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsInside()
                         const vector& nhVec = hairVecs[hairEdgeJ];
 
                         vector n = nhVec ^(points[nhe[0]] - points[he[0]]);
-                        n /= (mag(n) + VSMALL);
+                        n /= Foam::max(mag(n), VSMALL);
 
                         vector newVec = heVec - (heVec & n)*n;
-                        newVec /= (mag(newVec) + VSMALL);
+                        newVec /= Foam::max(mag(newVec), VSMALL);
 
                         scalar weight = 1.0;
 
@@ -642,7 +626,8 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsInside()
         forAll(newNormals, hairEdgeI)
         {
             if (hairEdgeType_[hairEdgeI] & INSIDE)
-                newNormals[hairEdgeI] /= (mag(newNormals[hairEdgeI]) + VSMALL);
+                newNormals[hairEdgeI] /=
+                    Foam::max(mag(newNormals[hairEdgeI]), VSMALL);
         }
 
         // transfer new hair vectors to the hairVecs list

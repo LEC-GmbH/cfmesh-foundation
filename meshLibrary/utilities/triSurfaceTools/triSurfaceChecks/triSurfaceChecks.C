@@ -58,9 +58,9 @@ Foam::label Foam::Module::triSurfaceChecks::checkAngles
         forAll(tri, pI)
         {
             vector vn = pts[tri[tri.fcIndex(pI)]] - pts[tri[pI]];
-            vn /= (mag(vn) + VSMALL);
+            vn /= Foam::max(mag(vn), VSMALL);
             vector vp = pts[tri[pI]] - pts[tri[tri.rcIndex(pI)]];
-            vp /= (mag(vp) + VSMALL);
+            vp /= Foam::max(mag(vp), VSMALL);
 
             if ((vp & vn) >= tol)
             {

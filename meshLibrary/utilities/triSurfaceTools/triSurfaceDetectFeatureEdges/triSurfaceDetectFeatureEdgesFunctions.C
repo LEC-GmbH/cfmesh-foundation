@@ -57,7 +57,11 @@ Foam::Module::triSurfaceDetectFeatureEdges::detectFeatureEdgesAngleCriterion()
 
         scalar cosAngle =
             (normals[eFaces[0]] & normals[eFaces[1]])
-           /(mag(normals[eFaces[0]])*mag(normals[eFaces[1]]) + VSMALL);
+           /Foam::max
+            (
+                mag(normals[eFaces[0]])*mag(normals[eFaces[1]]),
+                VSMALL
+            );
 
         // check the orientation of triangles at this edge
         // check the sign of the angle if the orientation  is not consistent

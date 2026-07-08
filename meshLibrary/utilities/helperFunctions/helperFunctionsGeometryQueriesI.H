@@ -74,6 +74,42 @@ bool Foam::Module::help::isinf(const ListType& l)
 }
 
 
+inline Foam::point Foam::Module::help::stableFaceCentre
+(
+    const face& f,
+    const pointField& points
+)
+{
+    return Foam::face::areaAndCentreStabilised
+    (
+        UIndirectList<point>(points, f)
+    ).second();
+}
+
+
+inline Foam::vector Foam::Module::help::stableFaceArea
+(
+    const face& f,
+    const pointField& points
+)
+{
+    return Foam::face::areaAndCentreStabilised
+    (
+        UIndirectList<point>(points, f)
+    ).first();
+}
+
+
+inline Foam::vector Foam::Module::help::stableFaceNormal
+(
+    const face& f,
+    const pointField& points
+)
+{
+    return normalised(stableFaceArea(f, points));
+}
+
+
 template<class Face1, class Face2>
 inline bool Foam::Module::help::isSharedEdgeConvex
 (
@@ -202,14 +238,14 @@ inline Foam::scalar Foam::Module::help::angleBetweenFaces
             (points[triOwn[1]] - points[triOwn[0]])
           ^ (points[triOwn[2]] - points[triOwn[0]])
         );
-        nOwn /= (mag(nOwn) + VSMALL);
+        nOwn /= Foam::max(mag(nOwn), VSMALL);
 
         vector nNei
         (
             (points[triNei[1]] - points[triNei[0]])
           ^ (points[triNei[2]] - points[triNei[0]])
         );
-        nNei /= (mag(nNei) + VSMALL);
+        nNei /= Foam::max(mag(nNei), VSMALL);
 
         const scalar dot = Foam::max(-1.0, Foam::min(nOwn & nNei, 1.0));
 
@@ -594,7 +630,8 @@ inline Foam::point Foam::Module::help::nearestPointOnTheTriangle
     {
         if (u < -SMALL)
         {
-            const scalar ed = ((pProj - tri.a()) & v1)/(magSqr(v1) + VSMALL);
+            const scalar ed =
+                ((pProj - tri.a()) & v1)/Foam::max(magSqr(v1), VSMALL);
 
             if (ed > 1.0)
             {
@@ -611,7 +648,8 @@ inline Foam::point Foam::Module::help::nearestPointOnTheTriangle
         }
         else if (v < -SMALL)
         {
-            const scalar ed = ((pProj - tri.a()) & v0)/(magSqr(v0) + VSMALL);
+            const scalar ed =
+                ((pProj - tri.a()) & v0)/Foam::max(magSqr(v0), VSMALL);
 
             if (ed > 1.0)
             {
@@ -629,7 +667,8 @@ inline Foam::point Foam::Module::help::nearestPointOnTheTriangle
         else
         {
             const vector ev = tri.b() - tri.c();
-            const scalar ed = ((pProj - tri.c()) & ev)/(magSqr(ev) + VSMALL);
+            const scalar ed =
+                ((pProj - tri.c()) & ev)/Foam::max(magSqr(ev), VSMALL);
 
             if (ed > 1.0)
             {
@@ -974,11 +1013,11 @@ inline bool Foam::Module::help::doEdgesOverlap
 
     vector e0 = e0p1 - e0p0;
     const scalar de0 = mag(e0);
-    e0 /= (de0 + VSMALL);
+    e0 /= Foam::max(de0, VSMALL);
 
     vector e1 = e1p1 - e1p0;
     const scalar de1 = mag(e1);
-    e1 /= (de1 + VSMALL);
+    e1 /= Foam::max(de1, VSMALL);
 
     //- check the angle deviation between the two vectors
     if (mag(e0 & e1) < cosTol)
@@ -1002,7 +1041,7 @@ inline bool Foam::Module::help::doEdgesOverlap
     )
     {
         vector vec = e0 + (((e0 & e1) > 0.0) ? e1 : -e1);
-        vec /= (mag(vec) + VSMALL);
+        vec /= Foam::max(mag(vec), VSMALL);
         const point origin = 0.25*(e0p0 + e0p1 + e1p0 + e1p1);
 
         //- calculate parameters on the regression line
@@ -1056,7 +1095,7 @@ inline bool Foam::Module::help::doTrianglesOverlap
 
     vector n0 = tri0.area();
     const scalar dn0 = mag(n0);
-    n0 /= (dn0 + VSMALL);
+    n0 /= Foam::max(dn0, VSMALL);
 
     if (dn0 < VSMALL)
     {
@@ -1065,7 +1104,7 @@ inline bool Foam::Module::help::doTrianglesOverlap
 
     vector n1 = tri1.area();
     const scalar dn1 = mag(n1);
-    n1 /= (dn1 + VSMALL);
+    n1 /= Foam::max(dn1, VSMALL);
 
     if (dn1 < VSMALL)
     {
@@ -1090,7 +1129,7 @@ inline bool Foam::Module::help::doTrianglesOverlap
     )
     {
         vector vec = n0 + ((n0 & n1) >= 0.0 ? n1 : -n1);
-        vec /= (mag(vec) + VSMALL);
+        vec /= Foam::max(mag(vec), VSMALL);
         const point origin = 0.5*(tri0.centre() + tri1.centre());
 
         overlappingPolygon.clear();
@@ -1141,7 +1180,7 @@ inline bool Foam::Module::help::doTrianglesOverlap
 
         //- transform into planar coordinates
         vector x = (bestPoint - origin) - ((bestPoint - origin) & vec)*vec;
-        x /= (mag(x) + VSMALL);
+        x /= Foam::max(mag(x), VSMALL);
         vector y = vec ^ x;
 
         DynList<point2D, 6> poly2D(3);
@@ -1687,7 +1726,7 @@ inline bool Foam::Module::help::isFaceConvexAndOk
         return false;
     }
 
-    normal /= (magN + VSMALL);
+    normal /= Foam::max(magN, VSMALL);
 
     //- project points into the plane formed by the face centre
     //- and the face normal
@@ -1707,7 +1746,7 @@ inline bool Foam::Module::help::isFaceConvexAndOk
 
         const edge e = f.faceEdge(eI);
         v = e.vec(fp);
-        v /= (mag(v) + VSMALL);
+        v /= Foam::max(mag(v), VSMALL);
     }
 
     //- check if the face is convex
@@ -1783,7 +1822,7 @@ inline Foam::point Foam::Module::help::nearestPointOnTheEdgeExact
         return edgePoint0;
     }
 
-    const scalar t = (e & k)/(dSq + VSMALL);
+    const scalar t = (e & k)/Foam::max(dSq, VSMALL);
     if (t > 1.0)
     {
         return edgePoint1;

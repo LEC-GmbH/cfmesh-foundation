@@ -473,57 +473,34 @@ void Foam::Module::detectBoundaryLayers::generateHairEdges()
     const VRWGraph& pFaces = mse.pointFaces();
     const labelList& bp = mse.bp();
 
-    # pragma omp parallel if (bFaces.size() > 1000)
+    forAll(bFaces, bfI)
     {
-        edgeLongList localEdges;
-
-        # pragma omp for schedule(dynamic, 100)
-        forAll(bFaces, bfI)
+        if (layerAtBndFace_[bfI] < 0)
         {
-            if (layerAtBndFace_[bfI] < 0)
-            {
-                continue;
-            }
-
-            // find hair edges for this face
-            DynList<edge> hairEdges;
-            if (!findHairsForFace(bfI, hairEdges))
-            {
-                continue;
-            }
-
-            const face& bf = bFaces[bfI];
-
-            forAll(bf, pI)
-            {
-                // store hair edges in a list
-                const edge& he = hairEdges[pI];
-
-                if (he.start() != bf[pI])
-                {
-                    FatalErrorInFunction
-                        << "Wrong starting point" << abort(FatalError);
-                }
-
-                localEdges.append(he);
-            }
+            continue;
         }
 
-        // find the starting element for this thread
-        label startEl;
-        # pragma omp critical
+        // find hair edges for this face
+        DynList<edge> hairEdges;
+        if (!findHairsForFace(bfI, hairEdges))
         {
-            startEl = hairEdges_.size();
-
-            hairEdges_.setSize(startEl + localEdges.size());
+            continue;
         }
 
-        # pragma omp barrier
+        const face& bf = bFaces[bfI];
 
-        // copy the local data to splitEdges_
-        forAll(localEdges, i)
+        forAll(bf, pI)
         {
-            hairEdges_[startEl++] = localEdges[i];
+            // store hair edges in a list
+            const edge& he = hairEdges[pI];
+
+            if (he.start() != bf[pI])
+            {
+                FatalErrorInFunction
+                    << "Wrong starting point" << abort(FatalError);
+            }
+
+            hairEdges_.append(he);
         }
     }
 
