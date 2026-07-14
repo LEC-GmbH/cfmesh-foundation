@@ -35,22 +35,6 @@ License
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-bool Foam::Module::meshOctree::isPointInside(const point& p) const
-{
-    const label cLabel = findLeafContainingVertex(p);
-
-    if (cLabel >= 0)
-    {
-        if (returnLeaf(cLabel).cubeType() & meshOctreeCubeBasic::INSIDE)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-
 void Foam::Module::meshOctree::findEdgesInBox
 (
     const boundBox& bb,

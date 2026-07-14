@@ -183,24 +183,6 @@ Foam::Module::meshSurfaceEngine::pointInFaces() const
 }
 
 
-/*
-inline const Foam::Module::VRWGraph&
-Foam::Module::meshSurfaceEngine::pointPatches() const
-{
-    if(!pointPatchesPtr_)
-    {
-        if(omp_in_parallel())
-            FatalErrorInFunction
-                << "Calculating addressing inside a parallel region."
-                << " This is not thread safe" << exit(FatalError);
-
-        calculatePointPatches();
-    }
-
-    return *pointPatchesPtr_;
-}
-*/
-
 inline const Foam::Module::VRWGraph&
 Foam::Module::meshSurfaceEngine::pointPoints() const
 {

@@ -54,7 +54,6 @@ namespace Module
 // Forward declarations
 class triSurfaceCurvatureEstimator;
 class triSurfacePartitioner;
-class meshOctreeAddressing;
 
 /*---------------------------------------------------------------------------*\
                 Class meshOctreeAutomaticRefinement Declaration
@@ -78,13 +77,6 @@ class meshOctreeAutomaticRefinement
 
 
     // Private member functions
-
-        //- meshOctreeAddressing pointer
-        mutable meshOctreeAddressing* octreeAddressingPtr_;
-
-        //- calculate octree addresing
-        void createOctreeAddressing() const;
-        const meshOctreeAddressing& octreeAddressing() const;
 
         //- surface partitioner pointer
         mutable triSurfacePartitioner* partitionerPtr_;

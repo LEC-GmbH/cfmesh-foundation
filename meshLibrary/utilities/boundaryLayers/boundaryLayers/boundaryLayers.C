@@ -333,7 +333,6 @@ Foam::Module::boundaryLayers::boundaryLayers
     msePtr_(nullptr),
     meshPartitionerPtr_(nullptr),
     patchWiseLayers_(true),
-    terminateLayersAtConcaveEdges_(false),
     is2DMesh_(false),
     patchNames_(),
     patchTypes_(),
@@ -387,18 +386,6 @@ void Foam::Module::boundaryLayers::addLayerForPatch(const word& patchName)
             addLayerForPatch(patchI);
         }
     }
-}
-
-
-void Foam::Module::boundaryLayers::createOTopologyLayers()
-{
-    patchWiseLayers_ = false;
-}
-
-
-void Foam::Module::boundaryLayers::terminateLayersAtConcaveEdges()
-{
-    terminateLayersAtConcaveEdges_ = true;
 }
 
 

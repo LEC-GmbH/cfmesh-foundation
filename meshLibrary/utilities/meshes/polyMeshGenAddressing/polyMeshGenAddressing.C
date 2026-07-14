@@ -56,7 +56,6 @@ Foam::Module::polyMeshGenAddressing::polyMeshGenAddressing
     mesh_(mesh),
     edgesPtr_(nullptr),
     ccPtr_(nullptr),
-    ecPtr_(nullptr),
     pcPtr_(nullptr),
     efPtr_(nullptr),
     pfPtr_(nullptr),

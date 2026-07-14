@@ -102,8 +102,6 @@ Foam::Module::correctEdgesBetweenPatches::correctEdgesBetweenPatches
         patchTypes_[patchI] = boundaries[patchI].patchType();
     }
 
-    //decomposeProblematicFaces();
-
     decomposeConcaveFaces();
 
     patchCorrection();

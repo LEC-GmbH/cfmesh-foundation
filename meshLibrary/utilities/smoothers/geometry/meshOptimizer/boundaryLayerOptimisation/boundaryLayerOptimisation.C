@@ -166,13 +166,6 @@ Foam::Module::boundaryLayerOptimisation::isBaseFace() const
 }
 
 
-const Foam::boolList&
-Foam::Module::boundaryLayerOptimisation::isExitFace() const
-{
-    return isExitFace_;
-}
-
-
 void Foam::Module::boundaryLayerOptimisation::readSettings
 (
     const dictionary& meshDict,

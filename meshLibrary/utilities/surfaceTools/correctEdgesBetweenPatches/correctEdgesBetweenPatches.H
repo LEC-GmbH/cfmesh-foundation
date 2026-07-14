@@ -95,11 +95,6 @@ class correctEdgesBetweenPatches
         //- decompose corrected cells
         void decomposeCorrectedCells();
 
-        //- decompose bnd faces for which the feature edges are not connected
-        //- over vertices and internal faces which have more than one feature
-        //- edge at the boundary
-        void decomposeProblematicFaces();
-
         //- decompose cells with faces at concave boundary edges
         void decomposeConcaveFaces();
 

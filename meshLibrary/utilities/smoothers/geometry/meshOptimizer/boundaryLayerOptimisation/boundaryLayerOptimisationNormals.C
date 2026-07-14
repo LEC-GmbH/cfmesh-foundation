@@ -502,8 +502,6 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsInside()
     // calculate direction of hair vector based on the surface normal
     const meshSurfaceEngine& mse = meshSurface();
     const labelList& bp = mse.bp();
-    const VRWGraph& bpEdges = mse.boundaryPointEdges();
-    const edgeList& edges = mse.edges();
 
     // they point in the normal direction to the surface
     vectorField hairVecs(hairEdges_.size());

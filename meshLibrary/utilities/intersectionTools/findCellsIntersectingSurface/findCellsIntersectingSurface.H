@@ -111,12 +111,6 @@ public:
 
     // Public member functions
 
-        //- return the list of intersected cells;
-        const boolList& intersectedCells() const;
-
-        //- return the graph of facets intersecting each cell
-        const VRWGraph& facetsIntersectingCells() const;
-
         //- create a cell subset containing intersected cells
         void addIntersectedCellsToSubset
         (

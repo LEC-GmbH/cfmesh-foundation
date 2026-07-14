@@ -44,28 +44,4 @@ Foam::Module::triSurf::accessToPatches()
 }
 
 
-/*
-inline Foam::label Foam::Module::triSurf::numberOfFaceGroups() const
-{
-    if (!faceGroupPtr_)
-    {
-        calculateFaceGroups();
-    }
-
-    return nFaceGroups_;
-}
-
-inline const Foam::Module::labelLongList&
-Foam::Module::triSurf::faceGroups() const
-{
-    if (!faceGroupPtr_)
-    {
-        calculateFaceGroups();
-    }
-
-    return *faceGroupPtr_;
-}
-*/
-
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

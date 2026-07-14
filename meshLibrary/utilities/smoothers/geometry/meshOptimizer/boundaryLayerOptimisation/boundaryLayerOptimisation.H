@@ -271,9 +271,6 @@ public:
         //- are set to true
         const boolList& isBaseFace() const;
 
-        //- boundary faces where the layers exit at the boundary
-        const boolList& isExitFace() const;
-
         //- performs boundary layer optimisation
         void optimiseLayer();
 

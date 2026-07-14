@@ -472,30 +472,4 @@ inline void Foam::Module::DynList<T, SizeMin>::operator=
 }
 
 
-// template<class T, int SizeMin>
-// template<class ListType>
-// inline void Foam::Module::DynList<T, SizeMin>::operator=
-// (
-//     const UList<T>& list
-// )
-// {
-//     # ifdef DEBUG
-//     checkAllocation();
-//     # endif
-//
-//     const label nElem = list.size();
-//     setCapacity(nElem);
-//     UList<T>::shallowCopy(UList<T>(UList<T>::data(), nElem));
-//
-//     # ifdef DEBUG
-//     checkAllocation();
-//     # endif
-//
-//     for (label i=0; i<nElem; ++i)
-//     {
-//         this->operator[](i) = list[i];
-//     }
-// }
-
-
 // ************************************************************************* //

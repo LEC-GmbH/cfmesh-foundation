@@ -95,10 +95,6 @@ void Foam::Module::meshUntangler::cutRegion::findNewFaces()
                     if (!valid_) return;
                     finished = false;
                     break;
-
-                    FatalErrorInFunction
-                        << "Edge has more than two nodes!"
-                        << abort(FatalError);
                 }
 
                 cFaces.append(newFace);

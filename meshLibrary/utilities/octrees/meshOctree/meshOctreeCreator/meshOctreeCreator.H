@@ -147,9 +147,6 @@ public:
 
     // Member Functions
 
-        //- set the scaling factor
-        void setScalingFactor(const scalar);
-
         //- activate octree refinement which marks all sons of an octree box
         //- for refinement in case a single son is marked for refinement
         //- this type of refinement is necessary for creating hex meshes

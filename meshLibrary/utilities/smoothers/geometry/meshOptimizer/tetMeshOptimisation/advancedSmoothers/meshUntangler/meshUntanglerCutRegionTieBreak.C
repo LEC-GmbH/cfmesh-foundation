@@ -64,11 +64,6 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
     {
         valid_ = false;
         return;
-
-        Info<< "Face vertices " << fvertices << endl;
-        FatalErrorInFunction
-            << "Number of created faces is not 1 but "
-            << fvertices.size() << abort(FatalError);
     }
 
     const DynList<label>& fv = fvertices[0];

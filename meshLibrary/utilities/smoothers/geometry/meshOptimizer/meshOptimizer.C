@@ -213,44 +213,6 @@ void Foam::Module::meshOptimizer::lockCellsInSubset(const word& subsetName)
 }
 
 
-void Foam::Module::meshOptimizer::lockFacesInSubset(const word& subsetName)
-{
-    // lock the points in the face subset with the given name
-    label subsetI = mesh_.faceSubsetIndex(subsetName);
-    if (subsetI >= 0)
-    {
-        labelLongList lf;
-        mesh_.facesInSubset(subsetI, lf);
-
-        lockFaces(lf);
-    }
-    else
-    {
-        Warning << "Subset " << subsetName << " is not a face subset!"
-            << " Cannot lock faces!" << endl;
-    }
-}
-
-
-void Foam::Module::meshOptimizer::lockPointsInSubset(const word& subsetName)
-{
-    // lock the points in the point subset with the given name
-    label subsetI = mesh_.pointSubsetIndex(subsetName);
-    if (subsetI >= 0)
-    {
-        labelLongList lp;
-        mesh_.pointsInSubset(subsetI, lp);
-
-        lockCells(lp);
-    }
-    else
-    {
-        Warning << "Subset " << subsetName << " is not a point subset!"
-            << " Cannot lock points!" << endl;
-    }
-}
-
-
 void Foam::Module::meshOptimizer::removeUserConstraints()
 {
     lockedFaces_.setSize(0);

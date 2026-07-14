@@ -387,63 +387,6 @@ void Foam::Module::meshSurfaceEngine::calculatePointFaces() const
 }
 
 
-void Foam::Module::meshSurfaceEngine::calculatePointPatches() const
-{
-    if (!pointPatchesPtr_)
-    {
-        pointPatchesPtr_ = new VRWGraph();
-    }
-    VRWGraph& pPatches = *pointPatchesPtr_;
-
-    const labelList& facePatch = boundaryFacePatches();
-    const VRWGraph& pFaces = pointFaces();
-
-    const label nThreads = 3*omp_get_num_procs();
-
-    labelList npPatches(pFaces.size());
-
-    # pragma omp parallel num_threads(nThreads)
-    {
-        # pragma omp for schedule(static)
-        forAll(npPatches, i)
-        {
-            npPatches[i] = 0;
-        }
-
-        # pragma omp for schedule(static)
-        forAll(pFaces, bpI)
-        {
-            DynList<label> pf;
-            forAllRow(pFaces, bpI, pfI)
-            {
-                pf.appendUniq(facePatch[pFaces(bpI, pfI)]);
-            }
-
-            npPatches[bpI] = pf.size();
-        }
-
-        # pragma omp barrier
-
-        # pragma omp master
-        VRWGraphSMPModifier(pPatches).setSizeAndRowSize(npPatches);
-
-        # pragma omp barrier
-
-        # pragma omp for schedule(static)
-        forAll(pFaces, bpI)
-        {
-            DynList<label> pf;
-            forAllRow(pFaces, bpI, pfI)
-            {
-                pf.appendUniq(facePatch[pFaces(bpI, pfI)]);
-            }
-
-            pPatches.setRow(bpI, pf);
-        }
-    }
-}
-
-
 void Foam::Module::meshSurfaceEngine::calculatePointPoints() const
 {
     if (!pointPointsPtr_)

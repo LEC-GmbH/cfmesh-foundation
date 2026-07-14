@@ -281,7 +281,6 @@ void Foam::Module::meshOctreeInsideOutside::frontalMarking()
 void Foam::Module::meshOctreeInsideOutside::markOutsideCubes()
 {
     const LongList<meshOctreeCube*>& leaves = octreeModifier_.leavesAccess();
-    const meshOctree& octree = octreeModifier_.octree();
 
     DynList<label> neighbours;
     label nChanged;
@@ -409,7 +408,6 @@ void Foam::Module::meshOctreeInsideOutside::reviseDataBoxes()
 void Foam::Module::meshOctreeInsideOutside::markInsideCubes()
 {
     const LongList<meshOctreeCube*>& leaves = octreeModifier_.leavesAccess();
-    const meshOctree& octree = octreeModifier_.octree();
     label nChanged;
     bool keepUpdating;
     DynList<label> neighbours;

@@ -92,9 +92,6 @@ class workflowControls
         //- sets the current step to completed
         void setStepCompleted() const;
 
-        //- is the current step already completed
-        bool isStepCompleted() const;
-
         //- shall the procedure stop after the current step
         bool exitAfterCurrentStep() const;
 

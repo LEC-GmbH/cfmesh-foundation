@@ -235,17 +235,9 @@ public:
         template<class labelListType>
         inline void lockFaces(const labelListType&);
 
-        //- lock faces which shall not be modified
-        //- stored in a face subset
-        void lockFacesInSubset(const word& subsetName);
-
         //- lock points which shall not be moved
         template<class labelListType>
         inline void lockPoints(const labelListType&);
-
-        //- lock points which shall not be modified
-        //- given as a point subset
-        void lockPointsInSubset(const word& subsetName);
 
         //- reset to default constraints
         void removeUserConstraints();

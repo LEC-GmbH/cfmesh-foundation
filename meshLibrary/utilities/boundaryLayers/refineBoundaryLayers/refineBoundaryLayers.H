@@ -408,9 +408,6 @@ public:
         //- sheet
         void setInteruptForPatch(const word& patchName);
 
-        //- set the flag to store the boundary layer cells in a subset
-        void setCellSubset(const word subsetName = "layerCells");
-
         //- this flag refinement of a layer into a single one matching
         //- the thickness of the n layers. This functionality is intended to
         //- create additional layer that shall be improved by the boundary

@@ -33,7 +33,6 @@ License
 #include "demandDrivenData.H"
 #include "triSurfacePartitioner.H"
 #include "triSurfaceCurvatureEstimator.H"
-#include "meshOctreeAddressing.H"
 #include "triSurf.H"
 #include "helperFunctions.H"
 #include "meshOctreeModifier.H"
@@ -491,8 +490,6 @@ void Foam::Module::meshOctreeAutomaticRefinement::refineSelectedBoxes
     labelLongList& refCandidates
 )
 {
-    deleteDemandDrivenData(octreeAddressingPtr_);
-
     meshOctreeModifier octreeModifier(octree_);
     LongList<meshOctreeCube*> leaves = octreeModifier.leavesAccess();
 

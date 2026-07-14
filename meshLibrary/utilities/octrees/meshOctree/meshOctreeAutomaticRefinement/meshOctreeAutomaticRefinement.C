@@ -32,36 +32,10 @@ License
 #include "demandDrivenData.H"
 #include "triSurfacePartitioner.H"
 #include "triSurfaceCurvatureEstimator.H"
-#include "meshOctreeAddressing.H"
 #include "IOdictionary.H"
 #include "triSurf.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-void Foam::Module::meshOctreeAutomaticRefinement::createOctreeAddressing() const
-{
-    octreeAddressingPtr_ =
-        new meshOctreeAddressing(octree_, meshDict_, useDATABoxes_);
-}
-
-
-const Foam::Module::meshOctreeAddressing&
-Foam::Module::meshOctreeAutomaticRefinement::octreeAddressing() const
-{
-    if (!octreeAddressingPtr_)
-    {
-        if (omp_in_parallel())
-        {
-            FatalErrorInFunction
-                << "Cannot calculate addressing!" << abort(FatalError);
-        }
-
-        createOctreeAddressing();
-    }
-
-    return *octreeAddressingPtr_;
-}
-
 
 void Foam::Module::meshOctreeAutomaticRefinement::createSurfacePartitioner()
 const
@@ -169,7 +143,6 @@ Foam::Module::meshOctreeAutomaticRefinement::meshOctreeAutomaticRefinement
     meshDict_(dict),
     useDATABoxes_(useDATABoxes),
     hexRefinement_(false),
-    octreeAddressingPtr_(nullptr),
     partitionerPtr_(nullptr),
     curvaturePtr_(nullptr),
     maxRefLevel_(0)
@@ -188,7 +161,6 @@ Foam::Module::meshOctreeAutomaticRefinement::meshOctreeAutomaticRefinement
 
 Foam::Module::meshOctreeAutomaticRefinement::~meshOctreeAutomaticRefinement()
 {
-    deleteDemandDrivenData(octreeAddressingPtr_);
     deleteDemandDrivenData(curvaturePtr_);
     deleteDemandDrivenData(partitionerPtr_);
 }

@@ -46,8 +46,6 @@ Foam::label Foam::Module::meshOctree::findLeafContainingVertex
             << "Point " << p << " is not inside the initial cube" << endl;
 
         throw "Found invalid locations of points";
-
-        return -1;
     }
 
     bool finished(false);

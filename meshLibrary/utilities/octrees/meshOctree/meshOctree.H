@@ -163,9 +163,6 @@ public:
         inline void containedEdges(const label, DynList<label>&) const;
 
 
-        //- checks if the point is inside or outside the surface
-        bool isPointInside(const point&) const;
-
         //- find nearest surface point for vertex and its region
         void findNearestSurfacePoint
         (

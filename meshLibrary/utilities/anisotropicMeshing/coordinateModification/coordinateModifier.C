@@ -204,12 +204,4 @@ Foam::point Foam::Module::coordinateModifier::backwardModifiedPoint
 }
 
 
-void Foam::Module::coordinateModifier::printObjects() const
-{
-    Info<< "Modification objects " << modifiers_ << endl;
-
-    Info<< "Backward modification objects " << backwardModifiers_ << endl;
-}
-
-
 // ************************************************************************* //

@@ -341,27 +341,4 @@ void Foam::Module::meshSurfaceMapper::mapEdgeNodes
 }
 
 
-void Foam::Module::meshSurfaceMapper::mapCornersAndEdges()
-{
-    const meshSurfacePartitioner& mPart = meshPartitioner();
-    const labelHashSet& cornerPoints = mPart.corners();
-    labelLongList selectedPoints;
-    for (const label it : cornerPoints.toc())
-    {
-        selectedPoints.append(it);
-    }
-
-    mapCorners(selectedPoints);
-
-    selectedPoints.clear();
-    const labelHashSet& edgePoints = mPart.edgePoints();
-    for (const label it : edgePoints.toc())
-    {
-        selectedPoints.append(it);
-    }
-
-    mapEdgeNodes(selectedPoints);
-}
-
-
 // ************************************************************************* //

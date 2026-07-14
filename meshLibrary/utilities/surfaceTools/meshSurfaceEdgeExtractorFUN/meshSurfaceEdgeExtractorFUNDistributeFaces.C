@@ -105,14 +105,6 @@ void Foam::Module::meshSurfaceEdgeExtractorFUN::distributeBoundaryFaces()
 }
 
 
-void Foam::Module::meshSurfaceEdgeExtractorFUN::reviseCorners()
-{}
-
-
-void Foam::Module::meshSurfaceEdgeExtractorFUN::reviseEdges()
-{}
-
-
 void Foam::Module::meshSurfaceEdgeExtractorFUN::remapBoundaryPoints()
 {
     meshSurfaceEngine& mse = surfaceEngine();

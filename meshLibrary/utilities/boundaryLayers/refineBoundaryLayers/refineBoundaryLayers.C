@@ -291,18 +291,6 @@ void Foam::Module::refineBoundaryLayers::setInteruptForPatch
 }
 
 
-void Foam::Module::refineBoundaryLayers::setCellSubset(const word subsetName)
-{
-    if (done_)
-    {
-        FatalErrorInFunction
-            << "refineLayers is already executed" << exit(FatalError);
-    }
-
-    cellSubsetName_ = subsetName;
-}
-
-
 void Foam::Module::refineBoundaryLayers::activateSpecialMode()
 {
     specialMode_ = true;

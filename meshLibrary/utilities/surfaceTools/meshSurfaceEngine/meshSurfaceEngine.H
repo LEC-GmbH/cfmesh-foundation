@@ -87,9 +87,6 @@ class meshSurfaceEngine
         mutable VRWGraph* pointFacesPtr_;
         mutable VRWGraph* pointInFacePtr_;
 
-        //- point-patches addressing
-        mutable VRWGraph* pointPatchesPtr_;
-
         //- pointBoundaryPoint addressing
         mutable labelList* bppPtr_;
 
@@ -134,8 +131,6 @@ class meshSurfaceEngine
         void calculateBoundaryFacePatches() const;
 
         void calculatePointFaces() const;
-
-        void calculatePointPatches() const;
 
         void calculatePointPoints() const;
 
@@ -193,8 +188,6 @@ public:
 
         inline const VRWGraph& pointFaces() const;
         inline const VRWGraph& pointInFaces() const;
-
-        //inline const VRWGraph& pointPatches() const;
 
         inline const VRWGraph& pointPoints() const;
 

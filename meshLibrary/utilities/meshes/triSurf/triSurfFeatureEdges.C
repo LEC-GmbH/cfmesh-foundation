@@ -79,17 +79,6 @@ Foam::label Foam::Module::triSurfFeatureEdges::addEdgeSubset
 }
 
 
-void Foam::Module::triSurfFeatureEdges::removeEdgeSubset(const label subsetID)
-{
-    if (featureEdgeSubsets_.find(subsetID) == featureEdgeSubsets_.end())
-    {
-        return;
-    }
-
-    featureEdgeSubsets_.erase(subsetID);
-}
-
-
 Foam::word Foam::Module::triSurfFeatureEdges::edgeSubsetName
 (
     const label subsetID

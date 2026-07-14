@@ -64,29 +64,6 @@ Foam::Ostream& Foam::Module::operator<<
 }
 
 
-/*
-template<class T, Foam::label width>
-Foam::Istream& Foam::Module::operator>>
-(
-    Istream& is,
-    Foam::Module::VRWGraph<T, width>& DL
-)
-{
-    label size;
-    T e;
-    is >> size;
-    DL.setSize(size);
-    for(IndexType i=0;i<size;++i)
-    {
-        is >> e;
-        DL[i] = e;
-    }
-
-    return is;
-}
-*/
-
-
 void Foam::Module::VRWGraph::optimizeMemoryUsage()
 {
     labelLongList newPosForNode(data_.size());

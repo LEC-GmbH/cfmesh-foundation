@@ -87,14 +87,6 @@ class meshSurfaceEdgeExtractorFUN
         //- distribute boundary faces into patches
         void distributeBoundaryFaces();
 
-        //- check whether all corners in the surface mesh are present
-        //- in the volume mesh
-        void reviseCorners();
-
-        //- check whether all edges in the surface mesh are present
-        //- in the volume mesh
-        void reviseEdges();
-
         //- find corner vertices and correct patches
         void findCornersAndCorrectPatches();
 

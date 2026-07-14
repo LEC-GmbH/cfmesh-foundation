@@ -6,7 +6,6 @@ boundaryLayers = $(bndLayers)/boundaryLayers
 detectBoundaryLayers = $(bndLayers)/detectBoundaryLayers
 extrudeLayer = $(bndLayers)/extrudeLayer
 refineBoundaryLayers = $(bndLayers)/refineBoundaryLayers
-triangulateNonPlanarBaseFaces = $(bndLayers)/triangulateNonPlanarBaseFaces
 
 checkMeshDict = utilities/checkMeshDict
 
@@ -87,7 +86,6 @@ triSurfaceTools = utilities/triSurfaceTools
 
 triSurface2DCheck = $(triSurfaceTools)/triSurface2DCheck
 triSurfaceChecks = $(triSurfaceTools)/triSurfaceChecks
-triSurfaceCleanupDuplicates = $(triSurfaceTools)/triSurfaceCleanupDuplicates
 triSurfaceCleanupDuplicateTriangles = $(triSurfaceTools)/triSurfaceCleanupDuplicateTriangles
 triSurfaceCopyParts = $(triSurfaceTools)/triSurfaceCopyParts
 triSurfaceCurvatureEstimator = $(triSurfaceTools)/triSurfaceCurvatureEstimator
@@ -117,7 +115,6 @@ face = utilities/meshes/primitives/face
 containers = utilities/containers
 VRWGraph = $(containers)/VRWGraph
 VRWGraphList = $(containers)/VRWGraphList
-graphs = $(containers)/Graphs
 lists = $(containers)/Lists
 
 meshZipper = utilities/meshZipper
@@ -151,9 +148,6 @@ $(VRWGraph)/VRWGraphSMPModifier.C
 
 $(VRWGraphList)/VRWGraphList.C
 
-$(graphs)/cellIOGraph.C
-$(graphs)/faceIOGraph.C
-
 $(polyMeshGen)/polyMeshGen.C
 $(polyMeshGen)/polyMeshGenPoints.C
 $(polyMeshGen)/polyMeshGenFaces.C
@@ -181,7 +175,6 @@ $(polyMeshGenModifier)/polyMeshGenModifierRemoveCells.C
 $(polyMeshGenModifier)/polyMeshGenModifierReorderBoundaryFaces.C
 $(polyMeshGenModifier)/polyMeshGenModifierAddCells.C
 $(polyMeshGenModifier)/polyMeshGenModifierReplaceBoundary.C
-$(polyMeshGenModifier)/polyMeshGenModifierZipUpCells.C
 $(polyMeshGenModifier)/polyMeshGenModifierRenumberMesh.C
 $(polyMeshGenModifier)/polyMeshGenModifierAddCellByCell.C
 
@@ -193,7 +186,6 @@ $(polyMeshGenAddressing)/polyMeshGenAddressingCentresAndAreas.C
 $(polyMeshGenAddressing)/polyMeshGenAddressingCentresAndVols.C
 $(polyMeshGenAddressing)/polyMeshGenAddressingClear.C
 $(polyMeshGenAddressing)/polyMeshGenAddressingUpdateGeometry.C
-$(polyMeshGenAddressing)/polyMeshGenAddressingEdgeCells.C
 $(polyMeshGenAddressing)/polyMeshGenAddressingEdgeFaces.C
 $(polyMeshGenAddressing)/polyMeshGenAddressingFaceEdges.C
 $(polyMeshGenAddressing)/polyMeshGenAddressingEdges.C
@@ -258,7 +250,6 @@ $(boundaryLayers)/boundaryLayersCreateVertices.C
 $(boundaryLayers)/boundaryLayersFacesAndCells.C
 $(boundaryLayers)/boundaryLayerCells.C
 $(boundaryLayers)/boundaryLayersCheckTopologyOfBndFaces.C
-$(boundaryLayers)/boundaryLayersWrapperLayer.C
 $(extrudeLayer)/extrudeLayer.C
 $(detectBoundaryLayers)/detectBoundaryLayers.C
 $(detectBoundaryLayers)/detectBoundaryLayersFunctions.C
@@ -266,8 +257,6 @@ $(refineBoundaryLayers)/refineBoundaryLayers.C
 $(refineBoundaryLayers)/refineBoundaryLayersFunctions.C
 $(refineBoundaryLayers)/refineBoundaryLayersFaces.C
 $(refineBoundaryLayers)/refineBoundaryLayersCells.C
-$(triangulateNonPlanarBaseFaces)/triangulateNonPlanarBaseFaces.C
-$(triangulateNonPlanarBaseFaces)/triangulateNonPlanarBaseFacesFunctions.C
 
 $(meshSurfaceEngine)/meshSurfaceEngine.C
 $(meshSurfaceEngine)/meshSurfaceEngineCalculateBoundaryNodesAndFaces.C
@@ -356,7 +345,6 @@ $(meshOctreeCube)/meshOctreeCubeCoordinatesIntersections.C
 $(meshOctreeModifier)/meshOctreeModifier.C
 $(meshOctreeModifier)/meshOctreeModifierRefineSelectedBoxes.C
 $(meshOctreeModifier)/meshOctreeModifierEnsureCorrectRegularity.C
-$(meshOctreeModifier)/meshOctreeModifierReduceMemoryConsumption.C
 
 $(meshOctreeInsideOutside)/meshOctreeInsideOutside.C
 
@@ -392,9 +380,6 @@ $(objectRefinement)/surfaceRefinement.C
 $(triSurface2DCheck)/triSurface2DCheck.C
 
 $(triSurfaceChecks)/triSurfaceChecks.C
-
-$(triSurfaceCleanupDuplicates)/triSurfaceCleanupDuplicates.C
-$(triSurfaceCleanupDuplicates)/triSurfaceCleanupDuplicatesFunctions.C
 
 $(triSurfaceCleanupDuplicateTriangles)/triSurfaceCleanupDuplicateTriangles.C
 $(triSurfaceCleanupDuplicateTriangles)/triSurfaceCleanupDuplicateTrianglesFunctions.C

@@ -63,12 +63,6 @@ Foam::Module::meshOctreeCreator::meshOctreeCreator
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-void Foam::Module::meshOctreeCreator::setScalingFactor(const scalar s)
-{
-    scalingFactor_ = s;
-}
-
-
 void Foam::Module::meshOctreeCreator::activateHexRefinement()
 {
     hexRefinement_ = true;

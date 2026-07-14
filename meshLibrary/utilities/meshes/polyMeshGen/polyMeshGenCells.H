@@ -141,7 +141,6 @@ public:
     // Subsets
 
         label addCellSubset(const word&);
-        void removeCellSubset(const label);
         word cellSubsetName(const label) const;
         label cellSubsetIndex(const word&) const;
         inline void addCellToSubset(const label, const label);

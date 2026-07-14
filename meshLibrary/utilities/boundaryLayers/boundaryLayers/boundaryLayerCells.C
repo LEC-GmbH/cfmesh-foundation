@@ -180,8 +180,6 @@ void Foam::Module::boundaryLayers::createLayerCells
         if (pKeyI < 0 || pKeyJ < 0)
         {
             continue;
-            FatalErrorInFunction
-                << "Patch key is negative at concave edge" << abort(FatalError);
         }
 
         if (pKeyI == pKeyJ)

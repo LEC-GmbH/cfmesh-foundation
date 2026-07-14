@@ -30,7 +30,6 @@ License
 
 #include "boundaryLayers.H"
 #include "meshSurfaceEngine.H"
-#include "decomposeCells.H"
 #include "helperFunctions.H"
 #include "HashSet.H"
 
@@ -273,10 +272,6 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
     if (nDecomposed != 0)
     {
         FatalError << "Critical. Not tested" << exit(FatalError);
-        decomposeCells dc(mesh_);
-        dc.decomposeMesh(decomposeCell);
-
-        clearOut();
     }
 
     mesh_.write();

@@ -91,23 +91,6 @@ void Foam::Module::workflowControls::setStepCompleted() const
 }
 
 
-bool Foam::Module::workflowControls::isStepCompleted() const
-{
-    const word latestStep = lastCompletedStep();
-
-    if (latestStep.empty())
-        return false;
-
-    const label currVal = workflowSteps_.find(currentStep_)->second;
-    const label latestVal = workflowSteps_.find(latestStep)->second;
-
-    if (latestVal == currVal)
-        return true;
-
-    return false;
-}
-
-
 bool Foam::Module::workflowControls::exitAfterCurrentStep() const
 {
     const dictionary& meshDict =
@@ -195,8 +178,6 @@ bool Foam::Module::workflowControls::stopAfterCurrentStep() const
         message += currentStep_;
 
         throw message;
-
-        return true;
     }
 
     return false;

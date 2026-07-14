@@ -167,9 +167,6 @@ public:
             labelList& refineBox,
             const scalarList& refThickness
         );
-
-        //- reduce memory consumption by deleting unnecessary data
-        void reduceMemoryConsumption();
 };
 
 

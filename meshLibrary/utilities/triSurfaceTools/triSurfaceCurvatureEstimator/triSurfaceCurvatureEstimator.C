@@ -50,9 +50,6 @@ Foam::Module::triSurfaceCurvatureEstimator::triSurfaceCurvatureEstimator
 {
     calculateEdgeCurvature();
     calculateSurfaceCurvatures();
-    //calculateGaussianCurvature();
-    //calculateMeanCurvature();
-    //calculateMinAndMaxCurvature();
 }
 
 

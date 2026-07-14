@@ -64,7 +64,6 @@ class meshSurfaceEngine;
 class meshSurfacePartitioner;
 class meshOctree;
 class triSurf;
-class triSurfaceClassifyEdges;
 class triSurfacePartitioner;
 
 /*---------------------------------------------------------------------------*\
@@ -86,9 +85,6 @@ class edgeExtractor
 
         //- surface mesh partitioner
         mutable const triSurfacePartitioner* surfPartitionerPtr_;
-
-        //- classification of edges in the surface mesh
-        mutable const triSurfaceClassifyEdges* surfEdgeClassificationPtr_;
 
         //- valence of surface points
         labelLongList pointValence_;
@@ -129,19 +125,11 @@ class edgeExtractor
         //  in the vicinity of an edge at the surface of the volume mesh
         void findFeatureEdgesNearEdge();
 
-        //- calculate a list of booleans with the following properties:
-        //  true if all faces at a surface vertex are in the same patch
-        //  false otherwise
-        void markPatchPoints(boolList&);
-
         //- get the surface engine
         const meshSurfaceEngine& surfaceEngine() const;
 
         //- get the surface partitioner
         const triSurfacePartitioner& partitioner() const;
-
-        //- get the edge classifier
-        const triSurfaceClassifyEdges& edgeClassifier() const;
 
         //- find faces which have faces assigned to other patches
         //  as their neighbours
@@ -193,11 +181,6 @@ class edgeExtractor
 
         //- move faces into the patch with the best alignment
         bool distributeBoundaryFacesNormalAlignment();
-
-        //- go through the boundary faces which have at least one neighour
-        //  assigned to a different patch and check which of its edges
-        //  are best candidates to be used as feature edges
-        void findEdgeCandidates();
 
         //- Disallow default bitwise copy construct
         edgeExtractor(const edgeExtractor&);
@@ -349,30 +332,13 @@ public:
         //  input geometry
         void moveVerticesTowardsDiscontinuities(const label nIterations = 2);
 
-        //- check if there exist cells at concave feature edges which have more
-        //  than one face at the boundary and the faces are
-        //  distributed into patches at the concave edge
-        bool checkConcaveEdgeCells();
-
         //- check and improve the distribution of mesh faces into patches
         //  in order to minimize the number of decomposed faces
         bool checkFacePatchesTopology();
 
-        //- checks whether there exist corners which do not exist in the surface
-        //  mesh, and checks whether the locations of corners in the volume mesh
-        //  are near the existing counterparts in the surface mesh
-        bool checkCorners();
-
         //- optimise distribution of mesh faces into patches
         //  in order to get better geometric quality of the mesh
         bool checkFacePatchesGeometry();
-
-        //- find the nearest points on the surface of the volume mesh
-        //  to the corners on the surface mesh
-        bool findCornerCandidates();
-
-        //- project the estimated corners and edges onto the surface mesh
-        void projectDeterminedFeatureVertices();
 
         //- check and untangle the surface of the volume mesh
         bool untangleSurface();

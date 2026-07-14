@@ -352,17 +352,6 @@ Foam::label Foam::Module::polyMeshGenCells::addCellSubset(const word& selName)
 }
 
 
-void Foam::Module::polyMeshGenCells::removeCellSubset(const label setI)
-{
-    if (cellSubsets_.find(setI) == cellSubsets_.end())
-    {
-        return;
-    }
-
-    cellSubsets_.erase(setI);
-}
-
-
 Foam::word Foam::Module::polyMeshGenCells::cellSubsetName
 (
     const label setI

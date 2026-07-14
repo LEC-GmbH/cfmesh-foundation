@@ -1189,24 +1189,6 @@ bool Foam::Module::polyMeshGenChecks::checkCellPartTetrahedra
     }
 
     return false;
-
-    if (nNegVolCells != 0)
-    {
-        WarningInFunction
-            << nNegVolCells << " zero or negative part tetrahedra detected."
-            << endl;
-
-        return true;
-    }
-    else
-    {
-        if (report)
-        {
-            Info<< "Part cell tetrahedra OK.\n" << endl;
-        }
-
-        return false;
-    }
 }
 
 

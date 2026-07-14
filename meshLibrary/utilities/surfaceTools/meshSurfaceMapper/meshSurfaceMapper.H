@@ -158,10 +158,6 @@ public:
         //  on the surface mesh
         void mapVerticesOntoSurface(const labelLongList& nodesToMap);
 
-        //- projects corner and edge vertices onto their nearest location
-        //  on the surface mesh
-        void mapCornersAndEdges();
-
         //- projects selected edge vertices onto their nearest
         //  locations on the surface mesh
         void mapEdgeNodes(const labelLongList& nodesToMap);

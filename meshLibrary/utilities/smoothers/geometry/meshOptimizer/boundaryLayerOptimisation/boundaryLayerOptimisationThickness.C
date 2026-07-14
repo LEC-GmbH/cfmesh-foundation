@@ -413,47 +413,6 @@ void Foam::Module::boundaryLayerOptimisation::optimiseThicknessVariation
                 }
             }
         }
-/*
-        # pragma omp parallel for schedule(dynamic, 50)
-        forAll(hairEdgesNearHairEdge_, hairEdgeI)
-        {
-            const scalar magN = hairLength[hairEdgeI];
-
-            if (magN < VSMALL)
-                FatalErrorInFunction
-                    << "Zero layer thickness at hair edge " << hairEdgeI
-                    << ". Exitting..." << exit(FatalError);
-
-            if (hairEdgeType_[hairEdgeI] & edgeType)
-            {
-                forAllRow(hairEdgesNearHairEdge_, hairEdgeI, nheI)
-                {
-                    const label hairEdgeJ =
-                        hairEdgesNearHairEdge_(hairEdgeI, nheI);
-
-                    if (!activeHairEdge[hairEdgeJ])
-                        continue;
-
-                    const scalar maxThickness =
-                        calculateThickness
-                        (
-                            hairEdgeI,
-                            hairEdgeJ
-                        );
-
-                    if (hairLength[hairEdgeI] > maxThickness)
-                    {
-                        // make the hair edge shorter
-                        hairLength[hairEdgeI] = maxThickness;
-
-                        changed = true;
-                        thinnedHairEdge_[hairEdgeI] = true;
-                        modifiedHairEdge[hairEdgeI] = true;
-                    }
-                }
-            }
-        }
-        */
 
         if (!changed)
             break;

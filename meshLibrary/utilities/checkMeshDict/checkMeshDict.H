@@ -74,9 +74,6 @@ class checkMeshDict
         //- check subsetCellSize entry
         void checkSubsetCellSize() const;
 
-        //- check local refinement level
-        void checkLocalRefinementLevel() const;
-
         //- check keepCellsIntersectingPatches entry
         void checkKeepCellsIntersectingPatches() const;
 
@@ -91,9 +88,6 @@ class checkMeshDict
 
         //- check surfaceRefinements entry
         void checkSurfaceRefinements() const;
-
-        //- check edgeMeshRefinements entry
-        void checkEdgeMeshRefinements() const;
 
         //- check entry for boundary layers
         void checkBoundaryLayers() const;

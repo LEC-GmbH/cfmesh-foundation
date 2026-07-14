@@ -101,7 +101,6 @@ public:
 
         //- point subsets
         label addEdgeSubset(const word&);
-        void removeEdgeSubset(const label);
         word edgeSubsetName(const label) const;
         label edgeSubsetIndex(const word&) const;
         inline void addEdgeToSubset(const label, const label);

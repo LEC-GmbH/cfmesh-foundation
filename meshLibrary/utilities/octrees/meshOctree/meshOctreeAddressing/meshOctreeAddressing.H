@@ -259,9 +259,6 @@ public:
         //- return octree box-faces addressing
         inline const VRWGraph& leafFaces() const;
 
-        //- checks if the face is intersected by the surface
-        bool isIntersectedFace(const label fI) const;
-
         //- return leaf-leaves addressing
         inline const VRWGraph& leafLeaves() const;
 
@@ -277,8 +274,6 @@ public:
         //- return leaf-edges addressing
         inline const VRWGraph& leafEdges() const;
 
-        //- checks if the edge is intersected by the surface
-        bool isIntersectedEdge(const label eI) const;
         void edgeIntersections
         (
             const label eI,

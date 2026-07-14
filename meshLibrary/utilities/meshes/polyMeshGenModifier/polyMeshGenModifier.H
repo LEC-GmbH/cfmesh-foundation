@@ -151,9 +151,6 @@ public:
         //- remove faces
         void removeFaces(const boolList& removeFace);
 
-        //- remove duplicate faces from the mesh
-        void removeDuplicateFaces();
-
         //- remove cells
         void removeCells
         (
@@ -174,9 +171,6 @@ public:
             const labelLongList& faceOwners,
             const labelLongList& facePatches
         );
-
-        //- zip up topologically open cells
-        void zipUpCells();
 
         //- reorder the cells and faces to reduce the matrix bandwidth
         void renumberMesh();

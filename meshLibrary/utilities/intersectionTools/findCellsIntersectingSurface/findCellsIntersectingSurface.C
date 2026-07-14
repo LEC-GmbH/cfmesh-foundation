@@ -333,20 +333,6 @@ Foam::Module::findCellsIntersectingSurface::~findCellsIntersectingSurface()
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-const Foam::boolList&
-Foam::Module::findCellsIntersectingSurface::intersectedCells() const
-{
-    return intersectedCells_;
-}
-
-
-const Foam::Module::VRWGraph&
-Foam::Module::findCellsIntersectingSurface::facetsIntersectingCells() const
-{
-    return facetsIntersectingCell_;
-}
-
-
 void Foam::Module::findCellsIntersectingSurface::addIntersectedCellsToSubset
 (
     const word subsetName

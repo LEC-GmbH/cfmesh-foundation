@@ -82,9 +82,6 @@ class boundaryLayers
         //- O-topology layer (false)
         bool patchWiseLayers_;
 
-        //- shall the layers be terminated at concave edges (true)
-        bool terminateLayersAtConcaveEdges_;
-
         //- is it a 2D mesh
         bool is2DMesh_;
 
@@ -238,22 +235,12 @@ public:
         //- adds layer for a given patch
         void addLayerForPatch(const word& patchName);
 
-        //- create O-topology layers (used as flag)
-        void createOTopologyLayers();
-
-        //- terminate boundary layers at concave edges (used as a flag)
-        void terminateLayersAtConcaveEdges();
-
         //- avoid generating layers for empty patches in case of a 2D mesh
         //- used as a flag prior to addLayerForAllPatches
         void activate2DMode();
 
         //- add layers for all patches
         void addLayerForAllPatches();
-
-        //- add wrapper layer
-        //- this function is intended for usage before surface recovery
-        void addWrapperLayer();
 };
 
 

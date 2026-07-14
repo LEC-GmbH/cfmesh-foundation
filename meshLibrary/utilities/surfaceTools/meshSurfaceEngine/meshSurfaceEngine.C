@@ -43,7 +43,6 @@ Foam::Module::meshSurfaceEngine::meshSurfaceEngine(polyMeshGen& mesh)
     boundaryFaceOwnersPtr_(nullptr),
     pointFacesPtr_(nullptr),
     pointInFacePtr_(nullptr),
-    pointPatchesPtr_(nullptr),
     bppPtr_(nullptr),
     pointPointsPtr_(nullptr),
     edgesPtr_(nullptr),
@@ -75,7 +74,6 @@ Foam::Module::meshSurfaceEngine::meshSurfaceEngine
     boundaryFaceOwnersPtr_(nullptr),
     pointFacesPtr_(nullptr),
     pointInFacePtr_(nullptr),
-    pointPatchesPtr_(nullptr),
     bppPtr_(nullptr),
     pointPointsPtr_(nullptr),
     edgesPtr_(nullptr),
@@ -111,7 +109,6 @@ void Foam::Module::meshSurfaceEngine::clearOut()
     deleteDemandDrivenData(boundaryFaceOwnersPtr_);
     deleteDemandDrivenData(pointFacesPtr_);
     deleteDemandDrivenData(pointInFacePtr_);
-    deleteDemandDrivenData(pointPatchesPtr_);
     deleteDemandDrivenData(bppPtr_);
     deleteDemandDrivenData(pointPointsPtr_);
     deleteDemandDrivenData(pointNormalsPtr_);

@@ -92,9 +92,6 @@ class polyMeshGenAddressing
         //- Cell-cells
         mutable VRWGraph* ccPtr_;
 
-        //- Edge-cells
-        mutable VRWGraph* ecPtr_;
-
         //- Point-cells
         mutable VRWGraph* pcPtr_;
 
@@ -150,9 +147,6 @@ class polyMeshGenAddressing
 
         //- Calculate cell-cell addressing
         void calcCellCells() const;
-
-        //- Calculate cell-edge addressing
-        void calcEdgeCells() const;
 
         //- Calculate point-cell addressing
         void calcPointCells() const;
@@ -221,37 +215,6 @@ public:
 
         ClassName("polyMeshGenAddressing");
 
-/*
-            //- Estimated number of cells per edge
-            static const unsigned cellsPerEdge_ = 4;
-
-            //- Estimated number of cells per point
-            static const unsigned cellsPerPoint_ = 8;
-
-            //- Estimated number of faces per cell
-            static const unsigned facesPerCell_ = 6;
-
-            //- Estimated number of faces per edge
-            static const unsigned facesPerEdge_ = 4;
-
-            //- Estimated number of faces per point
-            static const unsigned facesPerPoint_ = 12;
-
-            //- Estimated number of edges per cell
-            static const unsigned edgesPerCell_ = 12;
-
-            //- Estimated number of edges per cell
-            static const unsigned edgesPerFace_ = 4;
-
-            //- Estimated number of edges per point
-            static const unsigned edgesPerPoint_ = 6;
-
-            //- Estimated number of points per cell
-            static const unsigned pointsPerCell_ = 8;
-
-            //- Estimated number of points per face
-            static const unsigned pointsPerFace_ = 4;
-*/
     //- Construct from components
     polyMeshGenAddressing(const polyMeshGenCells& mesh);
 
@@ -272,7 +235,6 @@ public:
 
             const VRWGraph& cellCells() const;
             // faceCells given as faceOwner and faceNeighbour
-            const VRWGraph& edgeCells() const;
             const VRWGraph& pointCells() const;
 
             // faceFaces considered unnecessary
@@ -296,9 +258,6 @@ public:
 
 
     //  Storage management
-
-        //- Print a list of all the currently allocated mesh data
-        void printAllocated() const;
 
         //- Clear geometry
         void clearGeom();

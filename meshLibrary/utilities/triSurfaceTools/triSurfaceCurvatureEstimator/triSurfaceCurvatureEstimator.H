@@ -84,15 +84,6 @@ class triSurfaceCurvatureEstimator
         //- calculate curvatures of other surface points
         void calculateSurfaceCurvatures();
 
-        //- calculate Gaussian curvature
-        void calculateGaussianCurvature();
-
-        //- calculation of mean curvature
-        void calculateMeanCurvature();
-
-        //- calculation of min and max curvature
-        void calculateMinAndMaxCurvature();
-
         //- Disallow default bitwise copy construct
         triSurfaceCurvatureEstimator(const triSurfaceCurvatureEstimator&);
 
