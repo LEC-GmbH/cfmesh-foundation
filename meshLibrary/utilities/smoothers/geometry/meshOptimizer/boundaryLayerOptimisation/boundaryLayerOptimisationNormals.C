@@ -56,6 +56,13 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectors
     // calculate point normals with respect to all patches at a point
     pointPatchNormal.clear();
 
+    // patchNormal is rebuilt fresh from read-only shared data for every
+    // hairEdgeI (not incrementally updated), so it's safe for multiple
+    // hair edges sharing the same bpI to compute it concurrently; only the
+    // final insertion into the shared std::map-based pointPatchNormal
+    // needs protection - std::map insertion isn't thread-safe even for
+    // distinct keys, not just same-bpI collisions
+    # pragma omp parallel for schedule(dynamic, 40)
     forAll(hairEdges_, hairEdgeI)
     {
         if (!(hairEdgeType_[hairEdgeI] & eType))
@@ -82,7 +89,11 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectors
                 patchNormal[patchI].second += mag(fNormals[bfI]);
             }
         }
-        pointPatchNormal[bpI] = patchNormal;
+
+        # pragma omp critical
+        {
+            pointPatchNormal[bpI] = patchNormal;
+        }
     }
 
     // finally, calculate normal vectors
@@ -112,6 +123,12 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectorsSmother
 
     partTriMesh triMesh(mPart);
 
+    // pointTriangles() lazily computes triSurf's pointFacets() addressing
+    // on first access, and that accessor FatalErrors if first-triggered
+    // from inside a parallel region (see triSurfAddressingI.H) - force it
+    // to compute here, serially, before the parallel loop below
+    triMesh.pointTriangles();
+
     const pointField& triMeshPoints = triMesh.points();
     const VRWGraph& pTriangles = triMesh.pointTriangles();
     const LongList<labelledTri>& triangles = triMesh.triangles();
@@ -120,6 +137,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectorsSmother
 
     Info<< "Calculating normals using smoother" << endl;
 
+    # pragma omp parallel for schedule(dynamic, 20)
     forAll(hairEdgeType_, heI)
     {
         if (!(hairEdgeType_[heI] & eType))
@@ -208,7 +226,10 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectorsSmother
             patchNormal[patchI].first = (n/magN);
             patchNormal[patchI].second = magN;
 
-            pointPatchNormal[bpI] = patchNormal;
+            # pragma omp critical
+            {
+                pointPatchNormal[bpI] = patchNormal;
+            }
         }
     }
 

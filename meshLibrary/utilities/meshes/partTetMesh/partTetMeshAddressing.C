@@ -47,7 +47,6 @@ void Foam::Module::partTetMesh::createPointsAndTets
     const cellListPMG& cells = origMesh_.cells();
     const labelList& owner = origMesh_.owner();
     const labelList& neighbour = origMesh_.neighbour();
-    const PtrList<boundaryPatch>& boundaries = origMesh_.boundaries();
     const label nInternalFaces = origMesh_.nInternalFaces();
 
     // check how many neighbours of a face are marked for smoothing
@@ -83,40 +82,40 @@ void Foam::Module::partTetMesh::createPointsAndTets
     smoothVertex_.clear();
 
     // create BOUNDARY points
-    forAll(boundaries, patchI)
+    // Note: iterate the boundary face range directly rather than via
+    // boundaries[patchI].patchStart()/patchSize() - named patches are not
+    // guaranteed to tile [nInternalFaces, faces.size()) exactly at every
+    // point in the mesh-optimisation pipeline (e.g. mid-untangling, after
+    // faces/cells have been added), and a face left outside all patches
+    // would silently keep its nodeLabelForFace/nodeLabelForPoint at -1,
+    // corrupting later-built tets.
+    for (label faceI = nInternalFaces; faceI < faces.size(); ++faceI)
     {
-        const boundaryPatch& patch = boundaries[patchI];
-        const label start = patch.patchStart();
-        const label end = start + patch.patchSize();
-
-        for (label faceI = start; faceI < end; ++faceI)
+        if (!usedFace[faceI])
         {
-            if (!usedFace[faceI])
+            continue;
+        }
+
+        const face& f = faces[faceI];
+
+        if (f.size() > 3)
+        {
+            // create face centre
+            nodeLabelForFace[faceI] = points_.size();
+            points_.append(faceCentres[faceI]);
+            smoothVertex_.append(FACECENTRE);
+        }
+
+        // add face corners
+        forAll(f, pI)
+        {
+            const label pointI = f[pI];
+            if (nodeLabelForPoint[pointI] == -1)
             {
-                continue;
-            }
+                nodeLabelForPoint[pointI] = points_.size();
+                points_.append(points[pointI]);
 
-            const face& f = faces[faceI];
-
-            if (f.size() > 3)
-            {
-                // create face centre
-                nodeLabelForFace[faceI] = points_.size();
-                points_.append(faceCentres[faceI]);
-                smoothVertex_.append(FACECENTRE);
-            }
-
-            // add face corners
-            forAll(f, pI)
-            {
-                const label pointI = f[pI];
-                if (nodeLabelForPoint[pointI] == -1)
-                {
-                    nodeLabelForPoint[pointI] = points_.size();
-                    points_.append(points[pointI]);
-
-                    smoothVertex_.append(BOUNDARY);
-                }
+                smoothVertex_.append(BOUNDARY);
             }
         }
     }
@@ -272,7 +271,6 @@ void Foam::Module::partTetMesh::createPointsAndTets
             nodeLabelInOrigMesh_[nodeLabelForPoint[pI]] = pI;
         }
     }
-
 
     // create pointTets_
     pointTets_.reverseAddressing(points_.size(), tets_);

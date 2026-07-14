@@ -88,6 +88,11 @@ void Foam::Module::triSurfaceImportSurfaceAsSubset::addSurfaceAsSubset
 
     labelList nearestTriangle(importSurf.size(), -1);
 
+    // best (smallest) squared distance found so far for each nearestTriangle
+    // slot; guards concurrent claims to the same slot in the second pass
+    // below, where the write index is not the loop variable
+    scalarField bestDistSq(importSurf.size(), VGREAT);
+
     // check which triangles in the surface fit best to the centres of the
     // triangles in the import surface
     const pointField& importSurfPoints = importSurf.points();
@@ -218,7 +223,16 @@ void Foam::Module::triSurfaceImportSurfaceAsSubset::addSurfaceAsSubset
             continue;
 
         if (((nTri & normal)/(magSqrTri*dSqNormal)) > angleTol)
-            nearestTriangle[nt] = triI;
+        {
+            # pragma omp critical
+            {
+                if (dSq < bestDistSq[nt])
+                {
+                    bestDistSq[nt] = dSq;
+                    nearestTriangle[nt] = triI;
+                }
+            }
+        }
     }
 
     // create a facet subset in the surface mesh and add the facets into it

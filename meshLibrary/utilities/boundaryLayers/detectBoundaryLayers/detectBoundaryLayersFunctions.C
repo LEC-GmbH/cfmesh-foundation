@@ -473,34 +473,65 @@ void Foam::Module::detectBoundaryLayers::generateHairEdges()
     const VRWGraph& pFaces = mse.pointFaces();
     const labelList& bp = mse.bp();
 
-    forAll(bFaces, bfI)
+    # pragma omp parallel
     {
-        if (layerAtBndFace_[bfI] < 0)
+        // per-thread local buffer; findHairsForFace() is a purely local
+        // query (verified: all its intermediate state is declared inside
+        // the function, only reads shared mesh data through const refs,
+        // writes only to its own out-parameter) so this loop is safe to
+        // parallelize as long as the shared hairEdges_ append below is
+        // properly guarded
+        edgeLongList localHairEdges;
+
+        # pragma omp for schedule(dynamic, 40)
+        forAll(bFaces, bfI)
         {
-            continue;
-        }
-
-        // find hair edges for this face
-        DynList<edge> hairEdges;
-        if (!findHairsForFace(bfI, hairEdges))
-        {
-            continue;
-        }
-
-        const face& bf = bFaces[bfI];
-
-        forAll(bf, pI)
-        {
-            // store hair edges in a list
-            const edge& he = hairEdges[pI];
-
-            if (he.start() != bf[pI])
+            if (layerAtBndFace_[bfI] < 0)
             {
-                FatalErrorInFunction
-                    << "Wrong starting point" << abort(FatalError);
+                continue;
             }
 
-            hairEdges_.append(he);
+            // find hair edges for this face
+            DynList<edge> hairEdges;
+            if (!findHairsForFace(bfI, hairEdges))
+            {
+                continue;
+            }
+
+            const face& bf = bFaces[bfI];
+
+            forAll(bf, pI)
+            {
+                // store hair edges in a list
+                const edge& he = hairEdges[pI];
+
+                if (he.start() != bf[pI])
+                {
+                    FatalErrorInFunction
+                        << "Wrong starting point" << abort(FatalError);
+                }
+
+                localHairEdges.append(he);
+            }
+        }
+
+        // reserve a disjoint range in the shared list for this thread's
+        // edges (mirrors the correct disjoint-range-reservation pattern
+        // used elsewhere in this codebase, e.g.
+        // polyMeshGenModifierReorderBoundaryFaces.C), then write into it
+        // only after every thread has finished reserving
+        label startEl;
+        # pragma omp critical
+        {
+            startEl = hairEdges_.size();
+            hairEdges_.setSize(startEl + localHairEdges.size());
+        }
+
+        # pragma omp barrier
+
+        forAll(localHairEdges, i)
+        {
+            hairEdges_[startEl + i] = localHairEdges[i];
         }
     }
 

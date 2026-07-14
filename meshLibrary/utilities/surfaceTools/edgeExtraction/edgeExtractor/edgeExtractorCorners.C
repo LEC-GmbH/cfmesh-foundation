@@ -547,7 +547,10 @@ bool Foam::Module::edgeExtractor::findCornerCandidates()
                     // update the nearest point to the found corner
                     # pragma omp critical
                     {
-                        nearestPoint[cornerI] = labelledScalar(bpI, d);
+                        if (nearestPoint[cornerI].value() > d)
+                        {
+                            nearestPoint[cornerI] = labelledScalar(bpI, d);
+                        }
                     }
                 }
             }

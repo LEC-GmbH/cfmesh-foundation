@@ -321,14 +321,19 @@ void Foam::Module::edgeExtractor::markPatchPoints(boolList& patchPoint)
 const Foam::Module::meshSurfaceEngine&
 Foam::Module::edgeExtractor::surfaceEngine() const
 {
-    if (!surfaceEnginePtr_)
+    // the outer unprotected null-check that used to sit here was removed:
+    // a thread seeing a non-null pointer there would have no guarantee,
+    // under the C++ memory model, of observing a fully-constructed object
+    // (this was previously safe only by relying on the first call always
+    // happening serially, before any parallel region - true today, but
+    // fragile). #pragma omp critical implies a flush on both entry and
+    // exit, so always going through it - even for the fast "already
+    // constructed" path - makes every call properly synchronized.
+    # pragma omp critical
     {
-        # pragma omp critical
+        if (!surfaceEnginePtr_)
         {
-            if (!surfaceEnginePtr_)
-            {
-                surfaceEnginePtr_ = new meshSurfaceEngine(mesh_);
-            }
+            surfaceEnginePtr_ = new meshSurfaceEngine(mesh_);
         }
     }
 
@@ -339,15 +344,13 @@ Foam::Module::edgeExtractor::surfaceEngine() const
 const Foam::Module::triSurfacePartitioner&
 Foam::Module::edgeExtractor::partitioner() const
 {
-    if (!surfPartitionerPtr_)
+    // see the comment in surfaceEngine() above - same fix, same reasoning
+    # pragma omp critical
     {
-        # pragma omp critical
+        if (!surfPartitionerPtr_)
         {
-            if (!surfPartitionerPtr_)
-            {
-                surfPartitionerPtr_ =
-                    new triSurfacePartitioner(meshOctree_.surface());
-            }
+            surfPartitionerPtr_ =
+                new triSurfacePartitioner(meshOctree_.surface());
         }
     }
 
@@ -358,10 +361,16 @@ Foam::Module::edgeExtractor::partitioner() const
 const Foam::Module::triSurfaceClassifyEdges&
 Foam::Module::edgeExtractor::edgeClassifier() const
 {
-    if (!surfEdgeClassificationPtr_)
+    // previously had no synchronization at all (a weaker version of the
+    // same lazy-singleton anti-pattern fixed in surfaceEngine()/
+    // partitioner() above); added the same critical-guarded check
+    # pragma omp critical
     {
-        surfEdgeClassificationPtr_ =
-            new triSurfaceClassifyEdges(meshOctree_);
+        if (!surfEdgeClassificationPtr_)
+        {
+            surfEdgeClassificationPtr_ =
+                new triSurfaceClassifyEdges(meshOctree_);
+        }
     }
 
     return *surfEdgeClassificationPtr_;
@@ -1237,6 +1246,19 @@ bool Foam::Module::edgeExtractor::checkConcaveEdgeCells()
                         ((firstPatch == patch1) && (secondPatch == patch0))
                     )
                     {
+                        // guard the whole read-decide-write sequence below:
+                        // two different SINGLECELLEDGE edges belonging to
+                        // the same cell can reach this block concurrently
+                        // on different threads, and the reassignment both
+                        // reads and writes newBoundaryPatches[] for that
+                        // cell's own boundary faces. OpenMP critical blocks
+                        // must be structured (single entry/exit), so a local
+                        // flag stands in for the original "break" and the
+                        // actual break happens once we've left the block.
+                        bool matched = false;
+
+                        # pragma omp critical (checkConcaveEdgeCellsReassign)
+                        {
                         DynList<DynList<label>, 2> facesInPatch;
                         facesInPatch.setSize(2);
 
@@ -1287,7 +1309,7 @@ bool Foam::Module::edgeExtractor::checkConcaveEdgeCells()
                             forAll(facesInPatch[0], i)
                                 newBoundaryPatches[facesInPatch[0][i]] = patch1;
                             ++nChanged;
-                            break;
+                            matched = true;
                         }
                         else if (nFacesInPatch[0] > nFacesInPatch[1])
                         {
@@ -1296,7 +1318,7 @@ bool Foam::Module::edgeExtractor::checkConcaveEdgeCells()
                             forAll(facesInPatch[1], i)
                                 newBoundaryPatches[facesInPatch[1][i]] = patch0;
                             ++nChanged;
-                            break;
+                            matched = true;
                         }
                         else
                         {
@@ -1307,7 +1329,7 @@ bool Foam::Module::edgeExtractor::checkConcaveEdgeCells()
                                     newBoundaryPatches[facesInPatch[0][i]] =
                                         patch1;
                                 ++nChanged;
-                                break;
+                                matched = true;
                             }
                             else if (!hasPatchPoints[0] && hasPatchPoints[1])
                             {
@@ -1316,7 +1338,7 @@ bool Foam::Module::edgeExtractor::checkConcaveEdgeCells()
                                     newBoundaryPatches[facesInPatch[1][i]] =
                                         patch0;
                                 ++nChanged;
-                                break;
+                                matched = true;
                             }
                             else
                             {
@@ -1325,9 +1347,13 @@ bool Foam::Module::edgeExtractor::checkConcaveEdgeCells()
                                     newBoundaryPatches[facesInPatch[1][i]] =
                                         patch0;
                                 ++nChanged;
-                                break;
+                                matched = true;
                             }
                         }
+                        } // end omp critical (checkConcaveEdgeCellsReassign)
+
+                        if (matched)
+                            break;
                     }
                 }
             }

@@ -53,49 +53,47 @@ void Foam::Module::topologicalCleaner::checkNonConsecutiveBoundaryVertices()
         const label start = boundaries[patchI].patchStart();
         const label end = start + boundaries[patchI].patchSize();
 
+        # pragma omp parallel for schedule(dynamic, 40)
         for (label faceI = start; faceI < end; ++faceI)
         {
-            # pragma omp task shared(decomposeFace, faces, cells, owner, faceI)
-            {
-                const face& bf = faces[faceI];
+            const face& bf = faces[faceI];
 
-                const cell& c = cells[owner[faceI]];
+            const cell& c = cells[owner[faceI]];
 
-                forAll(c, fI)
-                    if (c[fI] < nIntFaces)
+            forAll(c, fI)
+                if (c[fI] < nIntFaces)
+                {
+                    const face& f = faces[c[fI]];
+
+                    DynList<label> shN;
+
+                    forAll(bf, pI)
+                        forAll(f, pJ)
+                            if (bf[pI] == f[pJ])
+                            {
+                                shN.append(pI);
+                            }
+
+                    if (shN.size() > 2)
                     {
-                        const face& f = faces[c[fI]];
-
-                        DynList<label> shN;
-
-                        forAll(bf, pI)
-                            forAll(f, pJ)
-                                if (bf[pI] == f[pJ])
-                                {
-                                    shN.append(pI);
-                                }
-
-                        if (shN.size() > 2)
+                        decomposeFace[faceI] = true;
+                        decomposeCell_[owner[faceI]] = true;
+                        changed = true;
+                    }
+                    else if (shN.size() == 2)
+                    {
+                        if (!(
+                                (shN[0] == bf.fcIndex(shN[1])) ||
+                                (shN[0] == bf.rcIndex(shN[1]))
+                            )
+                        )
                         {
                             decomposeFace[faceI] = true;
                             decomposeCell_[owner[faceI]] = true;
                             changed = true;
                         }
-                        else if (shN.size() == 2)
-                        {
-                            if (!(
-                                    (shN[0] == bf.fcIndex(shN[1])) ||
-                                    (shN[0] == bf.rcIndex(shN[1]))
-                                )
-                            )
-                            {
-                                decomposeFace[faceI] = true;
-                                decomposeCell_[owner[faceI]] = true;
-                                changed = true;
-                            }
-                        }
                     }
-            }
+                }
         }
     }
 

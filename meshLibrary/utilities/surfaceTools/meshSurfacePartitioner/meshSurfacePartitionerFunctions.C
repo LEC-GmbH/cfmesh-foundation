@@ -49,6 +49,7 @@ void Foam::Module::meshSurfacePartitioner::calculateCornersEdgesAndAddressing()
     {
         label localMax(0);
 
+        # pragma omp for
         forAll(facePatch_, bfI)
             localMax = Foam::max(localMax, facePatch_[bfI]);
 

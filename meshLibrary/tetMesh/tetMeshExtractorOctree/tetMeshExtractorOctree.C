@@ -197,7 +197,7 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
     faces.setSize(nFaces);
 
     // change cells
-    # pragma omp for schedule(dynamic, 40)
+    # pragma omp parallel for schedule(dynamic, 40)
     forAll(cells, cellI)
     {
         cell& c = cells[cellI];

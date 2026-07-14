@@ -56,7 +56,16 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
     splitEdges_ = dbl.hairEdges();
 
     // create point to split edges addressing
-    splitEdgesAtPoint_.reverseAddressing(splitEdges_);
+    // Note: use the explicit-nRows overload sized to the CURRENT total
+    // mesh point count, not the size-inferring overload (which sizes the
+    // graph from the max point label appearing in splitEdges_ alone).
+    // refineLayers() can run more than once on the same mesh (e.g. a
+    // second "buffer layer" pass in meshOptimizer::optimizeBoundaryLayer),
+    // and a later pass's own (smaller, localised) hair-edge set need not
+    // reach the highest point labels already present from an earlier
+    // pass's generateNewVertices() - undersizing here caused out-of-bounds
+    // reads later in refineFace() for faces touching those higher points.
+    splitEdgesAtPoint_.reverseAddressing(mesh_.points().size(), splitEdges_);
 
     // check if the layer is valid
     bool validLayer(true);
@@ -163,7 +172,17 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
                 )
                 {
                     // set the number of layers and lock this location
-                    nLayersAtPatch[patchNameToIndex[pName]] = it->second;
+                    // Note: normalise a disabled (<1) patch to the same
+                    // -1 sentinel used everywhere else in this function
+                    // (e.g. below and at the non-discontinuous path's
+                    // Foam::max(maxNumLayers, ...) which floors at 1) -
+                    // without this, a discontinuous patch with nLayers 0
+                    // ends up with a literal 0 here, which later gets
+                    // multiplied into generateNewCells()'s per-cell
+                    // split-count product and zeroes out any cell that
+                    // also touches an enabled, multi-layer patch.
+                    nLayersAtPatch[patchNameToIndex[pName]] =
+                        (it->second < 1) ? -1 : it->second;
                     protectedValue[patchNameToIndex[pName]] = true;
                     hasLocalValue = true;
                 }

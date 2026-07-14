@@ -213,7 +213,8 @@ bool Foam::Module::polyMeshGenChecks::checkClosedCells
         }
 
         scalar aspectRatio =
-            1.0/6.0*sumMagClosed[cellI]/pow(vols[cellI], 2.0/3.0);
+            1.0/6.0*sumMagClosed[cellI]
+           /pow(Foam::max(mag(vols[cellI]), VSMALL), 2.0/3.0);
 
         maxAspectRatio = max(maxAspectRatio, aspectRatio);
 
@@ -633,7 +634,7 @@ bool Foam::Module::polyMeshGenChecks::checkMinTwist
         const label start = nInternalFaces;
         label end = faces.size();
 
-        # pragma omp parallel for schedule(static, 1) reduction(+:nWarped)
+        # pragma omp for schedule(static, 1)
         for (label faceI = start; faceI < end; ++faceI)
         {
             const face& f = faces[faceI];
@@ -877,7 +878,8 @@ void Foam::Module::polyMeshGenChecks::checkMinVolRatio
             Foam::mag(vols[nei[faceI]])
         );
 
-        volRatio[faceI] = Foam::min(neiVol, ownVol)/max(neiVol, ownVol);
+        volRatio[faceI] =
+            Foam::min(neiVol, ownVol)/Foam::max(max(neiVol, ownVol), VSMALL);
     }
 }
 
@@ -1531,14 +1533,15 @@ void Foam::Module::polyMeshGenChecks::checkFaceSkewness
 
         const scalar dOwn = mag(fCentres[faceI] - centres[own[faceI]]);
         const scalar dNei = mag(fCentres[faceI] - centres[nei[faceI]]);
+        const scalar dSum = Foam::max(dOwn + dNei, SMALL);
 
         const point faceIntersection =
-            centres[own[faceI]]*dNei/(dOwn + dNei)
-          + centres[nei[faceI]]*dOwn/(dOwn + dNei);
+            centres[own[faceI]]*dNei/dSum
+          + centres[nei[faceI]]*dOwn/dSum;
 
         faceSkewness[faceI] =
             mag(fCentres[faceI] - faceIntersection)
-           /Foam::max(mag(centres[nei[faceI]] - centres[own[faceI]]), VSMALL);
+           /Foam::max(mag(centres[nei[faceI]] - centres[own[faceI]]), SMALL);
     }
 
     // boundary faces
@@ -1694,7 +1697,8 @@ void Foam::Module::polyMeshGenChecks::checkFaceUniformity
             Foam::mag(centres[neighbour[faceI]] - fCentres[faceI])
         );
 
-        faceUniformity[faceI] = Foam::min(dOwn, dNei)/(dOwn + dNei);
+        faceUniformity[faceI] =
+            Foam::min(dOwn, dNei)/Foam::max(dOwn + dNei, SMALL);
     }
 }
 

@@ -377,10 +377,12 @@ void Foam::Module::partTetMesh::updateVerticesSMP
 
                 if (smoothVertex_[pt[3]] & CELLCENTRE)
                 {
+                    # pragma omp atomic update
                     updateType[pt[3]] |= CELLCENTRE;
                 }
                 if (smoothVertex_[pt[2]] & FACECENTRE)
                 {
+                    # pragma omp atomic update
                     updateType[pt[2]] |= FACECENTRE;
                 }
             }

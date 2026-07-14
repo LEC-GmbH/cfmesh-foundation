@@ -122,7 +122,10 @@ void Foam::Module::meshSurfaceMapper::preMapVertices(const label nIterations)
             }
 
             forAll(bf, pI)
+            {
+                # pragma omp critical
                 boundaryPointPatches[bp[bf[pI]]].appendUniq(bestPatch);
+            }
         }
 
         // use the shrinking laplace first

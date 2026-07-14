@@ -58,8 +58,43 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
 
     labelList patchToNew(mesh_.boundaries().size(), -1);
 
-    wordList newPatchNames(patchToNew.size());
-    wordList newPatchTypes(patchToNew.size());
+    // Map every boundary face to the patch it currently belongs to.
+    // Note: named patches are not guaranteed to tile
+    // [nIntFaces, faces.size()) exactly at every point in the mesh
+    // pipeline (e.g. after mesh-optimisation faces/cells have been added
+    // without the patch list being kept in sync) - a face left outside
+    // all patches (-1) is routed to the default patch below, the same
+    // way a face from an administratively-removed patch is handled.
+    const label nIntFaces = mesh_.nInternalFaces();
+    const faceListPMG& meshFaces = mesh_.faces();
+
+    labelList facePatch(meshFaces.size() - nIntFaces, -1);
+    bool hasOrphanFaces(false);
+    forAll(mesh_.boundaries(), patchI)
+    {
+        const boundaryPatch& wp = mesh_.boundaries()[patchI];
+        const label start = wp.patchStart();
+        const label end = start + wp.patchSize();
+
+        for (label faceI = start; faceI < end; ++faceI)
+        {
+            facePatch[faceI - nIntFaces] = patchI;
+        }
+    }
+    forAll(facePatch, i)
+    {
+        if (facePatch[i] == -1)
+        {
+            hasOrphanFaces = true;
+            break;
+        }
+    }
+
+    // +1: room for a default patch beyond one-slot-per-original-patch,
+    // needed when orphaned faces force a default patch into existence
+    // even though every original patch already got its own new slot
+    wordList newPatchNames(patchToNew.size() + 1);
+    wordList newPatchTypes(patchToNew.size() + 1);
     std::map<word, label> newNameToPos;
     label newPatchI(0);
 
@@ -147,19 +182,19 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
     word defaultType("wall");
     dict.readIfPresent("defaultType", defaultType);
 
-    if (dict.found("defaultName") && (newPatchI < patchToNew.size()))
+    bool addDefaultPatch(hasOrphanFaces);
+    forAll(patchToNew, patchI)
     {
-        bool addPatch(false);
-        forAll(patchToNew, patchI)
+        if (patchToNew[patchI] == -1)
         {
-            if (patchToNew[patchI] == -1)
-            {
-                addPatch = true;
-                break;
-            }
+            addDefaultPatch = true;
+            break;
         }
+    }
 
-        if (addPatch)
+    if (dict.found("defaultName"))
+    {
+        if (addDefaultPatch)
         {
             newNameToPos.insert(std::pair<word, label>(defaultName, newPatchI));
             newPatchNames[newPatchI] = defaultName;
@@ -178,6 +213,14 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
             newPatchTypes[newPatchI] = mesh_.boundaries()[patchI].patchType();
             ++newPatchI;
         }
+
+        if (hasOrphanFaces)
+        {
+            newNameToPos.insert(std::pair<word, label>(defaultName, newPatchI));
+            newPatchNames[newPatchI] = defaultName;
+            newPatchTypes[newPatchI] = defaultType;
+            ++newPatchI;
+        }
     }
 
     if (newPatchI == 0)
@@ -191,34 +234,34 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
     labelLongList newBoundaryOwners;
     labelLongList newBoundaryPatches;
 
-    const PtrList<boundaryPatch>& boundaries = mesh_.boundaries();
     const faceListPMG& faces = mesh_.faces();
     const labelList& owner = mesh_.owner();
-    forAll(boundaries, patchI)
-    {
-        const boundaryPatch& wp = boundaries[patchI];
-        const label start = wp.patchStart();
-        const label end = start + wp.patchSize();
 
-        if (patchToNew[patchI] == -1)
+    for (label faceI = nIntFaces; faceI < faces.size(); ++faceI)
+    {
+        // a face left behind by cell removal without being compacted out
+        // of the mesh has no valid owner - skip it, following the same
+        // "owner[faceI] < 0 => logically deleted" convention already used
+        // elsewhere in this codebase (e.g. extrudeLayer.C)
+        if (owner[faceI] < 0)
         {
-            // this patch is moved to the default patch
-            for (label faceI = start; faceI < end; ++faceI)
-            {
-                newBoundaryFaces.appendList(faces[faceI]);
-                newBoundaryPatches.append(newPatchI - 1);
-                newBoundaryOwners.append(owner[faceI]);
-            }
+            continue;
+        }
+
+        const label patchI = facePatch[faceI - nIntFaces];
+
+        newBoundaryFaces.appendList(faces[faceI]);
+        newBoundaryOwners.append(owner[faceI]);
+
+        if ((patchI == -1) || (patchToNew[patchI] == -1))
+        {
+            // no patch, or this patch is moved to the default patch
+            newBoundaryPatches.append(newPatchI - 1);
         }
         else
         {
             // this patch is renamed
-            for (label faceI = start; faceI < end; ++faceI)
-            {
-                newBoundaryFaces.appendList(faces[faceI]);
-                newBoundaryPatches.append(patchToNew[patchI]);
-                newBoundaryOwners.append(owner[faceI]);
-            }
+            newBoundaryPatches.append(patchToNew[patchI]);
         }
     }
 

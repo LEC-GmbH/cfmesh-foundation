@@ -145,7 +145,8 @@ bool Foam::Module::triSurfaceCleanupDuplicates::mergeDuplicatePoints()
                     {
                         foundDuplicates = true;
                         # pragma omp critical
-                        newPointLabel[*nIt] = pointI;
+                        newPointLabel[*nIt] =
+                            Foam::min(newPointLabel[*nIt], pointI);
                     }
                 }
             }

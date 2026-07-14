@@ -292,6 +292,7 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
     {
         direction localMax(0);
 
+        # pragma omp for
         forAll(refineBox, leafI)
         {
             if (refineBox[leafI])
@@ -326,6 +327,7 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
         {
             label localMaxNLayers(0);
 
+            # pragma omp for
             forAll(activeLeaves, i)
             {
                 const label leafI = activeLeaves[i];

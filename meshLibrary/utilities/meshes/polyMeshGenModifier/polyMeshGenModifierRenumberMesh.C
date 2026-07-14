@@ -31,73 +31,134 @@ License
 #include "polyMeshGenModifier.H"
 #include "demandDrivenData.H"
 #include "polyMeshGenAddressing.H"
+#include "renumberMethod.H"
+#include "ListOps.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace
+{
+
+// Determine the upper-triangular face order for a given new cell order.
+// Ported from OpenFOAM-dev's applications/utilities/mesh/manipulation/
+// renumberMesh/renumberMesh.C (getFaceOrder()) - that function is
+// application-private (not part of a linkable library) and takes a
+// Foam::primitiveMesh, so it is adapted here to read directly from
+// polyMeshGen's own addressing. Ordering of boundary faces is left
+// unchanged, matching the upstream function's documented behaviour.
+Foam::labelList getFaceOrder
+(
+    const Foam::cellList& newCells,           // cell face-lists, new cell
+                                               // order, old face numbers
+    const Foam::labelList& oldOwner,          // old face owner
+    const Foam::labelList& oldNeighbour,      // old face neighbour
+    const Foam::Module::labelLongList& reverseCellOrder, // old cell -> new
+                                                          // cell
+    const Foam::label nInternalFaces,
+    const Foam::label nFaces
+)
+{
+    using namespace Foam;
+
+    labelList oldToNewFace(nFaces, -1);
+
+    label newFaceI = 0;
+
+    labelList nbr;
+    labelList order;
+
+    forAll(newCells, newCellI)
+    {
+        const cell& cFaces = newCells[newCellI];
+
+        nbr.setSize(cFaces.size());
+
+        forAll(cFaces, i)
+        {
+            const label faceI = cFaces[i];
+
+            if (faceI < nInternalFaces)
+            {
+                label nbrCellI = reverseCellOrder[oldNeighbour[faceI]];
+                if (nbrCellI == newCellI)
+                {
+                    nbrCellI = reverseCellOrder[oldOwner[faceI]];
+                }
+
+                nbr[i] = (newCellI < nbrCellI) ? nbrCellI : -1;
+            }
+            else
+            {
+                // boundary face - handled below
+                nbr[i] = -1;
+            }
+        }
+
+        order.setSize(nbr.size());
+        sortedOrder(nbr, order);
+
+        forAll(order, i)
+        {
+            const label index = order[i];
+            if (nbr[index] != -1)
+            {
+                oldToNewFace[cFaces[index]] = newFaceI++;
+            }
+        }
+    }
+
+    // Leave boundary faces intact (same patch grouping/order as before)
+    for (label faceI = newFaceI; faceI < nFaces; ++faceI)
+    {
+        oldToNewFace[faceI] = faceI;
+    }
+
+    forAll(oldToNewFace, faceI)
+    {
+        if (oldToNewFace[faceI] == -1)
+        {
+            FatalErrorInFunction
+                << "Did not determine new position for face " << faceI
+                << abort(FatalError);
+        }
+    }
+
+    return invert(nFaces, oldToNewFace);
+}
+
+} // End anonymous namespace
+
 
 void Foam::Module::polyMeshGenModifier::renumberMesh()
 {
     Info<< "Renumbering the mesh" << endl;
 
-    labelList newOrder(mesh_.cells().size());
+    // Determine the new cell order using OpenFOAM's Cuthill-McKee
+    // bandwidth-reduction renumbering, operating directly on cfMesh's own
+    // cell-adjacency addressing (no OpenFOAM polyMesh/fvMesh needed - the
+    // renumberMethod interface used here only requires a cell-adjacency
+    // graph and cell centres).
+    const VRWGraph& cCells = mesh_.addressingData().cellCells();
+    const vectorField& cellCentres = mesh_.addressingData().cellCentres();
 
-    if (true)
+    labelListList cellCells(cCells.size());
+    forAll(cellCells, cellI)
     {
-        const VRWGraph& cellCells = mesh_.addressingData().cellCells();
+        labelList& cc = cellCells[cellI];
+        cc.setSize(cCells.sizeOfRow(cellI));
 
-        // the business bit of the renumbering
-        labelLongList nextCell;
-
-        boolList visited(cellCells.size(), false);
-
-        label currentCell;
-        label cellInOrder = 0;
-
-        // loop over the cells
-        forAll(visited, cellI)
+        forAll(cc, i)
         {
-            // find the first cell that has not been visited yet
-            if (!visited[cellI])
-            {
-                currentCell = cellI;
-
-                // use this cell as a start
-                nextCell.append(currentCell);
-
-                // loop through the nextCell list.
-                // Add the first cell into the
-                // cell order if it has not already been
-                // visited and ask for its
-                // neighbours. If the neighbour in question
-                // has not been visited,
-                // add it to the end of the nextCell list
-                while (nextCell.size() > 0)
-                {
-                    currentCell = nextCell.remove();
-
-                    if (!visited[currentCell])
-                    {
-                        visited[currentCell] = true;
-
-                        // add into cellOrder
-                        newOrder[cellInOrder] = currentCell;
-                        ++cellInOrder;
-
-                        // find if the neighbours have been visited
-                        forAllRow(cellCells, currentCell, nI)
-                        {
-                            const label nei = cellCells(currentCell, nI);
-
-                            if (!visited[nei])
-                            {
-                                // not visited, add to the list
-                                nextCell.append(nei);
-                            }
-                        }
-                    }
-                }
-            }
+            cc[i] = cCells(cellI, i);
         }
     }
+
+    dictionary renumberDict;
+    renumberDict.add("method", word("CuthillMcKee"));
+    autoPtr<renumberMethod> renumberPtr = renumberMethod::New(renumberDict);
+
+    // Order in which cells need to be visited, i.e. new cell -> old cell
+    const labelList newOrder = renumberPtr().renumber(cellCells, cellCentres);
 
     cellListPMG& oldCells = this->cellsAccess();
     const labelList& oldOwner = mesh_.owner();
@@ -115,117 +176,20 @@ void Foam::Module::polyMeshGenModifier::renumberMesh()
         reverseOrder[newOrder[cellI]] = cellI;
     }
 
-    // Renumber the faces.
-    // Reverse face order gives the new face number for every old face
-    labelLongList reverseFaceOrder(oldOwner.size(), 0);
-
-    // Mark the internal faces with -2 so that they are inserted first
-    forAll(newCells, cellI)
-    {
-        const cell& c = newCells[cellI];
-
-        forAll(c, faceI)
-        {
-            --reverseFaceOrder[c[faceI]];
-        }
-    }
-
-    // Order internal faces
-    label nMarkedFaces = 0;
-
-    forAll(newCells, cellI)
-    {
-        // Note:
-        // Insertion cannot be done in one go as the faces need to be
-        // added into the list in the increasing order of neighbour
-        // cells.  Therefore, all neighbours will be detected first
-        // and then added in the correct order.
-
-        const cell& c = newCells[cellI];
-
-        // Record the neighbour cell
-        DynList<label, 24> neiCells(c.size(), -1);
-
-        label nNeighbours(0);
-
-        forAll(c, faceI)
-        {
-            if (reverseFaceOrder[c[faceI]] == -2)
-            {
-                // Face is internal and gets reordered
-                if (cellI == reverseOrder[oldOwner[c[faceI]]])
-                {
-                    neiCells[faceI] = reverseOrder[oldNeighbour[c[faceI]]];
-                }
-                else if (cellI == reverseOrder[oldNeighbour[c[faceI]]])
-                {
-                    neiCells[faceI] = reverseOrder[oldOwner[c[faceI]]];
-                }
-                else
-                {
-                    WarningInFunction
-                        << "Problem!" << endl;
-                }
-
-                ++nNeighbours;
-            }
-        }
-
-        // Add the faces in the increasing order of neighbours
-        for (label i = 0; i < nNeighbours; ++i)
-        {
-            // Find the lowest neighbour which is still valid
-            label nextNei = -1;
-            label minNei = oldCells.size();
-
-            forAll(neiCells, ncI)
-            {
-                if ((neiCells[ncI] > -1) && (neiCells[ncI] < minNei))
-                {
-                    nextNei = ncI;
-                    minNei = neiCells[ncI];
-                }
-            }
-
-            if (nextNei > -1)
-            {
-                // Face is internal and gets reordered
-                reverseFaceOrder[c[nextNei]] = nMarkedFaces;
-
-                // Stop the neighbour from being used again
-                neiCells[nextNei] = -1;
-
-                ++nMarkedFaces;
-            }
-            else
-            {
-                FatalErrorInFunction
-                    << "Error in internal face insertion"
-                    << abort(FatalError);
-            }
-        }
-    }
-
-    // Insert the boundary faces into reordering list
-    forAll(reverseFaceOrder, faceI)
-    {
-        if (reverseFaceOrder[faceI] < 0)
-        {
-            reverseFaceOrder[faceI] = nMarkedFaces;
-
-            ++nMarkedFaces;
-        }
-    }
-
     // Face order gives the old face label for every new face
-    labelLongList faceOrder(reverseFaceOrder.size());
-
-    forAll(faceOrder, faceI)
-    {
-        faceOrder[reverseFaceOrder[faceI]] = faceI;
-    }
+    const label nIntFaces = mesh_.nInternalFaces();
+    const labelList faceOrder = getFaceOrder
+    (
+        newCells,
+        oldOwner,
+        oldNeighbour,
+        reverseOrder,
+        nIntFaces,
+        oldOwner.size()
+    );
 
     // Renumber the cells
+    labelList reverseFaceOrder(invert(faceOrder.size(), faceOrder));
     forAll(newCells, cellI)
     {
         cell& c = newCells[cellI];
@@ -244,7 +208,7 @@ void Foam::Module::polyMeshGenModifier::renumberMesh()
         newFaces[faceI].transfer(oldFaces[faceOrder[faceI]]);
     }
 
-    // Turn the face that need to be turned
+    // Turn the faces that need to be turned
     // Only loop through internal faces
     forAll(oldNeighbour, faceI)
     {

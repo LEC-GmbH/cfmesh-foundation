@@ -102,6 +102,18 @@ void Foam::Module::meshSurfaceMapper2D::preMapVertices(const label nIterations)
         // create the surface modifier and move the surface points
         meshSurfaceEngineModifier surfaceModifier(surfaceEngine_);
 
+        // accumulate target positions per boundary point rather than
+        // moving directly: adjacent edges share an endpoint, so two
+        // threads computing different target positions for the same
+        // shared vertex would otherwise race (last-write-wins - unlike a
+        // plain index, a position has no natural "smaller wins" tie-break)
+        // - average all edges' proposals for a shared vertex instead
+        List<labelledPoint> newPositions
+        (
+            surfaceEngine_.boundaryPoints().size(),
+            labelledPoint(0, vector::zero)
+        );
+
         # pragma omp parallel for schedule(dynamic, 50)
         forAll(activeBoundaryEdges_, eI)
         {
@@ -126,9 +138,36 @@ void Foam::Module::meshSurfaceMapper2D::preMapVertices(const label nIterations)
             pMap.z() = p.z();
             point newP = 0.5*(pMap + p);
 
-            surfaceModifier.moveBoundaryVertexNoUpdate(bp[e.start()], newP);
+            const label bpStart = bp[e.start()];
+            # pragma omp critical
+            {
+                ++newPositions[bpStart].pointLabel();
+                newPositions[bpStart].coordinates() += newP;
+            }
+
             newP.z() = points[e.end()].z();
-            surfaceModifier.moveBoundaryVertexNoUpdate(bp[e.end()], newP);
+
+            const label bpEnd = bp[e.end()];
+            # pragma omp critical
+            {
+                ++newPositions[bpEnd].pointLabel();
+                newPositions[bpEnd].coordinates() += newP;
+            }
+        }
+
+        # pragma omp parallel for schedule(dynamic, 50)
+        forAll(newPositions, bpI)
+        {
+            labelledPoint& lp = newPositions[bpI];
+
+            if (lp.pointLabel() == 0)
+                continue;
+
+            surfaceModifier.moveBoundaryVertexNoUpdate
+            (
+                bpI,
+                lp.coordinates()/lp.pointLabel()
+            );
         }
 
         surfaceModifier.updateGeometry();
