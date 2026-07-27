@@ -48,7 +48,7 @@ License
 void Foam::Module::meshSurfaceMapper2D::findMappingDistance
 (
     const DynamicList<label>& edgesToMap,
-    std::map<label, scalar>& mappingDistance
+    Map<scalar>& mappingDistance
 ) const
 {
     const vectorField& faceCentres = surfaceEngine_.faceCentres();
@@ -62,18 +62,18 @@ void Foam::Module::meshSurfaceMapper2D::findMappingDistance
     {
         const label beI = edgesToMap[i];
 
-        mappingDistance.insert(std::make_pair(beI, 0.0));
-        std::map<label, scalar>::iterator mIter = mappingDistance.find(beI);
+        mappingDistance.insert(beI, 0.0);
+        Map<scalar>::iterator mIter = mappingDistance.find(beI);
 
         const point p = edges[beI].centre(points);
         forAllRow(eFaces, beI, efI)
         {
             const scalar d = magSqr(faceCentres[eFaces[beI][efI]] - p);
-            mIter->second = Foam::max(mIter->second, d);
+            mIter() = Foam::max(mIter(), d);
         }
 
         // safety factor
-        mIter->second *= 16.0;
+        mIter() *= 16.0;
     }
 
 }
@@ -214,7 +214,7 @@ void Foam::Module::meshSurfaceMapper2D::mapCorners
     const edgeList& edges = surfaceEngine_.edges();
     const labelList& bp = surfaceEngine_.bp();
 
-    std::map<label, scalar> mappingDistance;
+    Map<scalar> mappingDistance;
     findMappingDistance(edgesToMap, mappingDistance);
 
     // for every corner in the mesh surface find the nearest corner in the

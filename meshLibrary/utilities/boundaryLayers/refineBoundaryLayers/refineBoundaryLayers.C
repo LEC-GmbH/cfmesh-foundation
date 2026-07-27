@@ -203,7 +203,7 @@ void Foam::Module::refineBoundaryLayers::setNumberOfLayersForPatch
 
     forAll(matchedIDs, matchI)
     {
-        numLayersForPatch_[mesh_.getPatchName(matchedIDs[matchI])] = nLayers;
+        numLayersForPatch_(mesh_.getPatchName(matchedIDs[matchI])) = nLayers;
     }
 }
 
@@ -234,7 +234,7 @@ void Foam::Module::refineBoundaryLayers::setThicknessRatioForPatch
     forAll(matchedIDs, matchI)
     {
         const word pName = mesh_.getPatchName(matchedIDs[matchI]);
-        thicknessRatioForPatch_[pName] = thicknessRatio;
+        thicknessRatioForPatch_(pName) = thicknessRatio;
     }
 }
 
@@ -265,7 +265,7 @@ void Foam::Module::refineBoundaryLayers::setMaxThicknessOfFirstLayerForPatch
     forAll(matchedIDs, matchI)
     {
         const word pName = mesh_.getPatchName(matchedIDs[matchI]);
-        maxThicknessForPatch_[pName] = maxThickness;
+        maxThicknessForPatch_(pName) = maxThickness;
     }
 }
 
@@ -300,9 +300,9 @@ void Foam::Module::refineBoundaryLayers::activateSpecialMode()
 void Foam::Module::refineBoundaryLayers::refineLayers()
 {
     bool refinePatch(false);
-    for (std::map<word, label>::const_iterator it = numLayersForPatch_.cbegin(); it != numLayersForPatch_.cend(); ++it)
+    forAllConstIter(HashTable<label>, numLayersForPatch_, it)
     {
-        if (it->second > 0)
+        if (it() > 0)
         {
             refinePatch = true;
         }

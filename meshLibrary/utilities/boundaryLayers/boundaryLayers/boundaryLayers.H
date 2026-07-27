@@ -46,10 +46,9 @@ SourceFiles
 #include "DynamicList.H"
 #include "labelListListOps.H"
 #include "Map.H"
+#include "EdgeMap.H"
 #include "labelPair.H"
 #include "demandDrivenData.H"
-
-#include <map>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -103,7 +102,7 @@ class boundaryLayers
 
         //- map storing labels of new vertices created at node
         //- and corner vertices
-        std::map<label, std::map<std::pair<label, label>, label>> otherVrts_;
+        Map<EdgeMap<label>> otherVrts_;
 
         //- a key assigned to each patch. It is needed to search in otherVrts_
         labelList patchKey_;

@@ -46,8 +46,7 @@ SourceFiles
 #include "boolList.H"
 #include "plane.H"
 #include "labelListListOps.H"
-
-#include <map>
+#include "Map.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -68,7 +67,7 @@ class symmetryPlaneOptimisation
         polyMeshGen& mesh_;
 
         //- symmetry planes in the mesh
-        std::map<label, plane> symmetryPlanes_;
+        Map<plane> symmetryPlanes_;
 
 
     // Private member functions

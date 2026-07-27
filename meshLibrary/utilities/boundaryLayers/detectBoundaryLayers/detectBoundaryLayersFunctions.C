@@ -35,6 +35,7 @@ License
 #include "polyMeshGen2DEngine.H"
 
 #include "labelledScalar.H"
+#include "Map.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -291,14 +292,14 @@ void Foam::Module::detectBoundaryLayers::analyseLayers()
     }
 
     // check the number of layer found at a patch
-    typedef std::map<label, DynamicList<label>> patchToLayerType;
+    typedef Map<DynamicList<label>> patchToLayerType;
     patchToLayerType patchToLayer;
 
     const labelList& facePatch = meshSurface_.boundaryFacePatches();
 
     forAll(facePatch, bfI)
     {
-        appendUniq(patchToLayer[facePatch[bfI]], layerAtBndFace_[bfI]);
+        appendUniq(patchToLayer(facePatch[bfI]), layerAtBndFace_[bfI]);
     }
 
     // all faces of a patch must be in the same layer
@@ -310,18 +311,18 @@ void Foam::Module::detectBoundaryLayers::analyseLayers()
 
     forAllConstIter(patchToLayerType, patchToLayer, it)
     {
-        const DynamicList<label>& layersAtPatch = it->second;
+        const DynamicList<label>& layersAtPatch = it();
 
         forAll(layersAtPatch, i)
         {
             if (layersAtPatch[i] < 0)
             {
-                layerAtPatch_[it->first].clear();
+                layerAtPatch_[it.key()].clear();
                 break;
             }
             else
             {
-                layerAtPatch_[it->first].append(layersAtPatch[i]);
+                layerAtPatch_[it.key()].append(layersAtPatch[i]);
             }
         }
     }

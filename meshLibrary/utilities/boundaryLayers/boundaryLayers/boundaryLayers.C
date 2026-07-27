@@ -37,8 +37,7 @@ License
 #include "polyMeshGen2DEngine.H"
 
 #include "labelledPoint.H"
-#include <map>
-#include <set>
+#include "EdgeMap.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -132,7 +131,7 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
     meshSurfaceCheckInvertedVertices vertexCheck(mse);
     const labelHashSet& invertedVertices = vertexCheck.invertedVertices();
 
-    std::map<std::pair<label, label>, Pair<label>> edgeClassification;
+    EdgeMap<Pair<label>> edgeClassification;
     forAll(eFaces, eI)
     {
         if (eFaces[eI].size() != 2)
@@ -155,16 +154,16 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
         const label patch1 = boundaryFacePatches[eFaces[eI][1]];
         if (patch0 != patch1)
         {
-            std::pair<label, label> pp
+            edge pp
             (
                 Foam::min(patch0, patch1),
                 Foam::max(patch0, patch1)
             );
-            if (edgeClassification.find(pp) == edgeClassification.end())
+            if (!edgeClassification.found(pp))
             {
                 edgeClassification.insert
                 (
-                    std::make_pair(pp, Pair<label>(0, 0))
+                    pp, Pair<label>(0, 0)
                 );
             }
 
@@ -186,17 +185,17 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
         }
     }
 
-    for (std::map<std::pair<label, label>, Pair<label>>::const_iterator it = edgeClassification.cbegin(); it != edgeClassification.cend(); ++it)
+    forAllConstIter(EdgeMap<Pair<label>>, edgeClassification, it)
     {
-        const std::pair<label, label>& edgePair = it->first;
-        const Pair<label>& nConvexAndConcave = it->second;
+        const edge& edgePair = it.key();
+        const Pair<label>& nConvexAndConcave = it();
 
         if (nConvexAndConcave.second() != 0)
         {
             // number of concave edges is greater than the number
             // of the convex ones. Treat patches together.
-            const label patch0 = edgePair.first;
-            const label patch1 = edgePair.second;
+            const label patch0 = edgePair.start();
+            const label patch1 = edgePair.end();
 
             // avoid adding unused patches in case of 2D meshing
             if (treatedPatch_[patch0] || treatedPatch_[patch1])
@@ -224,7 +223,7 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
             continue;
         }
 
-        std::set<label> commonPatches;
+        labelHashSet commonPatches;
         commonPatches.insert(patchI);
 
         DynamicList<label> front;
@@ -254,14 +253,15 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
             }
         }
 
-        for (std::set<label>::const_iterator it = commonPatches.cbegin(); it != commonPatches.cend(); ++it)
+        const labelList commonPatchesSorted(commonPatches.sortedToc());
+        forAll(commonPatchesSorted, i)
         {
-            const label patchJ = *it;
+            const label patchJ = commonPatchesSorted[i];
 
             treatPatchesWithPatch_[patchJ].clear();
-            for (std::set<label>::const_iterator iter = commonPatches.cbegin(); iter != commonPatches.cend(); ++iter)
+            forAll(commonPatchesSorted, j)
             {
-                treatPatchesWithPatch_[patchJ].append(*iter);
+                treatPatchesWithPatch_[patchJ].append(commonPatchesSorted[j]);
             }
         }
     }

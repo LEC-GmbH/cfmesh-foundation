@@ -41,8 +41,7 @@ SourceFiles
 #define checkMeshDict_H
 
 #include "IOdictionary.H"
-
-#include <map>
+#include "HashTable.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -102,37 +101,37 @@ class checkMeshDict
         void checkEntries() const;
 
         //- update patchCellSize entry
-        void updatePatchCellSize(const std::map<word, wordList>&);
+        void updatePatchCellSize(const HashTable<wordList>&);
 
         //- update subsetCellSize entry
-        void updateSubsetCellSize(const std::map<word, wordList>&);
+        void updateSubsetCellSize(const HashTable<wordList>&);
 
         //- update local refinement
-        void updateLocalRefinement(const std::map<word, wordList>&);
+        void updateLocalRefinement(const HashTable<wordList>&);
 
         //- check keepCellsIntersectingPatches entry
         void updateKeepCellsIntersectingPatches
         (
-            const std::map<word, wordList>&
+            const HashTable<wordList>&
         );
 
         //- check removeCellsIntersectingPatches entry
         void updateRemoveCellsIntersectingPatches
         (
-            const std::map<word, wordList>&
+            const HashTable<wordList>&
         );
 
         //- check objectRefinements entry
-        void updateObjectRefinements(const std::map<word, wordList>&);
+        void updateObjectRefinements(const HashTable<wordList>&);
 
         //- check entry for boundary layers
-        void updateBoundaryLayers(const std::map<word, wordList>&);
+        void updateBoundaryLayers(const HashTable<wordList>&);
 
         //- check renameBoundary entry
         void updateRenameBoundary
         (
-            const std::map<word, wordList>&,
-            const std::map<word, word>&
+            const HashTable<wordList>&,
+            const HashTable<word>&
         );
 
 
@@ -150,8 +149,8 @@ public:
         //- update meshDict based on modification of patches in the surface
         void updateDictionaries
         (
-            const std::map<word, wordList>& patchesForPatch,
-            const std::map<word, word>& patchTypes,
+            const HashTable<wordList>& patchesForPatch,
+            const HashTable<word>& patchTypes,
             const bool renamePatches = true
         );
 };

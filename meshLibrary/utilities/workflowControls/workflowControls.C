@@ -33,7 +33,7 @@ License
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-const std::map<Foam::word, Foam::label>
+const Foam::HashTable<Foam::label>
 Foam::Module::workflowControls::workflowSteps_ =
     Foam::Module::workflowControls::populateWorkflowSteps();
 
@@ -212,20 +212,20 @@ bool Foam::Module::workflowControls::runAfterCurrentStep() const
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-std::map<Foam::word, Foam::label>
+Foam::HashTable<Foam::label>
 Foam::Module::workflowControls::populateWorkflowSteps()
 {
     // Note: can likely use initializer_list here
-    std::map<word, label> workflowSteps;
-    workflowSteps.insert(std::make_pair(word("start"), 0));
-    workflowSteps.insert(std::make_pair(word("templateGeneration"), 1));
-    workflowSteps.insert(std::make_pair(word("surfaceTopology"), 2));
-    workflowSteps.insert(std::make_pair(word("surfaceProjection"), 4));
-    workflowSteps.insert(std::make_pair(word("patchAssignment"), 8));
-    workflowSteps.insert(std::make_pair(word("edgeExtraction"), 16));
-    workflowSteps.insert(std::make_pair(word("meshOptimisation"), 32));
-    workflowSteps.insert(std::make_pair(word("boundaryLayerGeneration"), 64));
-    workflowSteps.insert(std::make_pair(word("boundaryLayerRefinement"), 128));
+    HashTable<label> workflowSteps;
+    workflowSteps.insert(word("start"), 0);
+    workflowSteps.insert(word("templateGeneration"), 1);
+    workflowSteps.insert(word("surfaceTopology"), 2);
+    workflowSteps.insert(word("surfaceProjection"), 4);
+    workflowSteps.insert(word("patchAssignment"), 8);
+    workflowSteps.insert(word("edgeExtraction"), 16);
+    workflowSteps.insert(word("meshOptimisation"), 32);
+    workflowSteps.insert(word("boundaryLayerGeneration"), 64);
+    workflowSteps.insert(word("boundaryLayerRefinement"), 128);
 
     return workflowSteps;
 }
@@ -283,12 +283,12 @@ bool Foam::Module::workflowControls::runCurrentStep(const word& stepName)
     }
 
     // check if the requested step exists in the database of steps
-    if (workflowSteps_.find(stepName) == workflowSteps_.end())
+    if (!workflowSteps_.found(stepName))
     {
         DynamicList<word> toc;
-        for (std::map<word, label>::const_iterator it = workflowSteps_.cbegin(); it != workflowSteps_.cend(); ++it)
+        forAllConstIter(HashTable<label>, workflowSteps_, it)
         {
-            toc.append(it->first);
+            toc.append(it.key());
         }
 
         FatalErrorInFunction

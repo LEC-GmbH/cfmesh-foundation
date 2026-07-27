@@ -44,8 +44,7 @@ SourceFiles
 
 #include "IOdictionary.H"
 #include "DynamicList.H"
-
-#include <map>
+#include "HashTable.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -81,7 +80,7 @@ class workflowControls
 
     // static private data
 
-        static const std::map<word, label> workflowSteps_;
+        static const HashTable<label> workflowSteps_;
 
 
     // Private member functions
@@ -114,7 +113,7 @@ class workflowControls
     // Static private member functions
 
         //- populate workflowSteps with values
-        static std::map<word, label> populateWorkflowSteps();
+        static HashTable<label> populateWorkflowSteps();
 
 
 public:

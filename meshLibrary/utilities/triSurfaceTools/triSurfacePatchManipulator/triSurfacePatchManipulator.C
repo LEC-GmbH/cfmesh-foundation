@@ -32,8 +32,8 @@ License
 #include "helperFunctions.H"
 #include "demandDrivenData.H"
 #include "checkMeshDict.H"
+#include "HashTable.H"
 
-#include <map>
 #include <stdexcept>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -189,12 +189,12 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
     {
         // create mapping between the patches on the original surface
         // and the renamed patches
-        std::map<word, wordList> patchesForPatch;
-        std::map<word, word> patchTypes;
+        HashTable<wordList> patchesForPatch;
+        HashTable<word> patchTypes;
 
         const geometricSurfacePatchList& origPatches = surf_.patches();
         forAll(origPatches, patchI)
-            patchTypes[origPatches[patchI].name()] =
+            patchTypes(origPatches[patchI].name()) =
                 origPatches[patchI].geometricType();
 
         // find the mapping of patch ids
@@ -231,7 +231,7 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
                 foundProblematic = true;
             }
 
-            patchesForPatch[pName].setSize
+            patchesForPatch(pName).setSize
             (
                 patchToNewPatches[patchI].size()
             );

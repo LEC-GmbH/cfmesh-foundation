@@ -37,43 +37,41 @@ Foam::label Foam::Module::boundaryLayers::findNewNodeLabel
     const label pKey
 ) const
 {
-    const std::map
-    <
-        label, std::map<std::pair<label, label>, label>
-    >::const_iterator it = otherVrts_.find(pointI);
+    const Map<EdgeMap<label>>::const_iterator it =
+        otherVrts_.find(pointI);
 
     if (it != otherVrts_.end())
     {
-        const auto& m = it->second;
+        const auto& m = it();
 
         if (m.size() == 2)
         {
-            for (std::map<std::pair<label, label>, label>::const_iterator mit = m.cbegin(); mit != m.cend(); ++mit)
+            forAllConstIter(EdgeMap<label>, m, mit)
             {
-                if (mit->first.first != pKey)
+                if (mit.key().start() != pKey)
                 {
-                    return mit->second;
+                    return mit();
                 }
             }
         }
         else
         {
-            for (std::map<std::pair<label, label>, label>::const_iterator mit = m.cbegin(); mit != m.cend(); ++mit)
+            forAllConstIter(EdgeMap<label>, m, mit)
             {
-                if (mit->first.first == pKey)
+                if (mit.key().start() == pKey)
                 {
                     continue;
                 }
-                if (mit->first.second == pKey)
+                if (mit.key().end() == pKey)
                 {
                     continue;
                 }
-                if (mit->first.first == mit->first.second)
+                if (mit.key().start() == mit.key().end())
                 {
                     continue;
                 }
 
-                return mit->second;
+                return mit();
             }
         }
     }
@@ -96,82 +94,84 @@ inline void Foam::Module::boundaryLayers::createNewCellFromEdge
         cellFaces[i].setSize(4);
     }
 
-    const std::map<std::pair<label, label>, label>& ms =
-        otherVrts_.find(e.start())->second;
-    const std::map<std::pair<label, label>, label>& me =
-        otherVrts_.find(e.end())->second;
+    const Map<EdgeMap<label>>::const_iterator
+        itS = otherVrts_.find(e.start());
+    const Map<EdgeMap<label>>::const_iterator
+        itE = otherVrts_.find(e.end());
+    const EdgeMap<label>& ms = itS();
+    const EdgeMap<label>& me = itE();
 
     label p0s(-1), p1s(-1), ns(-1), p0e(-1), p1e(-1), ne(-1);
 
     if (ms.size() == 2)
     {
-        p0s = ms.find(std::pair<label, label>(pKeyI, pKeyI))->second;
-        p1s = ms.find(std::pair<label, label>(pKeyJ, pKeyJ))->second;
+        p0s = ms.find(edge(pKeyI, pKeyI))();
+        p1s = ms.find(edge(pKeyJ, pKeyJ))();
         ns = newLabelForVertex_[e.start()];
     }
     else
     {
-        for (std::map<std::pair<label, label>, label>::const_iterator it = ms.cbegin(); it != ms.cend(); ++it)
+        forAllConstIter(EdgeMap<label>, ms, it)
         {
             if
             (
-                (it->first.first != pKeyJ) && (it->first.second != pKeyJ)
-             && (it->first.first != it->first.second)
+                (it.key().start() != pKeyJ) && (it.key().end() != pKeyJ)
+             && (it.key().start() != it.key().end())
             )
             {
-                p0s = it->second;
+                p0s = it();
             }
             else if
             (
-                (it->first.first != pKeyI) && (it->first.second != pKeyI)
-             && (it->first.first != it->first.second)
+                (it.key().start() != pKeyI) && (it.key().end() != pKeyI)
+             && (it.key().start() != it.key().end())
             )
             {
-                p1s = it->second;
+                p1s = it();
             }
             else if
             (
-                (it->first.first == it->first.second)
-             && (it->first.first != pKeyI) && (it->first.first != pKeyJ)
+                (it.key().start() == it.key().end())
+             && (it.key().start() != pKeyI) && (it.key().start() != pKeyJ)
             )
             {
-                ns = it->second;
+                ns = it();
             }
         }
     }
     if (me.size() == 2)
     {
-        p0e = me.find(std::pair<label, label>(pKeyI, pKeyI))->second;
-        p1e = me.find(std::pair<label, label>(pKeyJ, pKeyJ))->second;
+        p0e = me.find(edge(pKeyI, pKeyI))();
+        p1e = me.find(edge(pKeyJ, pKeyJ))();
         ne = newLabelForVertex_[e.end()];
     }
     else
     {
-        for (std::map<std::pair<label, label>, label>::const_iterator it = me.cbegin(); it != me.cend(); ++it)
+        forAllConstIter(EdgeMap<label>, me, it)
         {
             if
             (
-                (it->first.first != pKeyJ) && (it->first.second != pKeyJ)
-             && (it->first.first != it->first.second)
+                (it.key().start() != pKeyJ) && (it.key().end() != pKeyJ)
+             && (it.key().start() != it.key().end())
             )
             {
-                p0e = it->second;
+                p0e = it();
             }
             else if
             (
-                (it->first.first != pKeyI) && (it->first.second != pKeyI)
-             && (it->first.first != it->first.second)
+                (it.key().start() != pKeyI) && (it.key().end() != pKeyI)
+             && (it.key().start() != it.key().end())
             )
             {
-                p1e = it->second;
+                p1e = it();
             }
             else if
             (
-                (it->first.first == it->first.second)
-             && (it->first.first != pKeyI) && (it->first.first != pKeyJ)
+                (it.key().start() == it.key().end())
+             && (it.key().start() != pKeyI) && (it.key().start() != pKeyJ)
             )
             {
-                ne = it->second;
+                ne = it();
             }
         }
     }
@@ -227,45 +227,46 @@ inline void Foam::Module::boundaryLayers::createNewCellFromNode
         cellFaces[i].setSize(4);
     }
 
-    const std::map<std::pair<label, label>, label>& m =
-        otherVrts_.find(pointI)->second;
+    const Map<EdgeMap<label>>::const_iterator
+        itP = otherVrts_.find(pointI);
+    const EdgeMap<label>& m = itP();
 
     //- create labels before creating cells
     const label n = newLabelForVertex_[pointI];
     const label p00 =
-        m.find(std::pair<label, label>(pKeys[0], pKeys[0]))->second;
+        m.find(edge(pKeys[0], pKeys[0]))();
     const label p11 =
-        m.find(std::pair<label, label>(pKeys[1], pKeys[1]))->second;
+        m.find(edge(pKeys[1], pKeys[1]))();
     const label p22 =
-        m.find(std::pair<label, label>(pKeys[2], pKeys[2]))->second;
+        m.find(edge(pKeys[2], pKeys[2]))();
 
-    std::pair<label, label> pr;
-    pr.first = pKeys[0];
-    pr.second = pKeys[1];
-    if (m.find(pr) == m.end())
+    edge pr;
+    pr.start() = pKeys[0];
+    pr.end() = pKeys[1];
+    if (!m.found(pr))
     {
-        pr.first = pKeys[1];
-        pr.second = pKeys[0];
+        pr.start() = pKeys[1];
+        pr.end() = pKeys[0];
     }
-    const label p01 = m.find(pr)->second;
+    const label p01 = m.find(pr)();
 
-    pr.first = pKeys[0];
-    pr.second = pKeys[2];
-    if (m.find(pr) == m.end())
+    pr.start() = pKeys[0];
+    pr.end() = pKeys[2];
+    if (!m.found(pr))
     {
-        pr.first = pKeys[2];
-        pr.second = pKeys[0];
+        pr.start() = pKeys[2];
+        pr.end() = pKeys[0];
     }
-    const label p02 = m.find(pr)->second;
+    const label p02 = m.find(pr)();
 
-    pr.first = pKeys[1];
-    pr.second = pKeys[2];
-    if (m.find(pr) == m.end())
+    pr.start() = pKeys[1];
+    pr.end() = pKeys[2];
+    if (!m.found(pr))
     {
-        pr.first = pKeys[2];
-        pr.second = pKeys[1];
+        pr.start() = pKeys[2];
+        pr.end() = pKeys[1];
     }
-    const label p12 = m.find(pr)->second;
+    const label p12 = m.find(pr)();
 
     //- create the cell and append it
     //- F0

@@ -33,6 +33,7 @@ License
 #include "polyMeshGenAddressing.H"
 #include "helperFunctions.H"
 #include "polyMeshGenChecks.H"
+#include "Tuple2.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -44,40 +45,40 @@ void Foam::Module::symmetryPlaneOptimisation::detectSymmetryPlanes()
 
     symmetryPlanes_.clear();
 
-    typedef std::map<label, std::pair<vector, label>> mapType;
+    typedef Map<Tuple2<vector, label>> mapType;
     mapType centreSum, normalSum;
 
     forAll(boundaries, patchI)
     {
         if (boundaries[patchI].patchType() == "symmetryPlane")
         {
-            std::pair<vector, label>& cs = centreSum[patchI];
-            cs = std::pair<vector, label>(vector::zero, 0);
+            centreSum.insert(patchI, Tuple2<vector, label>(vector::zero, 0));
+            Tuple2<vector, label>& cs = centreSum[patchI];
 
-            std::pair<vector, label>& ns = normalSum[patchI];
-            ns = std::pair<vector, label>(vector::zero, 0);
+            normalSum.insert(patchI, Tuple2<vector, label>(vector::zero, 0));
+            Tuple2<vector, label>& ns = normalSum[patchI];
 
             const label start = boundaries[patchI].patchStart();
             const label end = start + boundaries[patchI].patchSize();
             for (label faceI = start; faceI < end; ++faceI)
             {
-                cs.first += help::stableFaceCentre(faces[faceI], points);
-                ns.first += help::stableFaceArea(faces[faceI], points);
+                cs.first() += help::stableFaceCentre(faces[faceI], points);
+                ns.first() += help::stableFaceArea(faces[faceI], points);
             }
 
-            cs.second = ns.second = boundaries[patchI].patchSize();
+            cs.second() = ns.second() = boundaries[patchI].patchSize();
         }
     }
 
     // create planes corresponding to each symmetry plane
     forAllConstIter(mapType, centreSum, it)
     {
-        const point c = it->second.first/it->second.second;
+        const point c = it().first()/it().second();
 
-        const std::pair<vector, label>& ns = normalSum[it->first];
-        const vector n = ns.first/ns.second;
+        const Tuple2<vector, label>& ns = normalSum[it.key()];
+        const vector n = ns.first()/ns.second();
 
-        symmetryPlanes_.insert(std::make_pair(it->first, plane(c, n)));
+        symmetryPlanes_.insert(it.key(), plane(c, n));
     }
 }
 
@@ -113,11 +114,11 @@ bool Foam::Module::symmetryPlaneOptimisation::pointInPlanes
 
                 forAll(f, pI)
                 {
-                    std::map<label, plane>::const_iterator it =
+                    Map<plane>::const_iterator it =
                         symmetryPlanes_.find(patchI);
                     if (it != symmetryPlanes_.end())
                     {
-                        const scalar d = it->second.distance(points[f[pI]]);
+                        const scalar d = it().distance(points[f[pI]]);
 
                         if (d > 0.5*maxDist)
                             foundProblematic = true;
@@ -183,18 +184,20 @@ void Foam::Module::symmetryPlaneOptimisation::optimizeSymmetryPlanes()
         if (nPlanes == 1)
         {
             // point is in a plane
-            std::map<label, plane>::const_iterator it =
+            Map<plane>::const_iterator it =
                 symmetryPlanes_.find(pointInPlane[pointI][0]);
 
-            p = it->second.nearestPoint(p);
+            p = it().nearestPoint(p);
         }
         else if (nPlanes == 2)
         {
             // point is at the edge between two planes
-            const plane& pl0 =
-                symmetryPlanes_.find(pointInPlane[pointI][0])->second;
-            const plane& pl1 =
-                symmetryPlanes_.find(pointInPlane[pointI][1])->second;
+            const Map<plane>::const_iterator it0 =
+                symmetryPlanes_.find(pointInPlane[pointI][0]);
+            const Map<plane>::const_iterator it1 =
+                symmetryPlanes_.find(pointInPlane[pointI][1]);
+            const plane& pl0 = it0();
+            const plane& pl1 = it1();
 
             const plane::ray il = pl0.planeIntersect(pl1);
 
@@ -208,12 +211,15 @@ void Foam::Module::symmetryPlaneOptimisation::optimizeSymmetryPlanes()
         else if (nPlanes == 3)
         {
             // points is a corner between three planes
-            const plane& pl0 =
-                symmetryPlanes_.find(pointInPlane[pointI][0])->second;
-            const plane& pl1 =
-                symmetryPlanes_.find(pointInPlane[pointI][1])->second;
-            const plane& pl2 =
-                symmetryPlanes_.find(pointInPlane[pointI][2])->second;
+            const Map<plane>::const_iterator it0 =
+                symmetryPlanes_.find(pointInPlane[pointI][0]);
+            const Map<plane>::const_iterator it1 =
+                symmetryPlanes_.find(pointInPlane[pointI][1]);
+            const Map<plane>::const_iterator it2 =
+                symmetryPlanes_.find(pointInPlane[pointI][2]);
+            const plane& pl0 = it0();
+            const plane& pl1 = it1();
+            const plane& pl2 = it2();
 
             p = pl0.planePlaneIntersect(pl1, pl2);
         }

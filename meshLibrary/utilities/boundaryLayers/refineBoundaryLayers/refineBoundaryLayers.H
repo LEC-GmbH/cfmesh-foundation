@@ -46,9 +46,8 @@ SourceFiles
 #include "DynamicList.H"
 #include "labelPair.H"
 #include "labelListListOps.H"
-
-#include <map>
-#include <set>
+#include "HashSet.H"
+#include "HashTable.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -83,16 +82,16 @@ class refineBoundaryLayers
         scalar globalMaxThicknessFirstLayer_;
 
         //- number of boundary layers for user-selected patches
-        std::map<word, label> numLayersForPatch_;
+        HashTable<label> numLayersForPatch_;
 
         //- local thickness ratio for selected patches
-        std::map<word, scalar> thicknessRatioForPatch_;
+        HashTable<scalar> thicknessRatioForPatch_;
 
         //- local maximum layer thickness for selected patches
-        std::map<word, scalar> maxThicknessForPatch_;
+        HashTable<scalar> maxThicknessForPatch_;
 
         //- allow discontinuous layers for patch
-        std::set<word> discontinuousLayersForPatch_;
+        wordHashSet discontinuousLayersForPatch_;
 
         //- the name of a subset which shall contain the indices
         //- of the cells in the boundary layer

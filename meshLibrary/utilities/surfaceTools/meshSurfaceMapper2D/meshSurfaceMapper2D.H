@@ -44,8 +44,7 @@ SourceFiles
 #include "pointField.H"
 #include "DynamicList.H"
 #include "boundBox.H"
-
-#include <map>
+#include "Map.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -139,7 +138,7 @@ class meshSurfaceMapper2D
         void findMappingDistance
         (
             const DynamicList<label>&,
-            std::map<label, scalar>&
+            Map<scalar>&
         ) const;
 
         //- Disallow default bitwise copy construct

@@ -30,8 +30,7 @@ License
 
 #include "triSurfAddressing.H"
 #include "demandDrivenData.H"
-
-#include <set>
+#include "HashSet.H"
 
 #include <omp.h>
 
@@ -68,7 +67,7 @@ void Foam::Module::triSurfAddressing::calculateEdges() const
         # pragma omp for schedule(static)
         forAll(pFacets, pI)
         {
-            std::set<std::pair<label, label>> edgesAtPoint;
+            HashSet<edge, Hash<edge>> edgesAtPoint;
 
             forAllRow(pFacets, pI, pfI)
             {
@@ -83,23 +82,23 @@ void Foam::Module::triSurfAddressing::calculateEdges() const
                         {
                             edgesAtPoint.insert
                             (
-                                std::make_pair(pI, tri[(i + 1)%3])
+                                edge(pI, tri[(i + 1)%3])
                             );
                         }
                         if (tri[(i + 2)%3] >= pI)
                         {
                             edgesAtPoint.insert
                             (
-                                std::make_pair(pI, tri[(i + 2)%3])
+                                edge(pI, tri[(i + 2)%3])
                             );
                         }
                     }
                 }
             }
 
-            for (std::set<std::pair<label, label>>::const_iterator it = edgesAtPoint.cbegin(); it != edgesAtPoint.cend(); ++it)
+            for (const edge& e : edgesAtPoint.sortedToc())
             {
-                edgesHelper.append(edge(it->first, it->second));
+                edgesHelper.append(e);
             }
         }
 

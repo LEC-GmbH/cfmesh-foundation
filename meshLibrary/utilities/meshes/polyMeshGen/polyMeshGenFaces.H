@@ -70,7 +70,7 @@ protected:
         PtrList<boundaryPatch> boundaries_;
 
         //- face subsets
-        std::map<label, meshSubset> faceSubsets_;
+        Map<meshSubset> faceSubsets_;
 
 
     // Addressing data

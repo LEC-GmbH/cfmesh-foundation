@@ -50,7 +50,7 @@ inline void Foam::Module::polyMeshGenCells::addCellToSubset
         return;
     }
 
-    it->second.addElement(cellI);
+    it().addElement(cellI);
 }
 
 
@@ -66,7 +66,7 @@ inline void Foam::Module::polyMeshGenCells::removeCellFromSubset
         return;
     }
 
-    it->second.removeElement(cellI);
+    it().removeElement(cellI);
 }
 
 
@@ -78,11 +78,11 @@ inline void Foam::Module::polyMeshGenCells::cellInSubsets
 {
     cellSubsets.clear();
 
-    for (std::map<label, meshSubset>::const_iterator it = cellSubsets_.cbegin(); it != cellSubsets_.cend(); ++it)
+    forAllConstIter(Map<meshSubset>, cellSubsets_, it)
     {
-        if (it->second.found(cellI))
+        if (it().found(cellI))
         {
-            cellSubsets.append(it->first);
+            cellSubsets.append(it.key());
         }
     }
 }
@@ -95,9 +95,9 @@ inline void Foam::Module::polyMeshGenCells::cellSubsetIndices
 {
     indices.clear();
 
-    for (std::map<label, meshSubset>::const_iterator it = cellSubsets_.cbegin(); it != cellSubsets_.cend(); ++it)
+    forAllConstIter(Map<meshSubset>, cellSubsets_, it)
     {
-        indices.append(it->first);
+        indices.append(it.key());
     }
 }
 
@@ -117,7 +117,7 @@ inline void Foam::Module::polyMeshGenCells::cellsInSubset
         return;
     }
 
-    it->second.containedElements(cellLabels);
+    it().containedElements(cellLabels);
 }
 
 
@@ -127,9 +127,9 @@ inline void Foam::Module::polyMeshGenCells::updateCellSubsets
     const ListType& newCellLabels
 )
 {
-    for (std::map<label, meshSubset>::iterator it = cellSubsets_.begin(); it != cellSubsets_.end(); ++it)
+    forAllIter(Map<meshSubset>, cellSubsets_, it)
     {
-        it->second.updateSubset(newCellLabels);
+        it().updateSubset(newCellLabels);
     }
 }
 
@@ -139,9 +139,9 @@ inline void Foam::Module::polyMeshGenCells::updateCellSubsets
     const labelListList2D& newCellsForCell
 )
 {
-    for (std::map<label, meshSubset>::iterator it = cellSubsets_.begin(); it != cellSubsets_.end(); ++it)
+    forAllIter(Map<meshSubset>, cellSubsets_, it)
     {
-        it->second.updateSubset(newCellsForCell);
+        it().updateSubset(newCellsForCell);
     }
 }
 

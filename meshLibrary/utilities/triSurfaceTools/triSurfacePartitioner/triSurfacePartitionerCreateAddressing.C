@@ -227,13 +227,13 @@ void Foam::Module::triSurfacePartitioner::calculatePatchToEdgeGroups()
             {
                 const label patchJ = patches[j];
 
-                const std::pair<label, label> pp
+                const edge pp
                 (
                     Foam::min(patchI, patchJ),
                     Foam::max(patchI, patchJ)
                 );
 
-                patchesEdgeGroups_[pp].insert(edgeGroups_[eI]);
+                patchesEdgeGroups_(pp).insert(edgeGroups_[eI]);
             }
         }
     }
@@ -267,17 +267,17 @@ void Foam::Module::triSurfacePartitioner::calculateEdgeGroupsToCorners()
                 if (epJ < 0)
                     continue;
 
-                std::pair<label, label> ep
+                edge ep
                 (
                     Foam::min(epI, epJ),
                     Foam::max(epI, epJ)
                 );
 
                 // create edgepartition - edge partitions addressing
-                edgeGroupEdgeGroups_[ep.first].insert(ep.second);
-                edgeGroupEdgeGroups_[ep.second].insert(ep.first);
+                edgeGroupEdgeGroups_[ep.start()].insert(ep.end());
+                edgeGroupEdgeGroups_[ep.end()].insert(ep.start());
 
-                edgeGroupsCorners_[ep].insert(cornerI);
+                edgeGroupsCorners_(ep).insert(cornerI);
             }
         }
     }

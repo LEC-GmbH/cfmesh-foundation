@@ -36,8 +36,6 @@ License
 #include "labelledPoint.H"
 #include "HashSet.H"
 #include "DynamicList.H"
-
-#include <map>
 #include <set>
 
 #include <omp.h>
@@ -555,7 +553,7 @@ void Foam::Module::meshSurfaceEngine::calculateEdgesAndAddressing() const
         # pragma omp for schedule(static)
         forAll(pFaces, bpI)
         {
-            std::set<std::pair<label, label>> edgesAtPoint;
+            HashSet<edge, Hash<edge>> edgesAtPoint;
 
             forAllRow(pFaces, bpI, pfI)
             {
@@ -568,21 +566,21 @@ void Foam::Module::meshSurfaceEngine::calculateEdgesAndAddressing() const
                 {
                     edgesAtPoint.insert
                     (
-                        std::make_pair(bf[pos], bf.nextLabel(pos))
+                        edge(bf[pos], bf.nextLabel(pos))
                     );
                 }
                 if (bp[bf.prevLabel(pos)] >= bpI)
                 {
                     edgesAtPoint.insert
                     (
-                        std::make_pair(bf[pos], bf.prevLabel(pos))
+                        edge(bf[pos], bf.prevLabel(pos))
                     );
                 }
             }
 
-            for (std::set<std::pair<label, label>>::const_iterator it = edgesAtPoint.cbegin(); it != edgesAtPoint.cend(); ++it)
+            for (const edge& e : edgesAtPoint.sortedToc())
             {
-                edgesHelper.append(edge(it->first, it->second));
+                edgesHelper.append(e);
             }
         }
 

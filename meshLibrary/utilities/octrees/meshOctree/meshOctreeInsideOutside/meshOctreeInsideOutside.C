@@ -31,6 +31,7 @@ License
 #include "meshOctreeInsideOutside.H"
 #include "triSurf.H"
 #include "boundBox.H"
+#include "labelPair.H"
 
 #include <omp.h>
 
@@ -130,7 +131,7 @@ void Foam::Module::meshOctreeInsideOutside::frontalMarking()
     # pragma omp parallel num_threads(nThreads) \
     private(frontCubes, neighbours)
     {
-        DynamicList<std::pair<label, label>> threadCommPairs;
+        DynamicList<labelPair> threadCommPairs;
 
         const label threadI = omp_get_thread_num();
 
@@ -195,7 +196,7 @@ void Foam::Module::meshOctreeInsideOutside::frontalMarking()
                         {
                             threadCommPairs.append
                             (
-                                std::make_pair(fLabel, nei)
+                                labelPair(fLabel, nei)
                             );
                         }
                     }
@@ -208,7 +209,7 @@ void Foam::Module::meshOctreeInsideOutside::frontalMarking()
                     boundaryDATACubes_.setSize(groupI + 1);
 
                 setRow(boundaryDATACubes_, groupI, neiDATACubes);
-                groupType_[groupI] = cType;
+                groupType_(groupI) = cType;
             }
         }
 
@@ -218,9 +219,9 @@ void Foam::Module::meshOctreeInsideOutside::frontalMarking()
         labelListList2D localNeiGroups(nGroup);
         forAll(threadCommPairs, cfI)
         {
-            const std::pair<label, label>& lp = threadCommPairs[cfI];
-            const label groupI = cubeGroup_[lp.first];
-            const label neiGroup = cubeGroup_[lp.second];
+            const labelPair& lp = threadCommPairs[cfI];
+            const label groupI = cubeGroup_[lp.first()];
+            const label neiGroup = cubeGroup_[lp.second()];
 
             if ((neiGroup >= nGroup) || (groupI >= nGroup))
                 FatalError << "neiGroup " << neiGroup
@@ -305,7 +306,7 @@ void Foam::Module::meshOctreeInsideOutside::markOutsideCubes()
                         if (groupType_[neiGroup] & meshOctreeCube::UNKNOWN)
                         {
                             ++nChanged;
-                            groupType_[neiGroup] = meshOctreeCube::OUTSIDE;
+                            groupType_(neiGroup) = meshOctreeCube::OUTSIDE;
                         }
                     }
                 }
@@ -319,14 +320,14 @@ void Foam::Module::meshOctreeInsideOutside::markOutsideCubes()
     } while (keepUpdating);
 
     // set OUTSIDE type to the cubes in OUTSIDE groups
-    for (std::map<label, direction>::const_iterator it = groupType_.cbegin(); it != groupType_.cend(); ++it)
+    forAllConstIter(Map<direction>, groupType_, it)
     {
-        if (it->first < 0)
+        if (it.key() < 0)
             continue;
 
-        if (it->second & meshOctreeCubeBasic::OUTSIDE)
+        if (it() & meshOctreeCubeBasic::OUTSIDE)
         {
-            const label groupI = it->first;
+            const label groupI = it.key();
 
             // set the cube type to OUTSIDE
             forAllRow(cubesInGroup_, groupI, i)
@@ -412,14 +413,14 @@ void Foam::Module::meshOctreeInsideOutside::markInsideCubes()
     DynamicList<label> neighbours;
 
     // make INSIDE groups for which it is possible
-    for (std::map<label, direction>::iterator it = groupType_.begin(); it != groupType_.end(); ++it)
+    forAllIter(Map<direction>, groupType_, it)
     {
-        const label groupI = it->first;
+        const label groupI = it.key();
 
         if (groupI < 0)
             continue;
 
-        if (it->second & meshOctreeCubeBasic::UNKNOWN)
+        if (it() & meshOctreeCubeBasic::UNKNOWN)
         {
             forAllRow(boundaryDATACubes_, groupI, neiI)
             {
@@ -430,7 +431,7 @@ void Foam::Module::meshOctreeInsideOutside::markInsideCubes()
                  || (leaves[cLabel]->cubeType() & meshOctreeCube::INSIDE)
                 )
                 {
-                    it->second = meshOctreeCube::INSIDE;
+                    it() = meshOctreeCube::INSIDE;
                     break;
                 }
             }
@@ -457,7 +458,7 @@ void Foam::Module::meshOctreeInsideOutside::markInsideCubes()
                         if (groupType_[neiGroup] & meshOctreeCube::UNKNOWN)
                         {
                             ++nChanged;
-                            groupType_[neiGroup] = meshOctreeCube::INSIDE;
+                            groupType_(neiGroup) = meshOctreeCube::INSIDE;
                         }
                     }
                 }
@@ -471,14 +472,14 @@ void Foam::Module::meshOctreeInsideOutside::markInsideCubes()
     } while (keepUpdating);
 
     // set INSIDE type to the cubes in INSIDE groups
-    for (std::map<label, direction>::const_iterator it = groupType_.cbegin(); it != groupType_.cend(); ++it)
+    forAllConstIter(Map<direction>, groupType_, it)
     {
-        if (it->first < 0)
+        if (it.key() < 0)
             continue;
 
-        if (it->second & meshOctreeCubeBasic::INSIDE)
+        if (it() & meshOctreeCubeBasic::INSIDE)
         {
-            const label groupI = it->first;
+            const label groupI = it.key();
 
             // set the cube type to OUTSIDE
             forAllRow(cubesInGroup_, groupI, i)

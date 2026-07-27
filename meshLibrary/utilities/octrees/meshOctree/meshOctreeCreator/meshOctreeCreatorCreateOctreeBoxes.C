@@ -35,6 +35,7 @@ License
 #include "triSurf.H"
 #include "meshOctreeAutomaticRefinement.H"
 #include "Tuple2.H"
+#include "HashTable.H"
 
 #include <omp.h>
 
@@ -113,7 +114,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
     //surfRefLevel_ = globalRefLevel_;
     forAll(surfRefLevel_, triI)
     {
-        surfRefLevel_[triI].append(std::make_pair(globalRefLevel_, 0.0));
+        surfRefLevel_[triI].append(Tuple2<direction, scalar>(globalRefLevel_, 0.0));
     }
 
     // set other refinement parameters
@@ -165,7 +166,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
         forAll(surfRefLevel_, triI)
         {
             surfRefLevel_[triI][0] =
-                std::make_pair(boundaryRefLevel_, thickness);
+                Tuple2<direction, scalar>(boundaryRefLevel_, thickness);
         }
     }
 
@@ -244,7 +245,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
 
             const direction level = globalRefLevel_ + addLevel;
 
-            std::pair<direction, scalar> pp(level, 0.0);
+            Tuple2<direction, scalar> pp(level, 0.0);
             forAll(surface, triI)
             {
                 if (surface[triI].region() == regionI)
@@ -326,7 +327,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
             surface.facetsInSubset(subsetID, subsetFaces);
             const direction level = globalRefLevel_ + addLevel;
 
-            const std::pair<direction, scalar> pp(level, 0.0);
+            const Tuple2<direction, scalar> pp(level, 0.0);
             forAll(subsetFaces, tI)
             {
                 surfRefLevel_[subsetFaces[tI]].append(pp);
@@ -342,19 +343,19 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
             const wordList entries = dict.toc();
 
             // map patch name to its index
-            std::map<word, label> patchToIndex;
+            HashTable<label> patchToIndex;
             forAll(surface.patches(), patchI)
             {
-                patchToIndex[surface.patches()[patchI].name()] = patchI;
+                patchToIndex(surface.patches()[patchI].name()) = patchI;
             }
 
             // map a facet subset name to its index
-            std::map<word, label> setToIndex;
+            HashTable<label> setToIndex;
             DynamicList<label> setIDs;
             surface.facetSubsetIndices(setIDs);
             forAll(setIDs, i)
             {
-                setToIndex[surface.facetSubsetName(setIDs[i])] = setIDs[i];
+                setToIndex(surface.facetSubsetName(setIDs[i])) = setIDs[i];
             }
 
             // set refinement for these entries
@@ -415,7 +416,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
 
                 const labelList matchedPatches = surface.findPatches(pName);
 
-                std::pair<direction, scalar> rp(level, refinementThickness);
+                Tuple2<direction, scalar> rp(level, refinementThickness);
 
                 forAll(matchedPatches, matchI)
                 {
@@ -430,7 +431,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
                         }
                     }
                 }
-                if (setToIndex.find(pName) != setToIndex.end())
+                if (setToIndex.found(pName))
                 {
                     // this is a facet subset
                     const label subsetId = setToIndex[pName];
@@ -455,7 +456,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
                         const scalar distance = distLvls[i].first();
                         const label lvl = distLvls[i].second();
                         const direction level = globalRefLevel_ + lvl;
-                        std::pair<direction, scalar> rp(level, distance);
+                        Tuple2<direction, scalar> rp(level, distance);
 
                         if
                         (
@@ -485,7 +486,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
                                 }
                             }
                         }
-                        if (setToIndex.find(pName) != setToIndex.end())
+                        if (setToIndex.found(pName))
                         {
                             // this is a facet subset
                             const label subsetId = setToIndex[pName];
@@ -533,7 +534,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
                         } while (!finished);
 
                         const direction level = globalRefLevel_ + lvl;
-                        std::pair<direction, scalar> rp(level, distance);
+                        Tuple2<direction, scalar> rp(level, distance);
 
                         if
                         (
@@ -563,7 +564,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
                                 }
                             }
                         }
-                        if (setToIndex.find(pName) != setToIndex.end())
+                        if (setToIndex.found(pName))
                         {
                             // this is a facet subset
                             const label subsetId = setToIndex[pName];

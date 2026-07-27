@@ -108,13 +108,13 @@ inline void Foam::Module::polyMeshGenFaces::addFaceToSubset
     const label faceI
 )
 {
-    std::map<label, meshSubset>::iterator it = faceSubsets_.find(setID);
+    Map<meshSubset>::iterator it = faceSubsets_.find(setID);
     if (it == faceSubsets_.end())
     {
         return;
     }
 
-    it->second.addElement(faceI);
+    it().addElement(faceI);
 }
 
 
@@ -123,13 +123,13 @@ inline void Foam::Module::polyMeshGenFaces::removeFaceFromSubset
     const label setI,
     const label faceI)
 {
-    std::map<label, meshSubset>::iterator it = faceSubsets_.find(setI);
+    Map<meshSubset>::iterator it = faceSubsets_.find(setI);
     if (it == faceSubsets_.end())
     {
         return;
     }
 
-    it->second.removeElement(faceI);
+    it().removeElement(faceI);
 }
 
 
@@ -141,11 +141,11 @@ inline void Foam::Module::polyMeshGenFaces::faceInSubsets
 {
     faceSubsets.clear();
 
-    for (std::map<label, meshSubset>::const_iterator it = faceSubsets_.cbegin(); it != faceSubsets_.cend(); ++it)
+    forAllConstIter(Map<meshSubset>, faceSubsets_, it)
     {
-        if (it->second.found(faceI))
+        if (it().found(faceI))
         {
-            faceSubsets.append(it->first);
+            faceSubsets.append(it.key());
         }
     }
 }
@@ -158,9 +158,9 @@ inline void Foam::Module::polyMeshGenFaces::faceSubsetIndices
 {
     indices.clear();
 
-    for (std::map<label, meshSubset>::const_iterator it = faceSubsets_.cbegin(); it != faceSubsets_.cend(); ++it)
+    forAllConstIter(Map<meshSubset>, faceSubsets_, it)
     {
-        indices.append(it->first);
+        indices.append(it.key());
     }
 }
 
@@ -174,13 +174,13 @@ inline void Foam::Module::polyMeshGenFaces::facesInSubset
 {
     faceLabels.clear();
 
-    std::map<label, meshSubset>::const_iterator it = faceSubsets_.find(setI);
+    Map<meshSubset>::const_iterator it = faceSubsets_.find(setI);
     if (it == faceSubsets_.end())
     {
         return;
     }
 
-    it->second.containedElements(faceLabels);
+    it().containedElements(faceLabels);
 }
 
 
@@ -190,9 +190,9 @@ inline void Foam::Module::polyMeshGenFaces::updateFaceSubsets
     const ListType& newFaceLabels
 )
 {
-    for (std::map<label, meshSubset>::iterator it = faceSubsets_.begin(); it != faceSubsets_.end(); ++it)
+    forAllIter(Map<meshSubset>, faceSubsets_, it)
     {
-        it->second.updateSubset(newFaceLabels);
+        it().updateSubset(newFaceLabels);
     }
 }
 
@@ -202,9 +202,9 @@ inline void Foam::Module::polyMeshGenFaces::updateFaceSubsets
     const labelListList2D& newFacesForFace
 )
 {
-    for (std::map<label, meshSubset>::iterator it = faceSubsets_.begin(); it != faceSubsets_.end(); ++it)
+    forAllIter(Map<meshSubset>, faceSubsets_, it)
     {
-        it->second.updateSubset(newFacesForFace);
+        it().updateSubset(newFacesForFace);
     }
 }
 

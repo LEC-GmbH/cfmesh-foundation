@@ -81,30 +81,30 @@ void Foam::Module::meshOctreeCreator::refineBoundary()
                 forAllRow(containedTriangles, elRowI, tI)
                 {
                     const label triI = containedTriangles[elRowI][tI];
-                    DynamicList<std::pair<direction, scalar>>& refRequests =
+                    DynamicList<Tuple2<direction, scalar>>& refRequests =
                         surfRefLevel_[triI];
 
                     forAllReverse(refRequests, i)
                     {
-                        const std::pair<direction, scalar>& rp = refRequests[i];
-                        if (rp.first <= oc.level())
+                        const Tuple2<direction, scalar>& rp = refRequests[i];
+                        if (rp.first() <= oc.level())
                         {
                             continue;
                         }
 
-                        if (rp.first < minRequestedLevel)
+                        if (rp.first() < minRequestedLevel)
                         {
                             refine = true;
-                            minRequestedLevel = rp.first;
-                            maxThicknessForLevel = rp.second;
+                            minRequestedLevel = rp.first();
+                            maxThicknessForLevel = rp.second();
                         }
                         else if
                         (
-                            (rp.first == minRequestedLevel) &&
-                            (rp.second > maxThicknessForLevel)
+                            (rp.first() == minRequestedLevel) &&
+                            (rp.second() > maxThicknessForLevel)
                         )
                         {
-                            maxThicknessForLevel = rp.second;
+                            maxThicknessForLevel = rp.second();
                         }
                     }
                 }

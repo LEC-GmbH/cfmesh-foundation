@@ -32,10 +32,9 @@ License
 #include "triSurf.H"
 #include "HashSet.H"
 #include "helperFunctions.H"
+#include "Map.H"
 
 #include <omp.h>
-
-#include <set>
 
 #include <sys/stat.h>
 
@@ -332,8 +331,8 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
 {
     const DynamicList<meshOctreeCube*>& leaves = octree_.leaves_;
 
-    typedef std::pair<direction, label> mapKey;
-    typedef std::map<mapKey, DynamicList<meshOctreeCube*>> lMap;
+    typedef Map<DynamicList<meshOctreeCube*>> innerLMap;
+    typedef Map<innerLMap> lMap;
     lMap leavesMap;
 
     // find the maximum refinement level of leaves marked for refinement
@@ -398,96 +397,106 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
 
         for (label layerI = 0; layerI<=maxNLayers; ++layerI)
         {
-            mapKey key(levelI, layerI);
-            DynamicList<meshOctreeCube*>& currLeaves = leavesMap[key];
+            DynamicList<meshOctreeCube*>& currLeaves =
+                leavesMap(levelI)(layerI);
             currLeaves.clear();
         }
 
         forAll(activeLeaves, i)
         {
-            mapKey key(levelI, nLayersForActive[i]);
-            leavesMap[key].append(leaves[activeLeaves[i]]);
+            leavesMap(levelI)(nLayersForActive[i]).append
+            (
+                leaves[activeLeaves[i]]
+            );
         }
     }
 
     // refine leaves
-    forAllConstIter(lMap, leavesMap, it)
+    const labelList levelKeys(leavesMap.sortedToc());
+    forAll(levelKeys, levelKeyI)
     {
-        const label nLayers = it->first.second;
-        const direction levelI = it->first.first;
+        const label levelI = levelKeys[levelKeyI];
+        const innerLMap& innerMap = leavesMap[levelI];
 
-        const DynamicList<meshOctreeCube*>& selectedLeaves = it->second;
-
-        if (selectedLeaves.size() == 0 )
-            continue;
-
-        label nMarked;
-        do
+        const labelList layerKeys(innerMap.sortedToc());
+        forAll(layerKeys, layerKeyI)
         {
-            nMarked = 0;
+            const label nLayers = layerKeys[layerKeyI];
 
-            // mark current leaves for refinement
-            labelList markedLeaves(leaves.size(), 0);
+            const DynamicList<meshOctreeCube*>& selectedLeaves =
+                innerMap[nLayers];
 
-            # pragma omp parallel for schedule(dynamic, 50) reduction(+:nMarked)
-            forAll(selectedLeaves, i)
+            if (selectedLeaves.size() == 0 )
+                continue;
+
+            label nMarked;
+            do
             {
-                if (!selectedLeaves[i]->isLeaf())
-                    continue;
+                nMarked = 0;
 
-                markedLeaves[selectedLeaves[i]->cubeLabel()] = 1;
-                ++nMarked;
-            }
+                // mark current leaves for refinement
+                labelList markedLeaves(leaves.size(), 0);
 
-            // get out of the do-while loop if there are no selected leaves
-            if (nMarked == 0)
-                break;
-
-            // mark additional boxes for refinement
-            markAdditionalLayers(markedLeaves, nLayers);
-
-            // find the leaves in the additional layers
-            DynamicList<label> activeLeaves;
-            forAll(markedLeaves, leafI)
-            {
-                if (markedLeaves[leafI])
-                    activeLeaves.append(leafI);
-            }
-
-            // check if there exist leaves at lower refinement level
-            bool hasLowerLevel(false);
-
-            # pragma omp parallel for schedule(guided)
-            forAll(activeLeaves, i)
-            {
-                const direction level = leaves[activeLeaves[i]]->level();
-                if (level < levelI)
+                # pragma omp parallel for schedule(dynamic, 50) reduction(+:nMarked)
+                forAll(selectedLeaves, i)
                 {
-                    // found a neighbour at a lower refinement level
-                    hasLowerLevel = true;
-                }
-                else if (level > levelI)
-                {
-                    // do not allow refinement of leaves at higher
-                    // refinement level
-                    markedLeaves[activeLeaves[i]] = 0;
-                }
-            }
+                    if (!selectedLeaves[i]->isLeaf())
+                        continue;
 
-            // deselect leaves at the current level
-            if (hasLowerLevel)
-            {
+                    markedLeaves[selectedLeaves[i]->cubeLabel()] = 1;
+                    ++nMarked;
+                }
+
+                // get out of the do-while loop if there are no selected leaves
+                if (nMarked == 0)
+                    break;
+
+                // mark additional boxes for refinement
+                markAdditionalLayers(markedLeaves, nLayers);
+
+                // find the leaves in the additional layers
+                DynamicList<label> activeLeaves;
+                forAll(markedLeaves, leafI)
+                {
+                    if (markedLeaves[leafI])
+                        activeLeaves.append(leafI);
+                }
+
+                // check if there exist leaves at lower refinement level
+                bool hasLowerLevel(false);
+
                 # pragma omp parallel for schedule(guided)
                 forAll(activeLeaves, i)
                 {
-                    if (leaves[activeLeaves[i]]->level() == levelI)
+                    const direction level = leaves[activeLeaves[i]]->level();
+                    if (level < levelI)
+                    {
+                        // found a neighbour at a lower refinement level
+                        hasLowerLevel = true;
+                    }
+                    else if (level > levelI)
+                    {
+                        // do not allow refinement of leaves at higher
+                        // refinement level
                         markedLeaves[activeLeaves[i]] = 0;
+                    }
                 }
-            }
 
-            // refine selected octree boxes
-            refineSelectedBoxes(markedLeaves);
-        } while (nMarked);
+                // deselect leaves at the current level
+                if (hasLowerLevel)
+                {
+                    # pragma omp parallel for schedule(guided)
+                    forAll(activeLeaves, i)
+                    {
+                        if (leaves[activeLeaves[i]]->level() == levelI)
+                            markedLeaves[activeLeaves[i]] = 0;
+                    }
+                }
+
+                // refine selected octree boxes
+                refineSelectedBoxes(markedLeaves);
+            } while (nMarked);
+        }
     }
 }
 

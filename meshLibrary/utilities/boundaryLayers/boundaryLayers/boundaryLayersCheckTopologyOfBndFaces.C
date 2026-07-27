@@ -34,8 +34,6 @@ License
 #include "HashSet.H"
 #include "DynamicList.H"
 
-#include <set>
-
 //#define DEBUGLayer
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -60,7 +58,7 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
 
     // create a set of patch pairs. These are pairs at which the layers
     // shall be terminated
-    std::set<std::pair<label, label>> terminatedPairs;
+    HashSet<edge, Hash<edge>> terminatedPairs;
     forAll(treatPatchesWithPatch_, patchI)
     {
         const DynamicList<label>& otherPatches = treatPatchesWithPatch_[patchI];
@@ -74,7 +72,7 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
 
             terminatedPairs.insert
             (
-                std::make_pair
+                edge
                 (
                     Foam::min(patchI, otherPatches[patchJ]),
                     Foam::max(patchI, otherPatches[patchJ])
@@ -140,13 +138,13 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
                 }
 
 
-                std::pair<label, label> pp
+                edge pp
                 (
                     Foam::min(fPatch, neiPatches[eI]),
                     Foam::max(fPatch, neiPatches[eI])
                 );
 
-                if (terminatedPairs.find(pp) == terminatedPairs.end())
+                if (!terminatedPairs.found(pp))
                 {
                     continue;
                 }
@@ -159,13 +157,13 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
                 }
                 else
                 {
-                    std::pair<label, label> ppPrev
+                    edge ppPrev
                     (
                         Foam::min(fPatch, neiPatches[neiPatches.rcIndex(eI)]),
                         Foam::max(fPatch, neiPatches[neiPatches.rcIndex(eI)])
                     );
 
-                    if (terminatedPairs.find(ppPrev) == terminatedPairs.end())
+                    if (!terminatedPairs.found(ppPrev))
                     {
                         usePrev = true;
                     }
@@ -177,13 +175,13 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
                 }
                 else
                 {
-                    std::pair<label, label> ppNext
+                    edge ppNext
                     (
                         Foam::min(fPatch, neiPatches[neiPatches.fcIndex(eI)]),
                         Foam::max(fPatch, neiPatches[neiPatches.fcIndex(eI)])
                     );
 
-                    if (terminatedPairs.find(ppNext) == terminatedPairs.end())
+                    if (!terminatedPairs.found(ppNext))
                     {
                         useNext = true;
                     }

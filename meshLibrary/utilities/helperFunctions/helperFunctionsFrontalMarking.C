@@ -200,7 +200,7 @@ Foam::label Foam::Module::help::groupMarking
 
         const label threadI = omp_get_thread_num();
 
-        DynamicList<std::pair<label, label>> threadCommPairs;
+        DynamicList<labelPair> threadCommPairs;
 
         const label minEl = threadI*chunkSize;
 
@@ -248,7 +248,7 @@ Foam::label Foam::Module::help::groupMarking
                     {
                         // this is a communication interface between
                         // two threads
-                        threadCommPairs.append(std::make_pair(elI, nei));
+                        threadCommPairs.append(labelPair(elI, nei));
                     }
                     else if (selector(nei))
                     {
@@ -289,9 +289,9 @@ Foam::label Foam::Module::help::groupMarking
         labelListList2D localNeiGroups(nGroups);
         forAll(threadCommPairs, cfI)
         {
-            const std::pair<label, label>& lp = threadCommPairs[cfI];
-            const label groupI = elementInGroup[lp.first];
-            const label neiGroup = elementInGroup[lp.second];
+            const labelPair& lp = threadCommPairs[cfI];
+            const label groupI = elementInGroup[lp.first()];
+            const label neiGroup = elementInGroup[lp.second()];
 
             if ((neiGroup >= nGroups) || (groupI >= nGroups))
             {

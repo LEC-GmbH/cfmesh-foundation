@@ -128,7 +128,7 @@ Foam::label Foam::Module::triSurfFacets::addFacetSubset(const word& subsetName)
 
 void Foam::Module::triSurfFacets::removeFacetSubset(const label subsetID)
 {
-    if (facetSubsets_.find(subsetID) == facetSubsets_.end())
+    if (!facetSubsets_.found(subsetID))
     {
         return;
     }

@@ -110,10 +110,12 @@ inline Foam::label Foam::Module::meshSubset::type() const
 template<class ListType>
 inline void Foam::Module::meshSubset::containedElements(ListType& l) const
 {
-    l.setSize(data_.size());
+    const labelList sorted(data_.sortedToc());
+
+    l.setSize(sorted.size());
 
     label counter(0);
-    for (const label elemi : data_)
+    for (const label elemi : sorted)
     {
         l[counter++] = elemi;
     }
@@ -135,9 +137,9 @@ inline void Foam::Module::meshSubset::removeElement(const label elmt)
 template<class ListType>
 inline void Foam::Module::meshSubset::updateSubset(const ListType& newLabels)
 {
-    std::set<label> newData;
+    labelHashSet newData;
 
-    for (const label elemi : data_)
+    for (const label elemi : data_.toc())
     {
         if (newLabels[elemi] < 0)
         {
@@ -156,9 +158,9 @@ inline void Foam::Module::meshSubset::updateSubset
     const labelListList2D& newLabels
 )
 {
-    std::set<label> newData;
+    labelHashSet newData;
 
-    for (const label elemi : data_)
+    for (const label elemi : data_.toc())
     {
         forAllRow(newLabels, elemi, i)
         {
@@ -172,7 +174,7 @@ inline void Foam::Module::meshSubset::updateSubset
 
 inline bool Foam::Module::meshSubset::found(const label elmt) const
 {
-    return (data_.find(elmt) != data_.end());
+    return data_.found(elmt);
 }
 
 
@@ -197,9 +199,9 @@ inline bool Foam::Module::meshSubset::operator==(const meshSubset& ms) const
         return false;
     }
 
-    for (const label elemi : data_)
+    for (const label elemi : data_.toc())
     {
-        if (ms.data_.find(elemi) == ms.data_.end())
+        if (!ms.data_.found(elemi))
         {
             return false;
         }
@@ -227,9 +229,11 @@ inline Foam::Ostream& Foam::Module::operator<<
 
     os << sel.name_ << nl << sel.type_;
 
-    labelList data(sel.data_.size());
+    const labelList sorted(sel.data_.sortedToc());
+
+    labelList data(sorted.size());
     label counter(0);
-    for (const label elemi : sel.data_)
+    for (const label elemi : sorted)
     {
         data[counter++] = elemi;
     }

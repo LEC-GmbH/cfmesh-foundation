@@ -33,8 +33,6 @@ License
 #include "helperFunctions.H"
 #include "demandDrivenData.H"
 
-#include <map>
-
 #include <omp.h>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -410,15 +408,15 @@ void Foam::Module::boundaryLayers::createNewVertices
 
             if (patchVertex[bpI] & EDGENODE)
             {
-                if (otherVrts_.find(pointI) == otherVrts_.end())
+                if (!otherVrts_.found(pointI))
                 {
-                    std::map<std::pair<label, label>, label> m;
+                    EdgeMap<label> m;
 
-                    otherVrts_.insert(std::make_pair(pointI, m));
+                    otherVrts_.insert(pointI, m);
                 }
 
-                std::pair<label, label> pr(pKey, pKey);
-                otherVrts_[pointI].insert(std::make_pair(pr, nPoints_++));
+                edge pr(pKey, pKey);
+                otherVrts_[pointI].insert(pr, nPoints_++);
             }
             else
             {
@@ -444,14 +442,14 @@ void Foam::Module::boundaryLayers::createNewVertices
             if (patchVertex[bpI] & EDGENODE)
             {
                 // set the new point or an edge point
-                if (otherVrts_.find(pointI) == otherVrts_.end())
+                if (!otherVrts_.found(pointI))
                 {
-                    std::map<std::pair<label, label>, label> m;
+                    EdgeMap<label> m;
 
-                    otherVrts_.insert(std::make_pair(pointI, m));
+                    otherVrts_.insert(pointI, m);
                 }
 
-                std::pair<label, label> pr(pKey, pKey);
+                edge pr(pKey, pKey);
                 const label npI = otherVrts_[pointI][pr];
                 points[npI] = p;
             }
@@ -469,28 +467,28 @@ void Foam::Module::boundaryLayers::createNewVertices
     {
         const label pointI = bPoints[bpI];
 
-        if (otherVrts_.find(pointI) == otherVrts_.end())
+        if (!otherVrts_.found(pointI))
         {
             continue;
         }
 
         const point& p = points[pointI];
 
-        std::map<std::pair<label, label>, label>& m = otherVrts_[pointI];
+        EdgeMap<label>& m = otherVrts_[pointI];
         DynamicList<label> usedPatches;
         DynamicList<label> newNodeLabel;
         DynamicList<vector> newPatchPenetrationVector;
         forAllRow(pPatches, bpI, patchI)
         {
             const label pKey = patchKey_[pPatches[bpI][patchI]];
-            const std::pair<label, label> pr(pKey, pKey);
-            const std::map<std::pair<label, label>, label>::const_iterator it =
+            const edge pr(pKey, pKey);
+            const EdgeMap<label>::const_iterator it =
                 m.find(pr);
             if ((it != m.end()) && findIndex(usedPatches, pKey) == -1)
             {
                 usedPatches.append(pKey);
-                newNodeLabel.append(it->second);
-                newPatchPenetrationVector.append(points[it->second] - p);
+                newNodeLabel.append(it());
+                newPatchPenetrationVector.append(points[it()] - p);
             }
         }
 
@@ -544,11 +542,8 @@ void Foam::Module::boundaryLayers::createNewVertices
 
                     m.insert
                     (
-                        std::make_pair
-                        (
-                            std::make_pair(usedPatches[i], usedPatches[j]),
-                            nPoints_
-                        )
+                        edge(usedPatches[i], usedPatches[j]),
+                        nPoints_
                     );
                     ++nPoints_;
                 }

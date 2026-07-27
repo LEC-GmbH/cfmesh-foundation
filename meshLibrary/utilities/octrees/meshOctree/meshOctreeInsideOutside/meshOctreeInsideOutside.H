@@ -43,7 +43,7 @@ SourceFiles
 #include "meshOctreeModifier.H"
 #include "labelListListOps.H"
 #include "DynamicList.H"
-#include <map>
+#include "Map.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -70,7 +70,7 @@ class meshOctreeInsideOutside
         labelListList2D cubesInGroup_;
 
         //- type for a group
-        std::map<label, direction> groupType_;
+        Map<direction> groupType_;
 
         //- boundary DATA boxes for a given group
         //  DynamicList<DynamicList<label>>, not labelListList2D: grown

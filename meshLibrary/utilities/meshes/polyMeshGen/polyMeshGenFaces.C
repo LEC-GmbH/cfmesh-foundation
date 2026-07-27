@@ -255,18 +255,15 @@ Foam::label Foam::Module::polyMeshGenFaces::addFaceSubset(const word& setName)
     }
 
     id = 0;
-    for (std::map<label, meshSubset>::const_iterator it = faceSubsets_.cbegin(); it != faceSubsets_.cend(); ++it)
+    forAllConstIter(Map<meshSubset>, faceSubsets_, it)
     {
-        id = Foam::max(id, it->first + 1);
+        id = Foam::max(id, it.key() + 1);
     }
 
     faceSubsets_.insert
     (
-        std::make_pair
-        (
-            id,
-            meshSubset(setName, meshSubset::FACESUBSET)
-        )
+        id,
+        meshSubset(setName, meshSubset::FACESUBSET)
     );
 
     return id;
@@ -275,7 +272,7 @@ Foam::label Foam::Module::polyMeshGenFaces::addFaceSubset(const word& setName)
 
 void Foam::Module::polyMeshGenFaces::removeFaceSubset(const label setI)
 {
-    if (faceSubsets_.find(setI) == faceSubsets_.end())
+    if (!faceSubsets_.found(setI))
     {
         return;
     }
@@ -289,7 +286,7 @@ Foam::word Foam::Module::polyMeshGenFaces::faceSubsetName
     const label setI
 ) const
 {
-    std::map<label, meshSubset>::const_iterator it =
+    Map<meshSubset>::const_iterator it =
         faceSubsets_.find(setI);
     if (it == faceSubsets_.end())
     {
@@ -297,7 +294,7 @@ Foam::word Foam::Module::polyMeshGenFaces::faceSubsetName
         return word();
     }
 
-    return it->second.name();
+    return it().name();
 }
 
 
@@ -306,11 +303,11 @@ Foam::label Foam::Module::polyMeshGenFaces::faceSubsetIndex
     const word& setName
 ) const
 {
-    for (std::map<label, meshSubset>::const_iterator it = faceSubsets_.cbegin(); it != faceSubsets_.cend(); ++it)
+    forAllConstIter(Map<meshSubset>, faceSubsets_, it)
     {
-        if (it->second.name() == setName)
+        if (it().name() == setName)
         {
-            return it->first;
+            return it.key();
         }
     }
 
@@ -472,13 +469,13 @@ void Foam::Module::polyMeshGenFaces::write() const
     patches.write();
 
     // write face subsets
-    for (std::map<label, meshSubset>::const_iterator setIt = faceSubsets_.cbegin(); setIt != faceSubsets_.cend(); ++setIt)
+    forAllConstIter(Map<meshSubset>, faceSubsets_, setIt)
     {
         faceSet set
         (
             IOobject
             (
-                setIt->second.name(),
+                setIt().name(),
                 runTime_.constant(),
                 "polyMesh/sets",
                 runTime_,
@@ -488,7 +485,7 @@ void Foam::Module::polyMeshGenFaces::write() const
         );
 
         DynamicList<label> containedElements;
-        setIt->second.containedElements(containedElements);
+        setIt().containedElements(containedElements);
 
         forAll(containedElements, i)
         {

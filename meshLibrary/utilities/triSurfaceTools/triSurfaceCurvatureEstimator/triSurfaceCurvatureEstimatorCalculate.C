@@ -139,7 +139,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
     # pragma omp parallel for schedule(dynamic, 40)
     forAll(pointTriangles, pointI)
     {
-        std::map<label, DynamicList<label>> regionTriangles;
+        Map<DynamicList<label>> regionTriangles;
         Map<labelHashSet> otherLabels;
         Map<vector> normals;
 
@@ -150,19 +150,16 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
 
             if (!normals.found(regionI))
                 normals.insert(regionI, vector::zero);
-            if (regionTriangles.find(regionI) != regionTriangles.end())
+            if (regionTriangles.found(regionI))
                 regionTriangles.insert
                 (
-                    std::make_pair
-                    (
-                        regionI,
-                        DynamicList<label>()
-                    )
+                    regionI,
+                    DynamicList<label>()
                 );
             if (!otherLabels.found(regionI))
                 otherLabels.insert(regionI, labelHashSet());
 
-            regionTriangles[regionI].append(triI);
+            regionTriangles(regionI).append(triI);
 
             forAll(surface_[triI], tpI)
             {

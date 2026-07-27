@@ -46,8 +46,7 @@ SourceFiles
 #include "meshSubset.H"
 #include "pointFieldPMG.H"
 #include "DynamicList.H"
-
-#include <map>
+#include "Map.H"
 
 namespace Foam
 {
@@ -69,7 +68,7 @@ protected:
         pointFieldPMG points_;
 
         //- map of point subsets
-        std::map<label, meshSubset> pointSubsets_;
+        Map<meshSubset> pointSubsets_;
 
 
     // Disallow bitwise assignment

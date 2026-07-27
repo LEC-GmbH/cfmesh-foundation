@@ -96,18 +96,18 @@ void Foam::Module::triSurfacePartitioner::edgeGroupsSharedByPatches
 {
     edgeGroups.clear();
 
-    std::pair<label, label> pp
+    edge pp
     (
         Foam::min(patch1, patch2),
         Foam::max(patch1, patch2)
     );
 
-    std::map<std::pair<label, label>, labelHashSet>::const_iterator it =
+    EdgeMap<labelHashSet>::const_iterator it =
         patchesEdgeGroups_.find(pp);
 
     if (it != patchesEdgeGroups_.end())
     {
-        const labelHashSet& eGroups = it->second;
+        const labelHashSet& eGroups = it();
 
         for (const label groupi : eGroups.toc())
         {
@@ -126,7 +126,7 @@ void Foam::Module::triSurfacePartitioner::cornersSharedByEdgeGroups
 {
     corners.clear();
 
-    std::pair<label, label> ep
+    edge ep
     (
         Foam::min(edgeGroup1, edgeGroup2),
         Foam::max(edgeGroup1, edgeGroup2)
@@ -136,7 +136,7 @@ void Foam::Module::triSurfacePartitioner::cornersSharedByEdgeGroups
 
     if (it != edgeGroupsCorners_.end())
     {
-        const labelHashSet& corn = it->second;
+        const labelHashSet& corn = it();
 
         for (const label corni : corn.toc())
         {

@@ -579,7 +579,7 @@ void Foam::Module::checkMeshDict::checkEntries() const
 
 void Foam::Module::checkMeshDict::updatePatchCellSize
 (
-    const std::map<word, wordList>& patchesFromPatch
+    const HashTable<wordList>& patchesFromPatch
 )
 {
     if (meshDict_.found("patchCellSize"))
@@ -596,14 +596,14 @@ void Foam::Module::checkMeshDict::updatePatchCellSize
             {
                 const word& pName = patchNames[patchI];
 
-                std::map<word, wordList>::const_iterator it =
+                HashTable<wordList>::const_iterator it =
                     patchesFromPatch.find(pName);
                 if (it == patchesFromPatch.end())
                 {
                     continue;
                 }
 
-                const wordList& updatedPatchNames = it->second;
+                const wordList& updatedPatchNames = it();
 
                 const dictionary& pDict = dict.subDict(pName);
                 const scalar cellSize = readScalar(pDict.lookup("cellSize"));
@@ -629,7 +629,7 @@ void Foam::Module::checkMeshDict::updatePatchCellSize
                 const word& pName = prl[prlI].patchName();
                 const scalar cellSize = prl[prlI].cellSize();
 
-                std::map<word, wordList>::const_iterator it =
+                HashTable<wordList>::const_iterator it =
                     patchesFromPatch.find(pName);
 
                 if (it == patchesFromPatch.end())
@@ -637,7 +637,7 @@ void Foam::Module::checkMeshDict::updatePatchCellSize
                     continue;
                 }
 
-                const wordList& updatedPatchNames = it->second;
+                const wordList& updatedPatchNames = it();
                 forAll(updatedPatchNames, nameI)
                 {
                     updatedPatchRefinement.append
@@ -659,14 +659,14 @@ void Foam::Module::checkMeshDict::updatePatchCellSize
 
 void Foam::Module::checkMeshDict::updateSubsetCellSize
 (
-    const std::map<word, wordList>& /*patchesFromPatch*/
+    const HashTable<wordList>& /*patchesFromPatch*/
 )
 {}
 
 
 void Foam::Module::checkMeshDict::updateLocalRefinement
 (
-    const std::map<word, wordList>& patchesFromPatch
+    const HashTable<wordList>& patchesFromPatch
 )
 {
     if (meshDict_.found("localRefinement"))
@@ -681,14 +681,14 @@ void Foam::Module::checkMeshDict::updateLocalRefinement
             {
                 const word& pName = entries[dictI];
 
-                std::map<word, wordList>::const_iterator it =
+                HashTable<wordList>::const_iterator it =
                     patchesFromPatch.find(pName);
                 if (it == patchesFromPatch.end())
                 {
                     continue;
                 }
 
-                const wordList& updatedPatchNames = it->second;
+                const wordList& updatedPatchNames = it();
 
                 const dictionary& pDict = dict.subDict(pName);
                 dictionary copy = pDict;
@@ -709,7 +709,7 @@ void Foam::Module::checkMeshDict::updateLocalRefinement
 
 void Foam::Module::checkMeshDict::updateKeepCellsIntersectingPatches
 (
-    const std::map<word, wordList>& patchesFromPatch
+    const HashTable<wordList>& patchesFromPatch
 )
 {
     if (meshDict_.found("keepCellsIntersectingPatches"))
@@ -725,7 +725,7 @@ void Foam::Module::checkMeshDict::updateKeepCellsIntersectingPatches
             {
                 const word& pName = patchNames[patchI];
 
-                std::map<word, wordList>::const_iterator it =
+                HashTable<wordList>::const_iterator it =
                     patchesFromPatch.find(pName);
 
                 if (it == patchesFromPatch.end())
@@ -734,7 +734,7 @@ void Foam::Module::checkMeshDict::updateKeepCellsIntersectingPatches
                     continue;
                 }
 
-                const wordList& newPatchNames = it->second;
+                const wordList& newPatchNames = it();
 
                 forAll(newPatchNames, nameI)
                 {
@@ -750,7 +750,7 @@ void Foam::Module::checkMeshDict::updateKeepCellsIntersectingPatches
             {
                 const word& pName = kcip[i];
 
-                std::map<word, wordList>::const_iterator it =
+                HashTable<wordList>::const_iterator it =
                     patchesFromPatch.find(pName);
 
                 if (it == patchesFromPatch.end())
@@ -758,7 +758,7 @@ void Foam::Module::checkMeshDict::updateKeepCellsIntersectingPatches
                     updatedPatchNames.append(pName);
                 }
 
-                const wordList& newPatchNames = it->second;
+                const wordList& newPatchNames = it();
 
                 forAll(newPatchNames, nameI)
                 {
@@ -774,7 +774,7 @@ void Foam::Module::checkMeshDict::updateKeepCellsIntersectingPatches
 
 void Foam::Module::checkMeshDict::updateRemoveCellsIntersectingPatches
 (
-    const std::map<word, wordList>& patchesFromPatch
+    const HashTable<wordList>& patchesFromPatch
 )
 {
     if (meshDict_.found("removeCellsIntersectingPatches"))
@@ -790,7 +790,7 @@ void Foam::Module::checkMeshDict::updateRemoveCellsIntersectingPatches
             {
                 const word& pName = patchNames[patchI];
 
-                std::map<word, wordList>::const_iterator it =
+                HashTable<wordList>::const_iterator it =
                     patchesFromPatch.find(pName);
 
                 if (it == patchesFromPatch.end())
@@ -799,7 +799,7 @@ void Foam::Module::checkMeshDict::updateRemoveCellsIntersectingPatches
                     continue;
                 }
 
-                const wordList& newPatchNames = it->second;
+                const wordList& newPatchNames = it();
 
                 forAll(newPatchNames, nameI)
                 {
@@ -815,7 +815,7 @@ void Foam::Module::checkMeshDict::updateRemoveCellsIntersectingPatches
             {
                 const word& pName = kcip[i];
 
-                std::map<word, wordList>::const_iterator it =
+                HashTable<wordList>::const_iterator it =
                     patchesFromPatch.find(pName);
 
                 if (it == patchesFromPatch.end())
@@ -823,7 +823,7 @@ void Foam::Module::checkMeshDict::updateRemoveCellsIntersectingPatches
                     updatedPatchNames.append(pName);
                 }
 
-                const wordList& newPatchNames = it->second;
+                const wordList& newPatchNames = it();
 
                 forAll(newPatchNames, nameI)
                 {
@@ -844,14 +844,14 @@ void Foam::Module::checkMeshDict::updateRemoveCellsIntersectingPatches
 
 void Foam::Module::checkMeshDict::updateObjectRefinements
 (
-    const std::map<word, wordList>& /*patchesFromPatch*/
+    const HashTable<wordList>& /*patchesFromPatch*/
 )
 {}
 
 
 void Foam::Module::checkMeshDict::updateBoundaryLayers
 (
-    const std::map<word, wordList>& patchesFromPatch
+    const HashTable<wordList>& patchesFromPatch
 )
 {
     if (meshDict_.isDict("boundaryLayers"))
@@ -870,13 +870,13 @@ void Foam::Module::checkMeshDict::updateBoundaryLayers
 
                 dictionary dict = patchBndLayers.subDict(pName);
 
-                const std::map<word, wordList>::const_iterator it =
+                const HashTable<wordList>::const_iterator it =
                     patchesFromPatch.find(pName);
 
                 // patch name may be a regex
                 if (it != patchesFromPatch.end())
                 {
-                    const wordList& newNames = it->second;
+                    const wordList& newNames = it();
 
                     forAll(newNames, i)
                     {
@@ -893,8 +893,8 @@ void Foam::Module::checkMeshDict::updateBoundaryLayers
 
 void Foam::Module::checkMeshDict::updateRenameBoundary
 (
-    const std::map<word, wordList>& patchesFromPatch,
-    const std::map<word, word>& patchTypes
+    const HashTable<wordList>& patchesFromPatch,
+    const HashTable<word>& patchTypes
 )
 {
     dictionary newDict;
@@ -925,10 +925,10 @@ void Foam::Module::checkMeshDict::updateRenameBoundary
                 // current state of the dictionary
                 const dictionary& patchDicts = dict.subDict("newPatchNames");
 
-                for (std::map<word, wordList>::const_iterator it = patchesFromPatch.cbegin(); it != patchesFromPatch.cend(); ++it)
+                forAllConstIter(HashTable<wordList>, patchesFromPatch, it)
                 {
-                    const word& pName = it->first;
-                    const wordList& newNames = it->second;
+                    const word& pName = it.key();
+                    const wordList& newNames = it();
 
                     if (patchDicts.found(pName))
                     {
@@ -964,10 +964,10 @@ void Foam::Module::checkMeshDict::updateRenameBoundary
                         {
                             dictionary newPatchDict;
 
-                            newPatchDict.add("newName", it->first);
-                            std::map<word, word>::const_iterator tIter =
-                                patchTypes.find(it->first);
-                            newPatchDict.add("type", tIter->second);
+                            newPatchDict.add("newName", it.key());
+                            HashTable<word>::const_iterator tIter =
+                                patchTypes.find(it.key());
+                            newPatchDict.add("type", tIter());
 
                             newPatchesDict.add(newNames[i], newPatchDict);
                         }
@@ -983,7 +983,7 @@ void Foam::Module::checkMeshDict::updateRenameBoundary
                     const word& pName = patchEntries[entryI].keyword();
                     dictionary patchDict(patchEntries[entryI].dict());
 
-                    std::map<word, wordList>::const_iterator it =
+                    HashTable<wordList>::const_iterator it =
                         patchesFromPatch.find(pName);
 
                     if (it == patchesFromPatch.end())
@@ -991,7 +991,7 @@ void Foam::Module::checkMeshDict::updateRenameBoundary
                         continue;
                     }
 
-                    const wordList& newNames = it->second;
+                    const wordList& newNames = it();
 
                     forAll(newNames, i)
                     {
@@ -999,10 +999,10 @@ void Foam::Module::checkMeshDict::updateRenameBoundary
                     }
                 }
 
-                for (std::map<word, wordList>::const_iterator it = patchesFromPatch.cbegin(); it != patchesFromPatch.cend(); ++it)
+                forAllConstIter(HashTable<wordList>, patchesFromPatch, it)
                 {
-                    const word& pName = it->first;
-                    const wordList& newNames = it->second;
+                    const word& pName = it.key();
+                    const wordList& newNames = it();
 
                     if (newPatchesDict.found(pName))
                     {
@@ -1015,10 +1015,10 @@ void Foam::Module::checkMeshDict::updateRenameBoundary
                     {
                         dictionary newPatchDict;
 
-                        newPatchDict.add("newName", it->first);
-                        std::map<word, word>::const_iterator tIter =
-                            patchTypes.find(it->first);
-                        newPatchDict.add("type", tIter->second);
+                        newPatchDict.add("newName", it.key());
+                        HashTable<word>::const_iterator tIter =
+                            patchTypes.find(it.key());
+                        newPatchDict.add("type", tIter());
 
                         newPatchesDict.add(newNames[i], newPatchDict);
                     }
@@ -1030,18 +1030,18 @@ void Foam::Module::checkMeshDict::updateRenameBoundary
             // newPatchNames is not used
             dictionary& newPatchesDict = newDict.subDict("newPatchNames");
 
-            for (std::map<word, wordList>::const_iterator it = patchesFromPatch.cbegin(); it != patchesFromPatch.cend(); ++it)
+            forAllConstIter(HashTable<wordList>, patchesFromPatch, it)
             {
-                const wordList& newPatchNames = it->second;
+                const wordList& newPatchNames = it();
 
                 forAll(newPatchNames, i)
                 {
                     const word& pName = newPatchNames[i];
                     dictionary newPatchDict;
-                    newPatchDict.add("newName", it->first);
-                    std::map<word, word>::const_iterator tIter =
-                        patchTypes.find(it->first);
-                    newPatchDict.add("type", tIter->second);
+                    newPatchDict.add("newName", it.key());
+                    HashTable<word>::const_iterator tIter =
+                        patchTypes.find(it.key());
+                    newPatchDict.add("type", tIter());
 
                     newPatchesDict.add(pName, newPatchDict);
                 }
@@ -1056,18 +1056,18 @@ void Foam::Module::checkMeshDict::updateRenameBoundary
         // create the dictionary if it has not existed before
         dictionary& newPatchesDict = newDict.subDict("newPatchNames");
 
-        for (std::map<word, wordList>::const_iterator it = patchesFromPatch.cbegin(); it != patchesFromPatch.cend(); ++it)
+        forAllConstIter(HashTable<wordList>, patchesFromPatch, it)
         {
-            const wordList& newPatchNames = it->second;
+            const wordList& newPatchNames = it();
 
             forAll(newPatchNames, i)
             {
                 const word& pName = newPatchNames[i];
                 dictionary newPatchDict;
-                newPatchDict.add("newName", it->first);
-                std::map<word, word>::const_iterator tIter =
-                    patchTypes.find(it->first);
-                newPatchDict.add("type", tIter->second);
+                newPatchDict.add("newName", it.key());
+                HashTable<word>::const_iterator tIter =
+                    patchTypes.find(it.key());
+                newPatchDict.add("type", tIter());
 
                 newPatchesDict.add(pName, newPatchDict);
             }
@@ -1095,8 +1095,8 @@ Foam::Module::checkMeshDict::checkMeshDict
 
 void Foam::Module::checkMeshDict::updateDictionaries
 (
-    const std::map<word, wordList>& patchesFromPatch,
-    const std::map<word, word>& patchTypes,
+    const HashTable<wordList>& patchesFromPatch,
+    const HashTable<word>& patchTypes,
     const bool renamePatches
 )
 {

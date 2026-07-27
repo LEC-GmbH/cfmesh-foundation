@@ -90,10 +90,10 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
     const PtrList<boundaryPatch>& boundaries = mesh_.boundaries();
 
     // create patch name to index addressing
-    std::map<word, label> patchNameToIndex;
+    HashTable<label> patchNameToIndex;
     forAll(boundaries, patchI)
     {
-        patchNameToIndex[boundaries[patchI].patchName()] = patchI;
+        patchNameToIndex(boundaries[patchI].patchName()) = patchI;
     }
 
     // check layer labels over a patch
@@ -158,17 +158,13 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
         {
             const word pName = layerPatches[lpI];
 
-            std::map<word, label>::const_iterator it =
+            HashTable<label>::const_iterator it =
                 numLayersForPatch_.find(pName);
 
             if (it != numLayersForPatch_.end())
             {
                 // check if the layer is interrupted at this patch
-                if
-                (
-                    discontinuousLayersForPatch_.find(pName) !=
-                    discontinuousLayersForPatch_.end()
-                )
+                if (discontinuousLayersForPatch_.found(pName))
                 {
                     // set the number of layers and lock this location
                     // Note: normalise a disabled (<1) patch to the same
@@ -181,14 +177,14 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
                     // split-count product and zeroes out any cell that
                     // also touches an enabled, multi-layer patch.
                     nLayersAtPatch[patchNameToIndex[pName]] =
-                        (it->second < 1) ? -1 : it->second;
+                        (it() < 1) ? -1 : it();
                     protectedValue[patchNameToIndex[pName]] = true;
                     hasLocalValue = true;
                 }
                 else
                 {
                     // take the maximum number of layers
-                    maxNumLayers = Foam::max(maxNumLayers, it->second);
+                    maxNumLayers = Foam::max(maxNumLayers, it());
                     hasLocalValue = true;
                 }
             }
@@ -338,25 +334,25 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
                 nLayers = Foam::max(nLayers, nLayersAtBndFace_[bfI]);
 
                 // override with the maximum ratio
-                const std::map<word, scalar>::const_iterator rIt =
+                const HashTable<scalar>::const_iterator rIt =
                     thicknessRatioForPatch_.find(patchName);
                 if (rIt != thicknessRatioForPatch_.end())
                 {
-                    ratio = rIt->second;
+                    ratio = rIt();
                 }
 
                 // override with the minimum thickness set for this edge
-                const std::map<word, scalar>::const_iterator tIt =
+                const HashTable<scalar>::const_iterator tIt =
                     maxThicknessForPatch_.find(patchName);
                 if (tIt != maxThicknessForPatch_.end())
                 {
                     if (overridenThickness)
                     {
-                        thickness = Foam::min(thickness, tIt->second);
+                        thickness = Foam::min(thickness, tIt());
                     }
                     else
                     {
-                        thickness = tIt->second;
+                        thickness = tIt();
                         overridenThickness = true;
                     }
                 }

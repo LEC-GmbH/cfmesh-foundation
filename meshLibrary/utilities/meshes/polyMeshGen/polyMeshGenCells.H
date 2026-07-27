@@ -67,7 +67,7 @@ protected:
         cellListPMG cells_;
 
         //- cell subsets
-        std::map<label, meshSubset> cellSubsets_;
+        Map<meshSubset> cellSubsets_;
 
         //- primitive mesh which calculates addressing
         mutable polyMeshGenAddressing* addressingDataPtr_;

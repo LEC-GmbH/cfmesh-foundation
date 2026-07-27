@@ -34,6 +34,7 @@ License
 #include "meshOctree.H"
 #include "meshOctreeCreator.H"
 #include "helperFunctions.H"
+#include "Map.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -168,7 +169,7 @@ public:
         template<class labelListType>
         void collectGroups
         (
-            std::map<label, DynamicList<label>>& /*neiGroups*/,
+            Map<DynamicList<label>>& /*neiGroups*/,
             const labelListType& /*elementInGroup*/,
             const DynamicList<label>& /*localGroupLabel*/
         ) const
@@ -453,7 +454,7 @@ public:
         template<class labelListType>
         void collectGroups
         (
-            std::map<label, DynamicList<label>>& /*neiGroups*/,
+            Map<DynamicList<label>>& /*neiGroups*/,
             const labelListType& /*elementInGroup*/,
             const DynamicList<label>& /*localGroupLabel*/
         ) const
@@ -594,7 +595,7 @@ public:
         template<class labelListType>
         void collectGroups
         (
-            std::map<label, DynamicList<label>>& /*neiGroups*/,
+            Map<DynamicList<label>>& /*neiGroups*/,
             const labelListType& /*elementInGroup*/,
             const DynamicList<label>& /*localGroupLabel*/
         ) const

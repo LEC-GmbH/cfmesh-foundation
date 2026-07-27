@@ -36,8 +36,6 @@ License
 
 #include "HashSet.H"
 
-#include <map>
-
 #include <omp.h>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -219,11 +217,11 @@ void Foam::Module::boundaryLayers::createLayerCells
         }
 
         const edge& e = edges[edgeI];
-        if (otherVrts_.find(e.start()) == otherVrts_.end())
+        if (!otherVrts_.found(e.start()))
         {
             continue;
         }
-        if (otherVrts_.find(e.end()) == otherVrts_.end())
+        if (!otherVrts_.found(e.end()))
         {
             continue;
         }
@@ -310,18 +308,18 @@ void Foam::Module::boundaryLayers::createLayerCells
     }
 
     // create cells for corner nodes
-    typedef std::map<label, DynamicList<label>> ppType;
+    typedef Map<DynamicList<label>> ppType;
 
     ppType nodePatches;
 
-    for (std::map<label, std::map<std::pair<label, label>, label>>::const_iterator iter = otherVrts_.cbegin(); iter != otherVrts_.cend(); ++iter)
+    forAllConstIter(Map<EdgeMap<label>>, otherVrts_, iter)
     {
-        if (iter->second.size() == 2)
+        if (iter().size() == 2)
         {
             continue;
         }
 
-        const label bpI = bp[iter->first];
+        const label bpI = bp[iter.key()];
 
         // ensure correct orientation
         DynamicList<label> pFaces;
@@ -334,7 +332,7 @@ void Foam::Module::boundaryLayers::createLayerCells
         for (label i = 0; i < pFaces.size(); ++i)
         {
             const face& bf = bFaces[pFaces[i]];
-            const edge e = bf.faceEdge(bf.which(iter->first));
+            const edge e = bf.faceEdge(bf.which(iter.key()));
 
             for (label j = i + 1; j < pFaces.size(); ++j)
             {
@@ -360,13 +358,15 @@ void Foam::Module::boundaryLayers::createLayerCells
             appendUniq(patchIDs, boundaryFacePatches[pFaces[patchI]]);
         }
 
-        nodePatches.insert(std::make_pair(iter->first, patchIDs));
+        nodePatches.insert(iter.key(), patchIDs);
     }
 
     // create layer cells for corner nodes
-    for (ppType::iterator iter = nodePatches.begin(); iter != nodePatches.end(); ++iter)
+    const labelList nodePatchesKeys(nodePatches.sortedToc());
+    forAll(nodePatchesKeys, keyI)
     {
-        const DynamicList<label>& patchIDs = iter->second;
+        const label nodeI = nodePatchesKeys[keyI];
+        const DynamicList<label>& patchIDs = nodePatches[nodeI];
         DynamicList<label> pKeys;
         pKeys.reserve(3);
         forAll(patchIDs, patchI)
@@ -387,7 +387,7 @@ void Foam::Module::boundaryLayers::createLayerCells
         }
 
         faceList cellFaces;
-        createNewCellFromNode(iter->first, pKeys, cellFaces);
+        createNewCellFromNode(nodeI, pKeys, cellFaces);
 
         // store boundary faces
         appendList(newBoundaryFaces,cellFaces[1]);

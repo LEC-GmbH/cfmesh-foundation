@@ -33,8 +33,7 @@ License
 #include "demandDrivenData.H"
 #include "IOdictionary.H"
 #include "DynamicList.H"
-
-#include <map>
+#include "HashTable.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -44,16 +43,13 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
 
     const dictionary& dict = meshDict_.subDict("renameBoundary");
 
-    std::map<word, label> patchToLabel;
+    HashTable<label> patchToLabel;
     forAll(mesh_.boundaries(), patchI)
     {
         patchToLabel.insert
         (
-            std::pair<word, label>
-            (
-                mesh_.boundaries()[patchI].patchName(),
-                patchI
-            )
+            mesh_.boundaries()[patchI].patchName(),
+            patchI
         );
     }
 
@@ -96,7 +92,7 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
     // even though every original patch already got its own new slot
     wordList newPatchNames(patchToNew.size() + 1);
     wordList newPatchTypes(patchToNew.size() + 1);
-    std::map<word, label> newNameToPos;
+    HashTable<label> newNameToPos;
     label newPatchI(0);
 
     // read new patch names and types
@@ -157,7 +153,7 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
 
                 pDict.readIfPresent("newName", newName);
 
-                if (newNameToPos.find(newName) != newNameToPos.end())
+                if (newNameToPos.found(newName))
                 {
                     // patch with the same name already exists
                     patchToNew[matchedPatches[matchI]] = newNameToPos[newName];
@@ -165,7 +161,7 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
                 }
 
                 // add a new patch
-                newNameToPos.insert(std::pair<word, label>(newName, newPatchI));
+                newNameToPos.insert(newName, newPatchI);
                 newPatchNames[newPatchI] = newName;
                 newPatchTypes[newPatchI] = "wall";
 
@@ -197,7 +193,7 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
     {
         if (addDefaultPatch)
         {
-            newNameToPos.insert(std::pair<word, label>(defaultName, newPatchI));
+            newNameToPos.insert(defaultName, newPatchI);
             newPatchNames[newPatchI] = defaultName;
             newPatchTypes[newPatchI] = defaultType;
             ++newPatchI;
@@ -217,7 +213,7 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
 
         if (hasOrphanFaces)
         {
-            newNameToPos.insert(std::pair<word, label>(defaultName, newPatchI));
+            newNameToPos.insert(defaultName, newPatchI);
             newPatchNames[newPatchI] = defaultName;
             newPatchTypes[newPatchI] = defaultType;
             ++newPatchI;

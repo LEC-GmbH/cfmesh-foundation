@@ -44,8 +44,6 @@ SourceFiles
 #include "HashSet.H"
 #include "labelListListOps.H"
 
-#include <set>
-
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -73,8 +71,7 @@ class meshSubset
         label type_;
 
         //- labels of elements
-        //HashSet<label> data_;
-        std::set<label> data_;
+        labelHashSet data_;
 
 
 public:

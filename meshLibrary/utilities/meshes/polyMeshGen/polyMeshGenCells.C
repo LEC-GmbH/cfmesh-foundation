@@ -335,18 +335,15 @@ Foam::label Foam::Module::polyMeshGenCells::addCellSubset(const word& selName)
     }
 
     id = 0;
-    for (std::map<label, meshSubset>::const_iterator it = cellSubsets_.cbegin(); it != cellSubsets_.cend(); ++it)
+    forAllConstIter(Map<meshSubset>, cellSubsets_, it)
     {
-        id = Foam::max(id, it->first + 1);
+        id = Foam::max(id, it.key() + 1);
     }
 
     cellSubsets_.insert
     (
-        std::make_pair
-        (
-            id,
-            meshSubset(selName, meshSubset::CELLSUBSET)
-        )
+        id,
+        meshSubset(selName, meshSubset::CELLSUBSET)
     );
 
     return id;
@@ -358,7 +355,7 @@ Foam::word Foam::Module::polyMeshGenCells::cellSubsetName
     const label setI
 ) const
 {
-    std::map<label, meshSubset>::const_iterator it =
+    Map<meshSubset>::const_iterator it =
         cellSubsets_.find(setI);
 
     if (it == cellSubsets_.end())
@@ -367,7 +364,7 @@ Foam::word Foam::Module::polyMeshGenCells::cellSubsetName
         return word();
     }
 
-    return it->second.name();
+    return it().name();
 }
 
 
@@ -376,11 +373,11 @@ Foam::label Foam::Module::polyMeshGenCells::cellSubsetIndex
     const word& selName
 ) const
 {
-    for (std::map<label, meshSubset>::const_iterator it = cellSubsets_.cbegin(); it != cellSubsets_.cend(); ++it)
+    forAllConstIter(Map<meshSubset>, cellSubsets_, it)
     {
-        if (it->second.name() == selName)
+        if (it().name() == selName)
         {
-            return it->first;
+            return it.key();
         }
     }
 
@@ -469,13 +466,13 @@ void Foam::Module::polyMeshGenCells::write() const
     polyMeshGenFaces::write();
 
     // write cell subsets
-    for (std::map<label, meshSubset>::const_iterator setIt = cellSubsets_.cbegin(); setIt != cellSubsets_.cend(); ++setIt)
+    forAllConstIter(Map<meshSubset>, cellSubsets_, setIt)
     {
         cellSet set
         (
             IOobject
             (
-                setIt->second.name(),
+                setIt().name(),
                 runTime_.constant(),
                 "polyMesh/sets",
                 runTime_,
@@ -485,7 +482,7 @@ void Foam::Module::polyMeshGenCells::write() const
         );
 
         DynamicList<label> containedElements;
-        setIt->second.containedElements(containedElements);
+        setIt().containedElements(containedElements);
 
         forAll(containedElements, i)
         {

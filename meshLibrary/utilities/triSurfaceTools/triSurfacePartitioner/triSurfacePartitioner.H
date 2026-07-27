@@ -44,8 +44,7 @@ SourceFiles
 #include "triSurf.H"
 #include "DynamicList.H"
 #include "HashSet.H"
-
-#include <map>
+#include "EdgeMap.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -79,10 +78,10 @@ class triSurfacePartitioner
         List<labelHashSet> edgeGroupEdgeGroups_;
 
         //- edge groups between surface patches
-        std::map<std::pair<label, label>, labelHashSet> patchesEdgeGroups_;
+        EdgeMap<labelHashSet> patchesEdgeGroups_;
 
         //- corners shared by edge groups
-        std::map<std::pair<label, label>, labelHashSet> edgeGroupsCorners_;
+        EdgeMap<labelHashSet> edgeGroupsCorners_;
 
 
     // Private member functions

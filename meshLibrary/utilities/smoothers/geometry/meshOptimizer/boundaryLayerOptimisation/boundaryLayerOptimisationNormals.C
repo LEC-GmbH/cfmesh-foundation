@@ -59,8 +59,8 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectors
     // patchNormal is rebuilt fresh from read-only shared data for every
     // hairEdgeI (not incrementally updated), so it's safe for multiple
     // hair edges sharing the same bpI to compute it concurrently; only the
-    // final insertion into the shared std::map-based pointPatchNormal
-    // needs protection - std::map insertion isn't thread-safe even for
+    // final insertion into the shared Map-based pointPatchNormal
+    // needs protection - HashTable insertion isn't thread-safe even for
     // distinct keys, not just same-bpI collisions
     # pragma omp parallel for schedule(dynamic, 40)
     forAll(hairEdges_, hairEdgeI)
@@ -78,33 +78,33 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectors
             const label bfI = pointFaces[bpI][pfI];
             const label patchI = facePatch[bfI];
 
-            if (patchNormal.find(patchI) == patchNormal.end())
+            if (!patchNormal.found(patchI))
             {
-                patchNormal[patchI].first = fNormals[bfI];
-                patchNormal[patchI].second = mag(fNormals[bfI]);
+                patchNormal(patchI).first() = fNormals[bfI];
+                patchNormal(patchI).second() = mag(fNormals[bfI]);
             }
             else
             {
-                patchNormal[patchI].first += fNormals[bfI];
-                patchNormal[patchI].second += mag(fNormals[bfI]);
+                patchNormal[patchI].first() += fNormals[bfI];
+                patchNormal[patchI].second() += mag(fNormals[bfI]);
             }
         }
 
         # pragma omp critical
         {
-            pointPatchNormal[bpI] = patchNormal;
+            pointPatchNormal(bpI) = patchNormal;
         }
     }
 
     // finally, calculate normal vectors
     forAllIter(pointNormalsType, pointPatchNormal, it)
     {
-        patchNormalType& patchNormal = it->second;
+        patchNormalType& patchNormal = it();
 
         forAllIter(patchNormalType, patchNormal, pIt)
         {
-            pIt->second.first /= pIt->second.second;
-            //pIt->second.first /= (mag(pIt->second.first) + VSMALL);
+            pIt().first() /= pIt().second();
+            //pIt().first() /= (mag(pIt().first()) + VSMALL);
         }
     }
 }
@@ -225,12 +225,12 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectorsSmother
             vector n = -1.0*(newP - pts[0]);
             const scalar magN = (mag(n) + VSMALL);
 
-            patchNormal[patchI].first = (n/magN);
-            patchNormal[patchI].second = magN;
+            patchNormal(patchI).first() = (n/magN);
+            patchNormal(patchI).second() = magN;
 
             # pragma omp critical
             {
-                pointPatchNormal[bpI] = patchNormal;
+                pointPatchNormal(bpI) = patchNormal;
             }
         }
     }
@@ -531,7 +531,7 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsInside()
                 const patchNormalType& patchNormals = pointPatchNormal[bpI];
                 forAllConstIter(patchNormalType, patchNormals, pIt)
                 {
-                    hv -= pIt->second.first;
+                    hv -= pIt().first();
                     ++counter;
                 }
 

@@ -75,7 +75,7 @@ Foam::label Foam::Module::triSurfPoints::addPointSubset(const word& subsetName)
 
 void Foam::Module::triSurfPoints::removePointSubset(const label subsetID)
 {
-    if (pointSubsets_.find(subsetID) == pointSubsets_.end())
+    if (!pointSubsets_.found(subsetID))
     {
         return;
     }

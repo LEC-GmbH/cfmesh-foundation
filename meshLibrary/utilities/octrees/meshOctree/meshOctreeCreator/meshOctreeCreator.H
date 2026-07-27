@@ -44,8 +44,7 @@ SourceFiles
 #include "IOdictionary.H"
 #include "meshOctreeModifier.H"
 #include "patchRefinementList.H"
-
-#include <map>
+#include "Tuple2.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -114,7 +113,7 @@ private:
         direction globalRefLevel_;
 
         //- this list contains ref level for each surface triangle
-        List<DynamicList<std::pair<direction, scalar>>> surfRefLevel_;
+        List<DynamicList<Tuple2<direction, scalar>>> surfRefLevel_;
 
         //- set the boundBox such that maxCellSize is achieved
         void setRootCubeSizeAndRefParameters();

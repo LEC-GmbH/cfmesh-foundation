@@ -33,8 +33,7 @@ License
 #include "boolList.H"
 #include "demandDrivenData.H"
 #include "helperFunctions.H"
-
-#include <map>
+#include "Map.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -54,8 +53,8 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
     const labelHashSet& corners = surfacePartitioner_.corners();
     const labelHashSet& edgePoints = surfacePartitioner_.edgePoints();
 
-    typedef std::map<label, vector> ltvMap;
-    typedef std::map<label, ltvMap> lltvMap;
+    typedef Map<vector> ltvMap;
+    typedef Map<ltvMap> lltvMap;
     lltvMap pointPatchNormal;
 
     for (const label bpI : corners.toc())
@@ -63,16 +62,16 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
         if (activePointsPtr_ && !activePointsPtr_->operator[](bpI))
             continue;
 
-        ltvMap& patchNormal = pointPatchNormal[bpI];
+        ltvMap& patchNormal = pointPatchNormal(bpI);
 
         forAllRow(pointFaces, bpI, pfI)
         {
             const label bfI = pointFaces[bpI][pfI];
             const label patchI = facePatch[bfI];
 
-            if (patchNormal.find(patchI) == patchNormal.end())
+            if (!patchNormal.found(patchI))
             {
-                patchNormal[patchI] = fNormals[bfI];
+                patchNormal.insert(patchI, fNormals[bfI]);
             }
             else
             {
@@ -86,16 +85,16 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
         if (activePointsPtr_ && !activePointsPtr_->operator[](bpI))
             continue;
 
-        ltvMap& patchNormal = pointPatchNormal[bpI];
+        ltvMap& patchNormal = pointPatchNormal(bpI);
 
         forAllRow(pointFaces, bpI, pfI)
         {
             const label bfI = pointFaces[bpI][pfI];
             const label patchI = facePatch[bfI];
 
-            if (patchNormal.find(patchI) == patchNormal.end())
+            if (!patchNormal.found(patchI))
             {
-                patchNormal[patchI] = fNormals[bfI];
+                patchNormal.insert(patchI, fNormals[bfI]);
             }
             else
             {
@@ -106,13 +105,13 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
 
     forAllIter(lltvMap, pointPatchNormal, it)
     {
-        auto& patchNormal = pointPatchNormal[it->first];
+        auto& patchNormal = pointPatchNormal[it.key()];
 
         forAllIter(ltvMap, patchNormal, pIt)
         {
-            const scalar magv = mag(pIt->second) + VSMALL;
+            const scalar magv = mag(pIt()) + VSMALL;
 
-            pIt->second /= magv;
+            pIt() /= magv;
         }
     }
 
@@ -132,7 +131,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
 
             vector pNormal = pNormals[bpI];
 
-            if (pointPatchNormal.find(bpI) != pointPatchNormal.end())
+            if (pointPatchNormal.found(bpI))
                 pNormal = pointPatchNormal[bpI][facePatch[bfI]];
 
             const face& bf = bFaces[bfI];
