@@ -41,6 +41,7 @@ SourceFiles
 
 #include "partTriMesh.H"
 #include "triFace.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -61,10 +62,10 @@ class partTriMeshSimplex
     // Private data
 
         //- points making the simplex
-        DynList<point, 32> pts_;
+        DynamicList<point> pts_;
 
         //- triangles making the simplex
-        DynList<triFace, 32> trias_;
+        DynamicList<triFace> trias_;
 
 
 public:
@@ -79,19 +80,19 @@ public:
     // Member functions
 
         //- return points
-        inline DynList<point, 32>& pts()
+        inline DynamicList<point>& pts()
         {
             return pts_;
         }
 
         //- return points
-        inline const DynList<point, 32>& pts() const
+        inline const DynamicList<point>& pts() const
         {
             return pts_;
         }
 
         //- return triangles
-        inline const DynList<triFace, 32>& triangles() const
+        inline const DynamicList<triFace>& triangles() const
         {
             return trias_;
         }

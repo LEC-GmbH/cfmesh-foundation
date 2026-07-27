@@ -81,7 +81,8 @@ void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurface()
 {
     Info<< "Mapping vertices onto surface" << endl;
 
-    labelLongList nodesToMap(surfaceEngine_.boundaryPoints().size());
+    DynamicList<label> nodesToMap;
+    nodesToMap.setSize(surfaceEngine_.boundaryPoints().size());
     forAll(nodesToMap, i)
         nodesToMap[i] = i;
 
@@ -93,7 +94,7 @@ void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurface()
 
 void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurface
 (
-    const labelLongList& nodesToMap
+    const DynamicList<label>& nodesToMap
 )
 {
     const labelList& boundaryPoints = surfaceEngine_.boundaryPoints();
@@ -133,7 +134,8 @@ void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurfacePatches()
 {
     Info<< "Mapping vertices with respect to surface patches" << endl;
 
-    labelLongList nodesToMap(surfaceEngine_.boundaryPoints().size());
+    DynamicList<label> nodesToMap;
+    nodesToMap.setSize(surfaceEngine_.boundaryPoints().size());
     forAll(nodesToMap, i)
         nodesToMap[i] = i;
 
@@ -145,18 +147,18 @@ void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurfacePatches()
 
 void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurfacePatches
 (
-    const labelLongList& nodesToMap
+    const DynamicList<label>& nodesToMap
 )
 {
     const meshSurfacePartitioner& mPart = meshPartitioner();
     const labelHashSet& cornerPoints = mPart.corners();
     const labelHashSet& edgePoints = mPart.edgePoints();
-    const VRWGraph& pointPatches = mPart.pointPatches();
+    const labelListList2D& pointPatches = mPart.pointPatches();
 
     boolList treatedPoint(surfaceEngine_.boundaryPoints().size(), false);
 
     // find corner and edge points
-    labelLongList selectedCorners, selectedEdges;
+    DynamicList<label> selectedCorners, selectedEdges;
     forAll(nodesToMap, i)
     {
         if (cornerPoints.found(nodesToMap[i]))
@@ -196,7 +198,7 @@ void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurfacePatches
             mapPoint,
             dSq,
             nt,
-            pointPatches(bpI, 0),
+            pointPatches[bpI][0],
             p
         );
 

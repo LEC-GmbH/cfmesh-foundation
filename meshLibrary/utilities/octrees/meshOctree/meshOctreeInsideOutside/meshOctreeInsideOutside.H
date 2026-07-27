@@ -41,6 +41,8 @@ SourceFiles
 #define meshOctreeInsideOutside_H
 
 #include "meshOctreeModifier.H"
+#include "labelListListOps.H"
+#include "DynamicList.H"
 #include <map>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -62,22 +64,26 @@ class meshOctreeInsideOutside
         meshOctreeModifier octreeModifier_;
 
         //- group for a given leaf
-        labelLongList cubeGroup_;
+        DynamicList<label> cubeGroup_;
 
         //- cubes belonging to each group of octree boxes
-        VRWGraph cubesInGroup_;
+        labelListList2D cubesInGroup_;
 
         //- type for a group
         std::map<label, direction> groupType_;
 
         //- boundary DATA boxes for a given group
-        VRWGraph boundaryDATACubes_;
+        //  DynamicList<DynamicList<label>>, not labelListList2D: grown
+        //  one new row at a time (once per newly discovered group) in
+        //  frontalMarking() - needs O(1) amortized outer-array growth,
+        //  not List's O(N) per setSize() call.
+        DynamicList<DynamicList<label>> boundaryDATACubes_;
 
         //- flag for DATA boxes next to the OUTSIDE boxes
         boolList hasOutsideNeighbour_;
 
         //- labels of cubes marked by different threads
-        VRWGraph neighbouringGroups_;
+        labelListList2D neighbouringGroups_;
 
 
     // Private member functions

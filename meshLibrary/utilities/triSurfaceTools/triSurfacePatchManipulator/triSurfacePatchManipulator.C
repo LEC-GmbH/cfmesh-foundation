@@ -60,24 +60,24 @@ Foam::Module::triSurfacePatchManipulator::triSurfacePatchManipulator
 
 void Foam::Module::triSurfacePatchManipulator::detectedSurfaceRegions
 (
-    VRWGraph& graph
+    labelListList2D& graph
 ) const
 {
     graph.setSize(nPatches_);
 
-    labelLongList nFacetsInPatch(nPatches_, 0);
+    DynamicList<label> nFacetsInPatch(nPatches_, 0);
 
     forAll(facetInPatch_, triI)
         ++nFacetsInPatch[facetInPatch_[triI]];
 
-    graph.setSizeAndRowSize(nFacetsInPatch);
+    setSizeAndRowSize(graph, nFacetsInPatch);
 
     nFacetsInPatch = 0;
     forAll(facetInPatch_, triI)
     {
         const label patchI = facetInPatch_[triI];
 
-        graph(patchI, nFacetsInPatch[patchI]) = triI;
+        graph[patchI][nFacetsInPatch[patchI]] = triI;
         ++nFacetsInPatch[patchI];
     }
 }
@@ -92,11 +92,12 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
 ) const
 {
     // collect patch information
-    VRWGraph facetsInPatch;
+    labelListList2D facetsInPatch;
     detectedSurfaceRegions(facetsInPatch);
 
     // create new list of boundary patches
-    LongList<labelledTri> newTriangles(facetInPatch_.size());
+    DynamicList<labelledTri> newTriangles;
+    newTriangles.setSize(facetInPatch_.size());
     label counter(0);
     geometricSurfacePatchList newPatches(nPatches_);
 
@@ -116,7 +117,7 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
             forAllRow(facetsInPatch, patchI, fpI)
             {
                 const label origPatchI =
-                    surf_[facetsInPatch(patchI, fpI)].region();
+                    surf_[facetsInPatch[patchI][fpI]].region();
                 newPatches[patchI].name() =
                     surf_.patches()[origPatchI].name() + '_' +
                     Foam::name(patchI);
@@ -128,13 +129,13 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
     }
 
     // create triangles for the new surface
-    labelLongList newFacetLabel(newTriangles.size(), -1);
+    DynamicList<label> newFacetLabel(newTriangles.size(), -1);
 
     forAll(facetsInPatch, patchI)
         forAllRow(facetsInPatch, patchI, tI)
         {
-            newFacetLabel[facetsInPatch(patchI, tI)] = counter;
-            labelledTri tria = surf_[facetsInPatch(patchI, tI)];
+            newFacetLabel[facetsInPatch[patchI][tI]] = counter;
+            labelledTri tria = surf_[facetsInPatch[patchI][tI]];
             tria.region() = patchI;
             newTriangles[counter++] = tria;
         }
@@ -145,12 +146,12 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
         (
             newTriangles,
             newPatches,
-            edgeLongList(),
+            DynamicList<edge>(),
             surf_.points()
         );
 
     // transfer facet subsets
-    DynList<label> subsetIDs;
+    DynamicList<label> subsetIDs;
     surf_.facetSubsetIndices(subsetIDs);
     forAll(subsetIDs, subsetI)
     {
@@ -158,7 +159,7 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
 
         const label newID = newSurfPtr->addFacetSubset(sName);
 
-        labelLongList facetsInSubset;
+        DynamicList<label> facetsInSubset;
         surf_.facetsInSubset(subsetIDs[subsetI], facetsInSubset);
 
         forAll(facetsInSubset, i)
@@ -177,7 +178,7 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
 
         const label newID = newSurfPtr->addPointSubset(sName);
 
-        labelLongList pointsInSubset;
+        DynamicList<label> pointsInSubset;
         surf_.pointsInSubset(subsetIDs[subsetI], pointsInSubset);
 
         forAll(pointsInSubset, i)
@@ -202,7 +203,7 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
         {
             forAllRow(facetsInPatch, patchI, fI)
             {
-                const label opatchI = surf_[facetsInPatch(patchI, fI)].region();
+                const label opatchI = surf_[facetsInPatch[patchI][fI]].region();
 
                 patchToNewPatches[opatchI].insert(patchI);
             }

@@ -40,7 +40,7 @@ inline Foam::label Foam::Module::triSurfFacets::size() const
 }
 
 
-inline const Foam::Module::LongList<Foam::labelledTri>&
+inline const Foam::DynamicList<Foam::labelledTri>&
 Foam::Module::triSurfFacets::facets() const
 {
     return triangles_;
@@ -98,7 +98,7 @@ inline void Foam::Module::triSurfFacets::removeFacetFromSubset
 inline void Foam::Module::triSurfFacets::facetInSubsets
 (
     const label triI,
-    DynList<label>& facetSubsets
+    DynamicList<label>& facetSubsets
 ) const
 {
     facetSubsets.clear();
@@ -115,7 +115,7 @@ inline void Foam::Module::triSurfFacets::facetInSubsets
 
 inline void Foam::Module::triSurfFacets::facetSubsetIndices
 (
-    DynList<label>& indices
+    DynamicList<label>& indices
 ) const
 {
     indices.clear();

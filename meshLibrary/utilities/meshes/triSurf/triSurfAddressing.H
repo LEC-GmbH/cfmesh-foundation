@@ -42,11 +42,10 @@ SourceFiles
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#include "VRWGraph.H"
-#include "edgeLongList.H"
+#include "labelListListOps.H"
+#include "DynamicList.H"
 #include "triSurfFacets.H"
 #include "labelledTri.H"
-#include "DynList.H"
 
 #include <map>
 
@@ -68,25 +67,22 @@ class triSurfAddressing
     // Topology addressing
 
         //- const reference to the facets
-        const LongList<labelledTri>& facets_;
+        const DynamicList<labelledTri>& facets_;
 
         //- facets connected to a point
-        mutable VRWGraph* pointFacetsPtr_;
+        mutable labelListList2D* pointFacetsPtr_;
 
         //- edges in the triangulation
-        mutable edgeLongList* edgesPtr_;
+        mutable DynamicList<edge>* edgesPtr_;
 
         //- labels of edges in the triangles
-        mutable VRWGraph* facetEdgesPtr_;
+        mutable labelListList2D* facetEdgesPtr_;
 
         //- labels of triangles connected to an edge
-        mutable VRWGraph* edgeFacetsPtr_;
+        mutable labelListList2D* edgeFacetsPtr_;
 
         //- labels of edges connected to a point
-        mutable VRWGraph* pointEdgesPtr_;
-
-        //- facets connected tp a facet via edges
-        mutable VRWGraph* facetFacetsEdgesPtr_;
+        mutable labelListList2D* pointEdgesPtr_;
 
 
     // Geometry data
@@ -118,9 +114,6 @@ class triSurfAddressing
         //- calculate point-edges addressing
         void calculatePointEdges() const;
 
-        //- calculate facet-faceys addressing
-        void calculateFacetFacetsEdges() const;
-
         //- calculate point normals
         void calculatePointNormals() const;
 
@@ -144,7 +137,7 @@ public:
     triSurfAddressing
     (
         const pointField& points,
-        const LongList<labelledTri>& triangles
+        const DynamicList<labelledTri>& triangles
     );
 
     //- Destructor
@@ -154,22 +147,19 @@ public:
     // Member functions
 
         //- return point-facets addressing
-        inline const VRWGraph& pointFacets() const;
+        inline const labelListList2D& pointFacets() const;
 
         //- return edges
-        inline const LongList<edge>& edges() const;
+        inline const DynamicList<edge>& edges() const;
 
         //- return facet-edges addressing
-        inline const VRWGraph& facetEdges() const;
+        inline const labelListList2D& facetEdges() const;
 
         //- return edge-facets addressing
-        inline const VRWGraph& edgeFacets() const;
+        inline const labelListList2D& edgeFacets() const;
 
         //- return point-edges addressing
-        inline const VRWGraph& pointEdges() const;
-
-        //- return facet-facets addressing
-        inline const VRWGraph& facetFacets() const;
+        inline const labelListList2D& pointEdges() const;
 
         //- return point normals
         inline const pointField& pointNormals() const;

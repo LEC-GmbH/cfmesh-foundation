@@ -46,7 +46,7 @@ Foam::Module::triSurfFacets::triSurfFacets()
 
 Foam::Module::triSurfFacets::triSurfFacets
 (
-    const LongList<labelledTri>& triangles
+    const DynamicList<labelledTri>& triangles
 )
 :
     triangles_(triangles),
@@ -64,7 +64,7 @@ Foam::Module::triSurfFacets::triSurfFacets
 
 Foam::Module::triSurfFacets::triSurfFacets
 (
-    const LongList<labelledTri>& triangles,
+    const DynamicList<labelledTri>& triangles,
     const geometricSurfacePatchList& patches
 )
 :

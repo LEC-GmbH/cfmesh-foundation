@@ -41,7 +41,7 @@ SourceFiles
 #define findCellsIntersectingSurface_H
 
 #include "boolList.H"
-#include "VRWGraph.H"
+#include "labelListListOps.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -74,7 +74,7 @@ class findCellsIntersectingSurface
         boolList intersectedCells_;
 
         //- stores information which surface facets intersect each cell
-        VRWGraph facetsIntersectingCell_;
+        labelListList2D facetsIntersectingCell_;
 
 
     // Private member functions

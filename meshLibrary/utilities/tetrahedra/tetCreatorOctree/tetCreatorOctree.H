@@ -44,8 +44,8 @@ SourceFiles
 #include "partTet.H"
 #include "meshOctreeAddressing.H"
 #include "meshOctreeCubeCoordinates.H"
-#include "VRWGraph.H"
-#include "labelLongList.H"
+#include "labelListListOps.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -72,22 +72,22 @@ class tetCreatorOctree
         meshOctreeAddressing octreeCheck_;
 
         //- points of the tetrahedrisation
-        LongList<point> tetPoints_;
+        DynamicList<point> tetPoints_;
 
         //- tetrahedra
-        LongList<partTet> tets_;
+        DynamicList<partTet> tets_;
 
         //- octree leaves sorted according to their level
-        List<labelLongList> sortedLeaves_;
+        List<DynamicList<label>> sortedLeaves_;
 
         //- node labels of vertices created inside split-hex boxes
-        VRWGraph* subNodeLabelsPtr_;
+        labelListList2D* subNodeLabelsPtr_;
 
         //- cube centre label
         labelList* cubeLabelPtr_;
 
         //- cube face label
-        VRWGraph* faceCentreLabelPtr_;
+        labelListList2D* faceCentreLabelPtr_;
 
         //- are tets created or not
         bool created_;
@@ -155,7 +155,7 @@ public:
 
     // Member Functions
 
-        const LongList<point>& tetPoints() const
+        const DynamicList<point>& tetPoints() const
         {
             if (!created_)
                 FatalErrorInFunction
@@ -164,7 +164,7 @@ public:
             return tetPoints_;
         }
 
-        const LongList<partTet>& tets() const
+        const DynamicList<partTet>& tets() const
         {
             if (!created_)
                 FatalErrorInFunction

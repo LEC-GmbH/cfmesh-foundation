@@ -43,7 +43,7 @@ using namespace Foam::Module;
 void makePatchFromSubset
 (
     triSurf& origSurf,
-    const DynList<word>& subsetNames
+    const DynamicList<word>& subsetNames
 )
 {
     // create new list of patches
@@ -61,14 +61,14 @@ void makePatchFromSubset
             subsetNames[subsetI];
 
     // create new triangles
-    LongList<labelledTri> newTriangles(origSurf.facets());
+    DynamicList<labelledTri> newTriangles(origSurf.facets());
 
     // set patches for all triangles
     forAll(subsetNames, subsetI)
     {
         const label subsetID = origSurf.facetSubsetIndex(subsetNames[subsetI]);
 
-        labelLongList subsetFaces;
+        DynamicList<label> subsetFaces;
         origSurf.facetsInSubset(subsetID, subsetFaces);
 
         const label regionI = origSurf.patches().size() + subsetI;
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 
     triSurf* origSurfPtr = new triSurf(inFileName);
 
-    DynList<word> subsetNames;
+    DynamicList<word> subsetNames;
     const label subsetID = origSurfPtr->facetSubsetIndex(subsetName);
     if (subsetID >= 0)
     {
@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
             << "Subset " << subsetName
             << " checking subsets containing this string!" << endl;
 
-        DynList<label> existingSubsets;
+        DynamicList<label> existingSubsets;
         origSurfPtr->facetSubsetIndices(existingSubsets);
 
         forAll(existingSubsets, subsetI)

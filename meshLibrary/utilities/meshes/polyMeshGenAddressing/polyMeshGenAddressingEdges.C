@@ -29,9 +29,9 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "polyMeshGenAddressing.H"
-#include "DynList.H"
 #include "helperFunctions.H"
 #include "demandDrivenData.H"
+#include "DynamicList.H"
 
 #include <omp.h>
 
@@ -49,7 +49,7 @@ void Foam::Module::polyMeshGenAddressing::calcEdges() const
     else
     {
         const faceListPMG& faces = mesh_.faces();
-        const VRWGraph& pointFaces = this->pointFaces();
+        const labelListList2D& pointFaces = this->pointFaces();
 
         edgesPtr_ = new edgeList();
         label nEdges(0);
@@ -60,7 +60,7 @@ void Foam::Module::polyMeshGenAddressing::calcEdges() const
 
         # pragma omp parallel num_threads(nThreads) if (faces.size() > 1000)
         {
-            LongList<edge> edgesHelper;
+            DynamicList<edge> edgesHelper;
 
             # pragma omp for schedule(static)
             forAll(faces, faceI)
@@ -73,7 +73,7 @@ void Foam::Module::polyMeshGenAddressing::calcEdges() const
                     const label s = fe.start();
                     const label e = fe.end();
 
-                    DynList<label> edgeFaces;
+                    DynamicList<label> edgeFaces;
 
                     bool store(true);
 
@@ -82,7 +82,7 @@ void Foam::Module::polyMeshGenAddressing::calcEdges() const
                     // with the smallest label
                     forAllRow(pointFaces, s, pfI)
                     {
-                        const label ofI = pointFaces(s, pfI);
+                        const label ofI = pointFaces[s][pfI];
                         const face& of = faces[ofI];
 
                         if (of.which(e) < 0)

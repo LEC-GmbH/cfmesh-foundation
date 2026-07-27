@@ -48,7 +48,7 @@ void Foam::Module::checkBoundaryFacesSharingTwoEdges::findFacesAtBndEdge()
 
     const labelList& bp = mse.bp();
     const edgeList& edges = mse.edges();
-    const VRWGraph& pointEdges = mse.boundaryPointEdges();
+    const labelListList2D& pointEdges = mse.boundaryPointEdges();
 
     const label nIntFaces = mesh_.nInternalFaces();
     const faceListPMG& faces = mesh_.faces();
@@ -77,7 +77,7 @@ void Foam::Module::checkBoundaryFacesSharingTwoEdges::findFacesAtBndEdge()
                 bool foundNext(false), foundPrev(false);
                 forAllRow(pointEdges, bpI, peI)
                 {
-                    const label beI = pointEdges(bpI, peI);
+                    const label beI = pointEdges[bpI][peI];
 
                     if (edges[beI] == ePrev)
                     {
@@ -107,13 +107,13 @@ void Foam::Module::checkBoundaryFacesSharingTwoEdges::findFacesAtBndEdge()
 void Foam::Module::checkBoundaryFacesSharingTwoEdges::findBndFacesAtBndVertex()
 {
     const meshSurfaceEngine& mse = meshSurface();
-    const VRWGraph& pointFaces = mse.pointFaces();
+    const labelListList2D& pointFaces = mse.pointFaces();
 
     nBndFacesAtBndPoint_.setSize(pointFaces.size());
     nBndFacesAtBndPoint_ = 0;
 
     forAll(nBndFacesAtBndPoint_, bpI)
-        nBndFacesAtBndPoint_[bpI] = pointFaces.sizeOfRow(bpI);
+        nBndFacesAtBndPoint_[bpI] = pointFaces[bpI].size();
 }
 
 
@@ -131,7 +131,7 @@ void Foam::Module::checkBoundaryFacesSharingTwoEdges::removeExcessiveVertices()
     {
         const face& f = faces[faceI];
 
-        DynList<label> newF;
+        DynamicList<label> newF;
         forAll(f, pI)
         {
             const label bpI = bp[f[pI]];
@@ -166,7 +166,7 @@ void Foam::Module::checkBoundaryFacesSharingTwoEdges::removeExcessiveVertices()
         {
             const face& f = faces[faceI];
 
-            DynList<label> newF;
+            DynamicList<label> newF;
             forAll(f, pI)
             {
                 const label bpI = bp[f[pI]];
@@ -303,7 +303,6 @@ bool Foam::Module::checkBoundaryFacesSharingTwoEdges::improveTopology()
         decomposeFaces(mesh_).decomposeMeshFaces(decomposeFace);
 
         // decompose cells
-        VRWGraph pRegions(mesh_.points().size());
         decomposeCells dc(mesh_);
         dc.decomposeMesh(decomposeCell);
 

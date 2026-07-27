@@ -38,23 +38,23 @@ void Foam::Module::voronoiMeshExtractor::createAddressing() const
     if (pointEdgesPtr_ || edgeTetsPtr_ || boundaryEdgePtr_ || edgesPtr_)
         return;
 
-    pointEdgesPtr_ = new VRWGraph(tetCreator_.tetPoints().size());
-    VRWGraph& pointEdges = *pointEdgesPtr_;
+    pointEdgesPtr_ = new labelListList2D(tetCreator_.tetPoints().size());
+    labelListList2D& pointEdges = *pointEdgesPtr_;
 
-    edgeTetsPtr_ = new VRWGraph();
-    VRWGraph& edgeTets = *edgeTetsPtr_;
+    edgeTetsPtr_ = new DynamicList<DynamicList<label>>();
+    DynamicList<DynamicList<label>>& edgeTets = *edgeTetsPtr_;
 
     boundaryEdgePtr_ = new boolList();
     boolList& boundaryEdges = *boundaryEdgePtr_;
 
-    edgesPtr_ = new LongList<edge>();
-    LongList<edge>& edges = *edgesPtr_;
+    edgesPtr_ = new DynamicList<edge>();
+    DynamicList<edge>& edges = *edgesPtr_;
 
     // create edges and edgeTets
-    const LongList<partTet>& tets = tetCreator_.tets();
+    const DynamicList<partTet>& tets = tetCreator_.tets();
 
-    VRWGraph pointTets;
-    pointTets.reverseAddressing(tets);
+    labelListList2D pointTets;
+    reverseAddressing(pointTets, tets);
 
     forAll(tets, tetI)
     {
@@ -65,16 +65,16 @@ void Foam::Module::voronoiMeshExtractor::createAddressing() const
             const edge& e = tetEdges[eI];
             const label start = e.start();
 
-            const row endTets = pointTets[e.end()];
+            const DynamicList<label>& endTets = pointTets[e.end()];
 
             bool store(true);
 
-            DynList<label> eTets;
+            DynamicList<label> eTets;
             forAllRow(pointTets, start, ptI)
             {
-                const label tetJ = pointTets(start, ptI);
+                const label tetJ = pointTets[start][ptI];
 
-                if (!endTets.found(tetJ))
+                if (findIndex(endTets, tetJ) < 0)
                     continue;
 
                 if (tetJ < tetI)
@@ -88,7 +88,7 @@ void Foam::Module::voronoiMeshExtractor::createAddressing() const
 
             if (store)
             {
-                edgeTets.appendList(eTets);
+                appendList(edgeTets, eTets);
 
                 edges.append(e);
             }
@@ -96,7 +96,7 @@ void Foam::Module::voronoiMeshExtractor::createAddressing() const
     }
 
     // calculate point-edges addressing
-    pointEdges.reverseAddressing(edges);
+    reverseAddressing(pointEdges, edges);
 
     // sort edge-tets in circular order
     boundaryEdges.setSize(edgeTets.size());
@@ -106,7 +106,7 @@ void Foam::Module::voronoiMeshExtractor::createAddressing() const
     forAll(edgeTets, edgeI)
     {
         const edge& e = edges[edgeI];
-        row eTets = edgeTets[edgeI];
+        DynamicList<label>& eTets = edgeTets[edgeI];
 
         forAll(eTets, tetI)
         {
@@ -167,7 +167,7 @@ void Foam::Module::voronoiMeshExtractor::createAddressing() const
 }
 
 
-const Foam::Module::VRWGraph&
+const Foam::Module::labelListList2D&
 Foam::Module::voronoiMeshExtractor::pointEdges() const
 {
     if (!pointEdgesPtr_)
@@ -177,7 +177,7 @@ Foam::Module::voronoiMeshExtractor::pointEdges() const
 }
 
 
-const Foam::Module::LongList<Foam::edge>&
+const Foam::DynamicList<Foam::edge>&
 Foam::Module::voronoiMeshExtractor::edges() const
 {
     if (!edgesPtr_)
@@ -187,7 +187,7 @@ Foam::Module::voronoiMeshExtractor::edges() const
 }
 
 
-const Foam::Module::VRWGraph&
+const Foam::DynamicList<Foam::DynamicList<Foam::label>>&
 Foam::Module::voronoiMeshExtractor::edgeTets() const
 {
     if (!edgeTetsPtr_)

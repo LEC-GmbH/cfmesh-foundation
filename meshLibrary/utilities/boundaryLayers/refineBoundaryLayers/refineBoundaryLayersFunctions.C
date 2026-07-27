@@ -32,7 +32,6 @@ License
 #include "meshSurfaceEngine.H"
 #include "helperFunctions.H"
 #include "polyMeshGen2DEngine.H"
-#include "VRWGraphList.H"
 #include "meshSurfacePartitioner.H"
 #include "detectBoundaryLayers.H"
 
@@ -65,7 +64,7 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
     // reach the highest point labels already present from an earlier
     // pass's generateNewVertices() - undersizing here caused out-of-bounds
     // reads later in refineFace() for faces touching those higher points.
-    splitEdgesAtPoint_.reverseAddressing(mesh_.points().size(), splitEdges_);
+    reverseAddressing(splitEdgesAtPoint_, mesh_.points().size(), splitEdges_);
 
     // check if the layer is valid
     bool validLayer(true);
@@ -81,7 +80,7 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
 
         forAll(bf, pI)
         {
-            if (splitEdgesAtPoint_.sizeOfRow(bf[pI]) == 0)
+            if (splitEdgesAtPoint_[bf[pI]].size() == 0)
             {
                 validLayer = false;
             }
@@ -103,16 +102,16 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
     {
         layerAtPatch_[i].clear();
     }
-    List<DynList<label>> groupsAtPatch(boundaries.size());
+    labelListList2D groupsAtPatch(boundaries.size());
     forAll(faceInLayer, bfI)
     {
-        groupsAtPatch[facePatch[bfI]].appendUniq(faceInLayer[bfI]);
+        appendUniq(groupsAtPatch[facePatch[bfI]], faceInLayer[bfI]);
     }
 
     // set the information which patches have an extruded layer
     forAll(groupsAtPatch, patchI)
     {
-        const DynList<label>& layers = groupsAtPatch[patchI];
+        const DynamicList<label>& layers = groupsAtPatch[patchI];
 
         forAll(layers, i)
         {
@@ -132,7 +131,7 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
     patchesInLayer_.setSize(nGroups);
     forAll(layerAtPatch_, patchI)
     {
-        const DynList<label>& layers = layerAtPatch_[patchI];
+        const DynamicList<label>& layers = layerAtPatch_[patchI];
 
         forAll(layers, i)
         {
@@ -149,7 +148,7 @@ bool Foam::Module::refineBoundaryLayers::analyseLayers()
 
     forAll(patchesInLayer_, layerI)
     {
-        const DynList<word>& layerPatches = patchesInLayer_[layerI];
+        const DynamicList<word>& layerPatches = patchesInLayer_[layerI];
 
         label maxNumLayers(1);
         bool hasLocalValue(false);
@@ -289,15 +288,19 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
 
     const meshSurfaceEngine& mse = surfaceEngine();
     const faceList::subList& bFaces = mse.boundaryFaces();
-    const VRWGraph& pointFaces = mse.pointFaces();
+    const labelListList2D& pointFaces = mse.pointFaces();
     const labelList& facePatch = mse.boundaryFacePatches();
     const labelList& bp = mse.bp();
 
     // allocate the data from storing parameters applying to a split edge
-    LongList<scalar> firstLayerThickness(splitEdges_.size());
-    LongList<scalar> thicknessRatio(splitEdges_.size());
-    labelLongList nNodesAtEdge(splitEdges_.size());
-    labelLongList nLayersAtEdge(splitEdges_.size());
+    DynamicList<scalar> firstLayerThickness;
+    firstLayerThickness.setSize(splitEdges_.size());
+    DynamicList<scalar> thicknessRatio;
+    thicknessRatio.setSize(splitEdges_.size());
+    DynamicList<label> nNodesAtEdge;
+    nNodesAtEdge.setSize(splitEdges_.size());
+    DynamicList<label> nLayersAtEdge;
+    nLayersAtEdge.setSize(splitEdges_.size());
 
     // count the number of vertices for each split edge
     const label nThreads = 3*omp_get_num_procs();
@@ -320,7 +323,7 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
 
             forAllRow(pointFaces, bpI, pfI)
             {
-                const label bfI = pointFaces(bpI, pfI);
+                const label bfI = pointFaces[bpI][pfI];
                 const label pos = help::positionOfEdgeInFace(e, bFaces[bfI]);
                 if (pos >= 0)
                 {
@@ -377,7 +380,7 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
 
     // calculate the number of additional vertices which will be generated
     // on edges of the mesh
-    DynList<label> numPointsAtThread;
+    DynamicList<label> numPointsAtThread;
     numPointsAtThread.setSize(nThreads);
     numPointsAtThread = 0;
 
@@ -390,7 +393,7 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
     }
 
     // allocate the space in a graph storing ids of points on a split edge
-    newVerticesForSplitEdge_.setSizeAndRowSize(nNodesAtEdge);
+    setSizeAndRowSize(newVerticesForSplitEdge_, nNodesAtEdge);
 
     // calculate the number of points which will be generated
     // on split edges
@@ -419,7 +422,7 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
             const vector v = e.vec(points);
             const scalar magv = mag(v);
 
-            const label nLayers = newVerticesForSplitEdge_.sizeOfRow(seI) - 1;
+            const label nLayers = newVerticesForSplitEdge_[seI].size() - 1;
 
             scalar firstThickness = magv/nLayersAtEdge[seI];
             if (thicknessRatio[seI] >(1. + SMALL))
@@ -453,7 +456,7 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
             }
 
             // generate vertices for this edge
-            newVerticesForSplitEdge_(seI, 0) = e.start();
+            newVerticesForSplitEdge_[seI][0] = e.start();
 
             scalar param = firstThickness;
             const vector vec = v /Foam::max(magv, VSMALL);
@@ -465,11 +468,11 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
 
                 param += firstThickness*Foam::pow(thicknessRatio[seI], pI);
 
-                newVerticesForSplitEdge_(seI, pI) = nPoints;
+                newVerticesForSplitEdge_[seI][pI] = nPoints;
                 points[nPoints++] = newP;
             }
 
-            newVerticesForSplitEdge_(seI, nLayers) = e.end();
+            newVerticesForSplitEdge_[seI][nLayers] = e.end();
         }
     }
 

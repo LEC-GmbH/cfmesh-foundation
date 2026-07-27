@@ -149,7 +149,7 @@ Foam::Module::meshSurfaceEngine::faceOwners() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshSurfaceEngine::pointFaces() const
 {
     if (!pointFacesPtr_)
@@ -166,7 +166,7 @@ Foam::Module::meshSurfaceEngine::pointFaces() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshSurfaceEngine::pointInFaces() const
 {
     if (!pointInFacePtr_)
@@ -183,7 +183,7 @@ Foam::Module::meshSurfaceEngine::pointInFaces() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshSurfaceEngine::pointPoints() const
 {
     if (!pointPointsPtr_)
@@ -268,7 +268,7 @@ Foam::Module::meshSurfaceEngine::edges() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshSurfaceEngine::boundaryPointEdges() const
 {
     if (!bpEdgesPtr_)
@@ -285,7 +285,7 @@ Foam::Module::meshSurfaceEngine::boundaryPointEdges() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshSurfaceEngine::edgeFaces() const
 {
     if (!edgeFacesPtr_)
@@ -302,7 +302,7 @@ Foam::Module::meshSurfaceEngine::edgeFaces() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshSurfaceEngine::faceEdges() const
 {
     if (!faceEdgesPtr_)
@@ -319,7 +319,7 @@ Foam::Module::meshSurfaceEngine::faceEdges() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshSurfaceEngine::edgePatches() const
 {
     if (!edgePatchesPtr_)
@@ -336,7 +336,7 @@ Foam::Module::meshSurfaceEngine::edgePatches() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshSurfaceEngine::faceFaces() const
 {
     if (!faceFacesPtr_)

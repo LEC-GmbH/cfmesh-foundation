@@ -30,7 +30,6 @@ License
 
 #include "topologicalCleaner.H"
 #include "polyMeshGenAddressing.H"
-#include "DynList.H"
 #include "meshSurfaceEngine.H"
 
 #include <map>
@@ -49,8 +48,8 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
     faceListPMG& faces = meshModifier.facesAccess();
     const cellListPMG& cells = mesh_.cells();
 
-    const VRWGraph& pointCells = mesh_.addressingData().pointCells();
-    const VRWGraph& cellCells = mesh_.addressingData().cellCells();
+    const labelListList2D& pointCells = mesh_.addressingData().pointCells();
+    const labelListList2D& cellCells = mesh_.addressingData().cellCells();
 
     meshSurfaceEngine mse(mesh_);
     const labelList& bPoints = mse.boundaryPoints();
@@ -63,24 +62,24 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
 
         label material(1);
 
-        labelList materialForCell(pointCells.sizeOfRow(pointI), 0);
+        labelList materialForCell(pointCells[pointI].size(), 0);
 
         forAllRow(pointCells, pointI, cI)
         if (!materialForCell[cI])
         {
             materialForCell[cI] = material;
 
-            DynList<label> frontCells;
+            DynamicList<label> frontCells;
             frontCells.append(cI);
 
             do
             {
-                DynList<label> newFrontCells;
+                DynamicList<label> newFrontCells;
 
                 forAll(frontCells, fcI)
                 {
                     const label pointCellI =
-                    pointCells(pointI, frontCells[fcI]);
+                    pointCells[pointI][frontCells[fcI]];
 
                     forAllRow(cellCells, pointCellI, nI)
                     {
@@ -90,8 +89,8 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
                                 continue;
 
                             if (
-                                cellCells(pointCellI, nI) ==
-                                pointCells(pointI, pcI)
+                                cellCells[pointCellI][nI] ==
+                                pointCells[pointI][pcI]
                             )
                             {
                                 newFrontCells.append(pcI);
@@ -124,7 +123,7 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
                 if (materialForCell[pcI] == 1)
                     continue;
 
-                const cell& c = cells[pointCells(pointI, pcI)];
+                const cell& c = cells[pointCells[pointI][pcI]];
 
                 forAll(c, fI)
                 {
@@ -162,7 +161,7 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesFaces
 {
     const meshSurfaceEngine mse(mesh_);
 
-    const VRWGraph& edgeFaces = mse.edgeFaces();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
     const labelList& faceOwner = mse.faceOwners();
 
     boolList removeCell(mesh_.cells().size(), false);
@@ -170,10 +169,10 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesFaces
 
     # pragma omp parallel for schedule(static, 1)
     forAll(edgeFaces, edgeI)
-        if (edgeFaces.sizeOfRow(edgeI) > 2)
+        if (edgeFaces[edgeI].size() > 2)
         {
             forAllRow(edgeFaces, edgeI, fI)
-                removeCell[faceOwner[edgeFaces(edgeI, fI)]] = true;
+                removeCell[faceOwner[edgeFaces[edgeI][fI]]] = true;
 
             changed = true;
         }

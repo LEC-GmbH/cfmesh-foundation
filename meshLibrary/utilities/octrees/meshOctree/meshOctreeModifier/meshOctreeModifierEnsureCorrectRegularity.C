@@ -30,6 +30,7 @@ License
 
 #include "meshOctreeModifier.H"
 #include "HashSet.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -38,16 +39,16 @@ void Foam::Module::meshOctreeModifier::ensureCorrectRegularity
     labelList& refineBox
 )
 {
-    const LongList<meshOctreeCube*>& leaves = octree_.leaves_;
+    const DynamicList<meshOctreeCube*>& leaves = octree_.leaves_;
 
-    labelLongList front;
+    DynamicList<label> front;
     forAll(refineBox, leafI)
     {
         if (refineBox[leafI])
             front.append(leafI);
     }
 
-    DynList<label> neighbours;
+    DynamicList<label> neighbours;
 
     label nMarked;
     do
@@ -56,7 +57,7 @@ void Foam::Module::meshOctreeModifier::ensureCorrectRegularity
 
         # pragma omp parallel private(neighbours)
         {
-            labelLongList tFront;
+            DynamicList<label> tFront;
 
             # pragma omp for schedule(dynamic, 50)
             forAll(front, i)
@@ -115,7 +116,7 @@ bool Foam::Module::meshOctreeModifier::ensureCorrectRegularitySons
     labelList& refineBox
 )
 {
-    const LongList<meshOctreeCube*>& leaves = octree_.leaves_;
+    const DynamicList<meshOctreeCube*>& leaves = octree_.leaves_;
 
     label nMarked(0);
 

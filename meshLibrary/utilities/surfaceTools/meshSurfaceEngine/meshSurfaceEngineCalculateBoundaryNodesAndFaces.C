@@ -32,9 +32,10 @@ License
 #include "demandDrivenData.H"
 #include "boolList.H"
 #include "helperFunctions.H"
-#include "VRWGraphSMPModifier.H"
+#include "labelListListOps.H"
 #include "labelledPoint.H"
 #include "HashSet.H"
+#include "DynamicList.H"
 
 #include <map>
 #include <set>
@@ -197,15 +198,15 @@ void Foam::Module::meshSurfaceEngine::calculatePointFaces() const
     // fill pointFacesAddr
     if (!pointFacesPtr_)
     {
-        pointFacesPtr_ = new VRWGraph();
+        pointFacesPtr_ = new labelListList2D();
     }
-    VRWGraph& pointFacesAddr = *pointFacesPtr_;
+    labelListList2D& pointFacesAddr = *pointFacesPtr_;
 
     if (!pointInFacePtr_)
     {
-        pointInFacePtr_ = new VRWGraph();
+        pointInFacePtr_ = new labelListList2D();
     }
-    VRWGraph& pointInFaceAddr = *pointInFacePtr_;
+    labelListList2D& pointInFaceAddr = *pointInFacePtr_;
 
     const labelList& bPoints = this->boundaryPoints();
     const faceList::subList& bFaces = this->boundaryFaces();
@@ -213,7 +214,7 @@ void Foam::Module::meshSurfaceEngine::calculatePointFaces() const
     // create boundary points
     const labelList& bp = this->bp();
 
-    labelLongList npf;
+    DynamicList<label> npf;
 
     label nThreads = 3*omp_get_num_procs();
     if (bPoints.size() < 1000)
@@ -222,13 +223,13 @@ void Foam::Module::meshSurfaceEngine::calculatePointFaces() const
     }
 
     label minRow(INT_MAX), maxRow(0);
-    List<List<LongList<labelPair>>> dataForOtherThreads(nThreads);
+    List<List<DynamicList<labelPair>>> dataForOtherThreads(nThreads);
 
     # pragma omp parallel num_threads(nThreads)
     {
         const label threadI = omp_get_thread_num();
 
-        List<LongList<labelPair>>& dot = dataForOtherThreads[threadI];
+        List<DynamicList<labelPair>>& dot = dataForOtherThreads[threadI];
         dot.setSize(nThreads);
 
         // find min and max entry in the graph
@@ -299,7 +300,7 @@ void Foam::Module::meshSurfaceEngine::calculatePointFaces() const
         // count the appearances which are not local to the processor
         for (label i = 0; i < nThreads; ++i)
         {
-            const LongList<labelPair>& data =
+            const DynamicList<labelPair>& data =
                 dataForOtherThreads[i][threadI];
 
             forAll(data, j)
@@ -313,8 +314,8 @@ void Foam::Module::meshSurfaceEngine::calculatePointFaces() const
         // allocate graph
         # pragma omp master
         {
-            VRWGraphSMPModifier(pointFacesAddr).setSizeAndRowSize(npf);
-            VRWGraphSMPModifier(pointInFaceAddr).setSizeAndRowSize(npf);
+            Foam::Module::setSizeAndRowSize(pointFacesAddr, npf);
+            Foam::Module::setSizeAndRowSize(pointInFaceAddr, npf);
         }
 
         # pragma omp barrier
@@ -328,7 +329,7 @@ void Foam::Module::meshSurfaceEngine::calculatePointFaces() const
         // update data from processors with smaller labels
         for (label i = 0; i < threadI; ++i)
         {
-            const LongList<labelPair>& data =
+            const DynamicList<labelPair>& data =
                 dataForOtherThreads[i][threadI];
 
             forAll(data, j)
@@ -336,8 +337,8 @@ void Foam::Module::meshSurfaceEngine::calculatePointFaces() const
                 const label bpI = data[j].first();
                 const label bfI = data[j].second();
 
-                pointFacesAddr(bpI, npf[bpI]) = bfI;
-                pointInFaceAddr(bpI, npf[bpI]) =
+                pointFacesAddr[bpI][npf[bpI]] = bfI;
+                pointInFaceAddr[bpI][npf[bpI]] =
                     bFaces[bfI].which(bPoints[bpI]);
 
                 ++npf[bpI];
@@ -356,8 +357,8 @@ void Foam::Module::meshSurfaceEngine::calculatePointFaces() const
 
                 if ((bpI >= localMin) && (bpI < localMax))
                 {
-                    pointInFaceAddr(bpI, npf[bpI]) = pI;
-                    pointFacesAddr(bpI, npf[bpI]++) = bfI;
+                    pointInFaceAddr[bpI][npf[bpI]] = pI;
+                    pointFacesAddr[bpI][npf[bpI]++] = bfI;
                 }
             }
         }
@@ -365,7 +366,7 @@ void Foam::Module::meshSurfaceEngine::calculatePointFaces() const
         // update data from the processors with higher labels
         for (label i = threadI + 1; i < nThreads; ++i)
         {
-            const LongList<labelPair>& data =
+            const DynamicList<labelPair>& data =
                 dataForOtherThreads[i][threadI];
 
             forAll(data, j)
@@ -373,8 +374,8 @@ void Foam::Module::meshSurfaceEngine::calculatePointFaces() const
                 const label bpI = data[j].first();
                 const label bfI = data[j].second();
 
-                pointFacesAddr(bpI, npf[bpI]) = bfI;
-                pointInFaceAddr(bpI, npf[bpI]) =
+                pointFacesAddr[bpI][npf[bpI]] = bfI;
+                pointInFaceAddr[bpI][npf[bpI]] =
                     bFaces[bfI].which(bPoints[bpI]);
 
                 ++npf[bpI];
@@ -391,14 +392,14 @@ void Foam::Module::meshSurfaceEngine::calculatePointPoints() const
 {
     if (!pointPointsPtr_)
     {
-        pointPointsPtr_ = new VRWGraph();
+        pointPointsPtr_ = new labelListList2D();
     }
 
-    VRWGraph& pointPoints = *pointPointsPtr_;
+    labelListList2D& pointPoints = *pointPointsPtr_;
 
     const labelList& boundaryPoints = this->boundaryPoints();
     const faceList::subList& bFaces = this->boundaryFaces();
-    const VRWGraph& pFaces = this->pointFaces();
+    const labelListList2D& pFaces = this->pointFaces();
     const labelList& bp = this->bp();
 
     const label nThreads = 3*omp_get_num_procs();
@@ -416,16 +417,16 @@ void Foam::Module::meshSurfaceEngine::calculatePointPoints() const
         # pragma omp for schedule(static)
         forAll(pFaces, bpI)
         {
-            DynList<label> pPoints;
+            DynamicList<label> pPoints;
 
             forAllRow(pFaces, bpI, pfI)
             {
-                const face& bf = bFaces[pFaces(bpI, pfI)];
+                const face& bf = bFaces[pFaces[bpI][pfI]];
 
                 const label pos = bf.which(boundaryPoints[bpI]);
 
-                pPoints.appendUniq(bp[bf.nextLabel(pos)]);
-                pPoints.appendUniq(bp[bf.prevLabel(pos)]);
+                appendUniq(pPoints, bp[bf.nextLabel(pos)]);
+                appendUniq(pPoints, bp[bf.prevLabel(pos)]);
             }
 
             npp[bpI] = pPoints.size();
@@ -434,26 +435,26 @@ void Foam::Module::meshSurfaceEngine::calculatePointPoints() const
         # pragma omp barrier
 
         # pragma omp master
-        VRWGraphSMPModifier(pointPoints).setSizeAndRowSize(npp);
+        Foam::Module::setSizeAndRowSize(pointPoints, npp);
 
         # pragma omp barrier
 
         # pragma omp for schedule(static)
         forAll(pFaces, bpI)
         {
-            DynList<label> pPoints;
+            DynamicList<label> pPoints;
 
             forAllRow(pFaces, bpI, pfI)
             {
-                const face& bf = bFaces[pFaces(bpI, pfI)];
+                const face& bf = bFaces[pFaces[bpI][pfI]];
 
                 const label pos = bf.which(boundaryPoints[bpI]);
 
-                pPoints.appendUniq(bp[bf.nextLabel(pos)]);
-                pPoints.appendUniq(bp[bf.prevLabel(pos)]);
+                appendUniq(pPoints, bp[bf.nextLabel(pos)]);
+                appendUniq(pPoints, bp[bf.prevLabel(pos)]);
             }
 
-            pointPoints.setRow(bpI, pPoints);
+            Foam::Module::setRow(pointPoints, bpI, pPoints);
         }
     }
 }
@@ -461,7 +462,7 @@ void Foam::Module::meshSurfaceEngine::calculatePointPoints() const
 
 void Foam::Module::meshSurfaceEngine::calculatePointNormals() const
 {
-    const VRWGraph& pFaces = pointFaces();
+    const labelListList2D& pFaces = pointFaces();
     const vectorField& fNormals = faceNormals();
 
     pointNormalsPtr_ = new vectorField(pFaces.size());
@@ -473,7 +474,7 @@ void Foam::Module::meshSurfaceEngine::calculatePointNormals() const
 
         forAllRow(pFaces, pI, pfI)
         {
-            normal += fNormals[pFaces(pI, pfI)];
+            normal += fNormals[pFaces[pI][pfI]];
         }
 
         const scalar d = mag(normal);
@@ -526,7 +527,7 @@ void Foam::Module::meshSurfaceEngine::calculateFaceCentres() const
 
 void Foam::Module::meshSurfaceEngine::calculateEdgesAndAddressing() const
 {
-    const VRWGraph& pFaces = pointFaces();
+    const labelListList2D& pFaces = pointFaces();
     const faceList::subList& bFaces = boundaryFaces();
     const labelList& bPoints = boundaryPoints();
     const labelList& bp = this->bp();
@@ -534,8 +535,8 @@ void Foam::Module::meshSurfaceEngine::calculateEdgesAndAddressing() const
     edgesPtr_ = new edgeList();
     edgeList& edges = *edgesPtr_;
 
-    bpEdgesPtr_ = new VRWGraph();
-    VRWGraph& bpEdges = *bpEdgesPtr_;
+    bpEdgesPtr_ = new labelListList2D();
+    labelListList2D& bpEdges = *bpEdgesPtr_;
 
     label nThreads = 3*omp_get_num_procs();
     if (pFaces.size() < 1000)
@@ -549,7 +550,7 @@ void Foam::Module::meshSurfaceEngine::calculateEdgesAndAddressing() const
 
     # pragma omp parallel num_threads(nThreads)
     {
-        edgeLongList edgesHelper;
+        DynamicList<edge> edgesHelper;
 
         # pragma omp for schedule(static)
         forAll(pFaces, bpI)
@@ -558,7 +559,7 @@ void Foam::Module::meshSurfaceEngine::calculateEdgesAndAddressing() const
 
             forAllRow(pFaces, bpI, pfI)
             {
-                const label bfI = pFaces(bpI, pfI);
+                const label bfI = pFaces[bpI][pfI];
                 const face& bf = bFaces[bfI];
 
                 const label pos = bf.which(bPoints[bpI]);
@@ -616,8 +617,7 @@ void Foam::Module::meshSurfaceEngine::calculateEdgesAndAddressing() const
     }
 
     // set the bpEdges
-    VRWGraphSMPModifier(bpEdges).reverseAddressing(bp, edges);
-    bpEdges.setSize(pFaces.size());
+    Foam::Module::reverseAddressing(bpEdges, pFaces.size(), bp, edges);
 }
 
 
@@ -626,10 +626,10 @@ void Foam::Module::meshSurfaceEngine::calculateFaceEdgesAddressing() const
     const faceList::subList& bFaces = this->boundaryFaces();
     const labelList& bp = this->bp();
     const edgeList& edges = this->edges();
-    const VRWGraph& bpEdges = this->boundaryPointEdges();
+    const labelListList2D& bpEdges = this->boundaryPointEdges();
 
-    faceEdgesPtr_ = new VRWGraph(bFaces.size());
-    VRWGraph& faceEdges = *faceEdgesPtr_;
+    faceEdgesPtr_ = new labelListList2D(bFaces.size());
+    labelListList2D& faceEdges = *faceEdgesPtr_;
 
     labelList nfe(bFaces.size());
 
@@ -648,7 +648,7 @@ void Foam::Module::meshSurfaceEngine::calculateFaceEdgesAddressing() const
         # pragma omp master
         {
 
-        VRWGraphSMPModifier(faceEdges).setSizeAndRowSize(nfe);
+        Foam::Module::setSizeAndRowSize(faceEdges, nfe);
 
         }
 
@@ -667,12 +667,12 @@ void Foam::Module::meshSurfaceEngine::calculateFaceEdgesAddressing() const
 
                 forAllRow(bpEdges, bps, peI)
                 {
-                    const label beI = bpEdges(bps, peI);
+                    const label beI = bpEdges[bps][peI];
                     const edge& ee = edges[beI];
 
                     if (e == ee)
                     {
-                        faceEdges(bfI, eI) = beI;
+                        faceEdges[bfI][eI] = beI;
                         break;
                     }
                 }
@@ -685,12 +685,12 @@ void Foam::Module::meshSurfaceEngine::calculateFaceEdgesAddressing() const
 void Foam::Module::meshSurfaceEngine::calculateEdgeFacesAddressing() const
 {
     const faceList::subList& bFaces = this->boundaryFaces();
-    const VRWGraph& pointFaces = this->pointFaces();
+    const labelListList2D& pointFaces = this->pointFaces();
     const edgeList& edges = this->edges();
     const labelList& bp = this->bp();
 
-    edgeFacesPtr_ = new VRWGraph();
-    VRWGraph& edgeFaces = *edgeFacesPtr_;
+    edgeFacesPtr_ = new labelListList2D();
+    labelListList2D& edgeFaces = *edgeFacesPtr_;
 
     labelList nef(edges.size());
 
@@ -712,7 +712,7 @@ void Foam::Module::meshSurfaceEngine::calculateEdgeFacesAddressing() const
 
             forAllRow(pointFaces, bpI, pfI)
             {
-                const label bfI = pointFaces(bpI, pfI);
+                const label bfI = pointFaces[bpI][pfI];
 
                 const face& bf = bFaces[bfI];
 
@@ -730,7 +730,7 @@ void Foam::Module::meshSurfaceEngine::calculateEdgeFacesAddressing() const
         # pragma omp barrier
 
         # pragma omp master
-        VRWGraphSMPModifier(edgeFaces).setSizeAndRowSize(nef);
+        Foam::Module::setSizeAndRowSize(edgeFaces, nef);
 
         # pragma omp barrier
 
@@ -741,10 +741,10 @@ void Foam::Module::meshSurfaceEngine::calculateEdgeFacesAddressing() const
             const label bpI = bp[ee.start()];
 
             // find boundary faces attached to this edge
-            DynList<label> eFaces;
+            DynamicList<label> eFaces;
             forAllRow(pointFaces, bpI, pfI)
             {
-                const label bfI = pointFaces(bpI, pfI);
+                const label bfI = pointFaces[bpI][pfI];
 
                 const face& bf = bFaces[bfI];
 
@@ -775,7 +775,7 @@ void Foam::Module::meshSurfaceEngine::calculateEdgeFacesAddressing() const
                 }
             }
 
-            edgeFaces.setRow(edgeI, eFaces);
+            Foam::Module::setRow(edgeFaces, edgeI, eFaces);
         }
     }
 }
@@ -783,54 +783,54 @@ void Foam::Module::meshSurfaceEngine::calculateEdgeFacesAddressing() const
 
 void Foam::Module::meshSurfaceEngine::calculateEdgePatchesAddressing() const
 {
-    edgePatchesPtr_ = new VRWGraph();
-    VRWGraph& edgePatches = *edgePatchesPtr_;
+    edgePatchesPtr_ = new labelListList2D();
+    labelListList2D& edgePatches = *edgePatchesPtr_;
 
-    const VRWGraph& edgeFaces = this->edgeFaces();
+    const labelListList2D& edgeFaces = this->edgeFaces();
     const labelList& facePatch = this->boundaryFacePatches();
 
     edgePatches.setSize(edgeFaces.size());
 
     forAll(edgeFaces, eI)
     {
-        DynList<label> ePatches;
+        DynamicList<label> ePatches;
 
         forAllRow(edgeFaces, eI, i)
         {
-            const label patchI = facePatch[edgeFaces(eI, i)];
+            const label patchI = facePatch[edgeFaces[eI][i]];
 
-            ePatches.appendUniq(patchI);
+            appendUniq(ePatches, patchI);
         }
 
-        edgePatches.setRow(eI, ePatches);
+        Foam::Module::setRow(edgePatches, eI, ePatches);
     }
 }
 
 
 void Foam::Module::meshSurfaceEngine::calculateFaceFacesAddressing() const
 {
-    const VRWGraph& edgeFaces = this->edgeFaces();
+    const labelListList2D& edgeFaces = this->edgeFaces();
 
     const faceList::subList& bFaces = boundaryFaces();
-    faceFacesPtr_ = new VRWGraph(bFaces.size());
-    VRWGraph& faceFaces = *faceFacesPtr_;
+    faceFacesPtr_ = new labelListList2D(bFaces.size());
+    labelListList2D& faceFaces = *faceFacesPtr_;
 
     forAll(bFaces, bfI)
     {
-        faceFaces.setRowSize(bfI, bFaces[bfI].size());
+        faceFaces[bfI].setSize(bFaces[bfI].size());
     }
 
     labelList nAppearances(bFaces.size(), 0);
 
     forAll(edgeFaces, efI)
     {
-        if (edgeFaces.sizeOfRow(efI) == 2)
+        if (edgeFaces[efI].size() == 2)
         {
-            const label f0 = edgeFaces(efI, 0);
-            const label f1 = edgeFaces(efI, 1);
+            const label f0 = edgeFaces[efI][0];
+            const label f1 = edgeFaces[efI][1];
 
-            faceFaces(f0, nAppearances[f0]++) = f1;
-            faceFaces(f1, nAppearances[f1]++) = f0;
+            faceFaces[f0][nAppearances[f0]++] = f1;
+            faceFaces[f1][nAppearances[f1]++] = f0;
         }
     }
 }

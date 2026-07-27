@@ -41,9 +41,8 @@ SourceFiles
 #define partTriMesh_H
 
 #include "boolList.H"
-#include "labelLongList.H"
-#include "VRWGraph.H"
-#include "DynList.H"
+#include "DynamicList.H"
+#include "labelListListOps.H"
 #include "HashSet.H"
 #include "labelledPoint.H"
 #include "triSurf.H"
@@ -58,7 +57,6 @@ namespace Module
 
 // Forward declarations
 class meshSurfacePartitioner;
-class VRWGraph;
 
 /*---------------------------------------------------------------------------*\
                          Class partTriMesh Declaration
@@ -75,13 +73,13 @@ class partTriMesh
         triSurf surf_;
 
         //- label of point in the mesh surface
-        labelLongList pointLabelInMeshSurface_;
+        DynamicList<label> pointLabelInMeshSurface_;
 
         //- label of mesh surface point in the partTriMesh
         labelList meshSurfacePointLabelInTriMesh_;
 
         //- shall a node be used for smoothing or not
-        LongList<direction> pointType_;
+        DynamicList<direction> pointType_;
 
 
     // Private Member Functions
@@ -139,22 +137,22 @@ public:
             return surf_.points();
         }
 
-        inline const LongList<labelledTri>& triangles() const
+        inline const DynamicList<labelledTri>& triangles() const
         {
             return surf_.facets();
         }
 
-        inline const VRWGraph& pointTriangles() const
+        inline const labelListList2D& pointTriangles() const
         {
             return surf_.pointFacets();
         }
 
-        inline const LongList<direction>& pointType() const
+        inline const DynamicList<direction>& pointType() const
         {
             return pointType_;
         }
 
-        inline const labelLongList& pointLabelInMeshSurface() const
+        inline const DynamicList<label>& pointLabelInMeshSurface() const
         {
             return pointLabelInMeshSurface_;
         }
@@ -174,7 +172,7 @@ public:
 
         //- move vertices to their new positions
         //- intended for SMP parallelisation
-        void updateVerticesSMP(const List<LongList<labelledPoint>>&);
+        void updateVerticesSMP(const List<DynamicList<labelledPoint>>&);
 
         //- update coordinates of points in partTriMesh to match the coordinates
         //- in the mesh surface
@@ -182,7 +180,7 @@ public:
 
         //- update coordinates of points in partTriMesh to match the coordinates
         //- of the specified points in the mesh surface
-        void updateVertices(const labelLongList&);
+        void updateVertices(const DynamicList<label>&);
 
         //- return triSurf from this partTriMesh
         const triSurf& getTriSurf() const

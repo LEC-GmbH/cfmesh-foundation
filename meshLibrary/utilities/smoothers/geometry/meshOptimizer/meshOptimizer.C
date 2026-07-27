@@ -34,7 +34,7 @@ License
 #include "meshSurfacePartitioner.H"
 #include "polyMeshGenAddressing.H"
 #include "polyMeshGenChecks.H"
-#include "labelLongList.H"
+#include "DynamicList.H"
 
 // * * * * * * * * Private member functions * * * * * * * * * * * * * * * * * //
 
@@ -200,7 +200,7 @@ void Foam::Module::meshOptimizer::lockCellsInSubset(const word& subsetName)
     label subsetI = mesh_.cellSubsetIndex(subsetName);
     if (subsetI >= 0)
     {
-        labelLongList lc;
+        DynamicList<label> lc;
         mesh_.cellsInSubset(subsetI, lc);
 
         lockCells(lc);

@@ -33,6 +33,7 @@ License
 #include "polyMeshGenAddressing.H"
 #include "renumberMethod.H"
 #include "ListOps.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -52,8 +53,8 @@ Foam::labelList getFaceOrder
                                                // order, old face numbers
     const Foam::labelList& oldOwner,          // old face owner
     const Foam::labelList& oldNeighbour,      // old face neighbour
-    const Foam::Module::labelLongList& reverseCellOrder, // old cell -> new
-                                                          // cell
+    const Foam::DynamicList<Foam::label>& reverseCellOrder, // old cell ->
+                                                             // new cell
     const Foam::label nInternalFaces,
     const Foam::label nFaces
 )
@@ -138,18 +139,18 @@ void Foam::Module::polyMeshGenModifier::renumberMesh()
     // cell-adjacency addressing (no OpenFOAM polyMesh/fvMesh needed - the
     // renumberMethod interface used here only requires a cell-adjacency
     // graph and cell centres).
-    const VRWGraph& cCells = mesh_.addressingData().cellCells();
+    const labelListList2D& cCells = mesh_.addressingData().cellCells();
     const vectorField& cellCentres = mesh_.addressingData().cellCentres();
 
     labelListList cellCells(cCells.size());
     forAll(cellCells, cellI)
     {
         labelList& cc = cellCells[cellI];
-        cc.setSize(cCells.sizeOfRow(cellI));
+        cc.setSize(cCells[cellI].size());
 
         forAll(cc, i)
         {
-            cc[i] = cCells(cellI, i);
+            cc[i] = cCells[cellI][i];
         }
     }
 
@@ -167,7 +168,8 @@ void Foam::Module::polyMeshGenModifier::renumberMesh()
     cellList newCells(oldCells.size());
 
     // The reverse order list gives the new cell label for every old cell
-    labelLongList reverseOrder(newOrder.size());
+    DynamicList<label> reverseOrder;
+    reverseOrder.setSize(newOrder.size());
 
     forAll(newOrder, cellI)
     {

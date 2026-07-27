@@ -74,7 +74,7 @@ void Foam::Module::sortEdgesIntoChains::createNodeLabels()
 bool Foam::Module::sortEdgesIntoChains::findPointsBelongingToTheChain
 (
     const label currPos,
-    DynList<bool>& chainEdges
+    DynamicList<bool>& chainEdges
 ) const
 {
     chainEdges.setSize(bEdges_.size());
@@ -102,7 +102,7 @@ bool Foam::Module::sortEdgesIntoChains::findPointsBelongingToTheChain
     {
         found = false;
 
-        const DynList<label>& vEdges = edgesAtPoint_[newNodeLabel_[prevVrt]];
+        const DynamicList<label>& vEdges = edgesAtPoint_[newNodeLabel_[prevVrt]];
         if (vEdges.size() == 2)
         {
             forAll(vEdges, eI)
@@ -121,7 +121,7 @@ bool Foam::Module::sortEdgesIntoChains::findPointsBelongingToTheChain
     {
         found = false;
 
-        const DynList<label>& vEdges = edgesAtPoint_[newNodeLabel_[nextVrt]];
+        const DynamicList<label>& vEdges = edgesAtPoint_[newNodeLabel_[nextVrt]];
         if (vEdges.size() == 2)
         {
             forAll(vEdges, eI)
@@ -153,7 +153,7 @@ bool Foam::Module::sortEdgesIntoChains::findPointsBelongingToTheChain
 
 void Foam::Module::sortEdgesIntoChains::shrinkEdges
 (
-    const DynList<bool>& chainEdges
+    const DynamicList<bool>& chainEdges
 )
 {
     forAll(chainEdges, eI)
@@ -161,15 +161,14 @@ void Foam::Module::sortEdgesIntoChains::shrinkEdges
         if (chainEdges[eI])
         {
             const edge& e = bEdges_[eI];
-            edgesAtPoint_[newNodeLabel_[e.start()]].removeElement
-            (
-                findIndex(edgesAtPoint_[newNodeLabel_[e.start()]], eI)
-            );
 
-            edgesAtPoint_[newNodeLabel_[e.end()]].removeElement
-            (
-                findIndex(edgesAtPoint_[newNodeLabel_[e.end()]], eI)
-            );
+            DynamicList<label>& atStart =
+                edgesAtPoint_[newNodeLabel_[e.start()]];
+            atStart.erase(atStart.begin() + findIndex(atStart, eI));
+
+            DynamicList<label>& atEnd =
+                edgesAtPoint_[newNodeLabel_[e.end()]];
+            atEnd.erase(atEnd.begin() + findIndex(atEnd, eI));
         }
     }
 }
@@ -177,7 +176,7 @@ void Foam::Module::sortEdgesIntoChains::shrinkEdges
 
 void Foam::Module::sortEdgesIntoChains::createChainFromEdges
 (
-    const DynList<bool>& chainEdges
+    const DynamicList<bool>& chainEdges
 )
 {
     label i(0);
@@ -190,7 +189,8 @@ void Foam::Module::sortEdgesIntoChains::createChainFromEdges
     }
 
 
-    DynList<label> chainPoints(i);
+    DynamicList<label> chainPoints;
+    chainPoints.setSize(i);
     i = 0;
 
     forAll(chainEdges, eI)
@@ -204,7 +204,7 @@ void Foam::Module::sortEdgesIntoChains::createChainFromEdges
             do
             {
                 found = false;
-                const DynList<label>& pEdges =
+                const DynamicList<label>& pEdges =
                     edgesAtPoint_[newNodeLabel_[chainPoints[i - 1]]];
 
                 forAll(pEdges, peI)
@@ -247,7 +247,8 @@ void Foam::Module::sortEdgesIntoChains::sortEdges()
 
     if (!openEdges_)
     {
-        DynList<bool> chainEdges(bEdges_.size());
+        DynamicList<bool> chainEdges;
+        chainEdges.reserve(bEdges_.size());
         forAll(edgesAtPoint_, pI)
         {
             if (findPointsBelongingToTheChain(pI, chainEdges))
@@ -265,7 +266,7 @@ void Foam::Module::sortEdgesIntoChains::sortEdges()
 
 Foam::Module::sortEdgesIntoChains::sortEdgesIntoChains
 (
-    const DynList<edge>& bEdges
+    const DynamicList<edge>& bEdges
 )
 :
     bEdges_(bEdges),
@@ -280,7 +281,7 @@ Foam::Module::sortEdgesIntoChains::sortEdgesIntoChains
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-const Foam::Module::DynList<Foam::Module::DynList<Foam::label>>&
+const Foam::DynamicList<Foam::DynamicList<Foam::label>>&
 Foam::Module::sortEdgesIntoChains::sortedChains() const
 {
     return createdChains_;

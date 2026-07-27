@@ -43,7 +43,7 @@ SourceFiles
 #include "polyMeshGenModifier.H"
 #include "partTet.H"
 #include "tetCreatorOctree.H"
-#include "VRWGraph.H"
+#include "labelListListOps.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

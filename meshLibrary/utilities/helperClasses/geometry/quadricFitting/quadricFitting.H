@@ -41,7 +41,8 @@ SourceFiles
 #ifndef quadricFitting_H
 #define quadricFitting_H
 
-#include "DynList.H"
+#include "DynamicList.H"
+#include "FixedList.H"
 #include "plane.H"
 #include "simpleMatrix.H"
 
@@ -73,10 +74,10 @@ class quadricFitting
         vector vecY_;
 
         //- other points
-        DynList<point> otherPoints_;
+        DynamicList<point> otherPoints_;
 
         //- transformed coordinates of other points
-        DynList<point> transformedPoints_;
+        DynamicList<point> transformedPoints_;
 
         //- coefficients of the quadric surface
         scalarField coefficients_;

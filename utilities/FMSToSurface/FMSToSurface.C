@@ -54,7 +54,7 @@ void exportFeatureEdges
     labelList newPointLabel(points.size(), -1);
     label nPoints(0);
 
-    const edgeLongList& featureEdges = origSurf.featureEdges();
+    const DynamicList<edge>& featureEdges = origSurf.featureEdges();
     forAll(featureEdges, feI)
     {
         const edge& e = featureEdges[feI];
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
     // export surface subsets as separate surface meshes
     if (args.optionFound("exportSubsets"))
     {
-        DynList<label> subsetIDs;
+        DynamicList<label> subsetIDs;
         origSurf.facetSubsetIndices(subsetIDs);
 
         triSurfaceCopyParts copyParts(origSurf);

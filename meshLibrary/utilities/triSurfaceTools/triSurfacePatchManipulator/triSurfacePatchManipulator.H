@@ -44,7 +44,7 @@ SourceFiles
 
 #include "IOdictionary.H"
 #include "triSurf.H"
-#include "VRWGraph.H"
+#include "labelListListOps.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -106,7 +106,7 @@ public:
 
     // Member Functions
 
-        void detectedSurfaceRegions(VRWGraph&) const;
+        void detectedSurfaceRegions(labelListList2D&) const;
 
         //- store regions into subsets with a given prefix
         const triSurf* surfaceWithPatches

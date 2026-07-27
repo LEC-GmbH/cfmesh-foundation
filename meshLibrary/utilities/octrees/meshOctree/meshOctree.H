@@ -40,7 +40,7 @@ SourceFiles
 #ifndef meshOctree_H
 #define meshOctree_H
 
-#include "DynList.H"
+#include "DynamicList.H"
 #include "meshOctreeSlot.H"
 #include "meshOctreeCube.H"
 #include "patchRefinementList.H"
@@ -86,7 +86,7 @@ class meshOctree
         List<meshOctreeSlot> dataSlots_;
 
         //- list of cubes which are leaves of the octree
-        LongList<meshOctreeCube*> leaves_;
+        DynamicList<meshOctreeCube*> leaves_;
 
         //- a flag whether is true if is it a quadtree
         const bool isQuadtree_;
@@ -110,7 +110,7 @@ class meshOctree
         void findLeavesContainedInBox
         (
             const boundBox&,
-            DynList<const meshOctreeCube*, 256>&
+            DynamicList<const meshOctreeCube*>&
         ) const;
 
 
@@ -144,7 +144,7 @@ public:
         (
             const point&,
             const scalar,
-            DynList<label>&
+            DynamicList<label>&
         ) const;
 
         //- is octree a quadtree or an octree
@@ -156,11 +156,11 @@ public:
         //- return leaves of the octree
         inline label numberOfLeaves() const;
         inline const meshOctreeCubeBasic& returnLeaf(const label) const;
-        void findBoundaryPatchesForLeaf(const label, DynList<label>&) const;
+        void findBoundaryPatchesForLeaf(const label, DynamicList<label>&) const;
         inline bool hasContainedTriangles(const label) const;
-        inline void containedTriangles(const label, DynList<label>&) const;
+        inline void containedTriangles(const label, DynamicList<label>&) const;
         inline bool hasContainedEdges(const label) const;
-        inline void containedEdges(const label, DynList<label>&) const;
+        inline void containedEdges(const label, DynamicList<label>&) const;
 
 
         //- find nearest surface point for vertex and its region
@@ -190,7 +190,7 @@ public:
             scalar& distSq,
             label& nearestEdge,
             const point& p,
-            const DynList<label>& regions
+            const DynamicList<label>& regions
         ) const;
 
         bool findNearestPointToEdge
@@ -209,7 +209,7 @@ public:
             scalar& distSq,
             label& nearestPoint,
             const point& p,
-            const DynList<label>& patches
+            const DynamicList<label>& patches
         ) const;
 
         //- find the nearest vertex to the given patches
@@ -218,7 +218,7 @@ public:
             point& nearest,
             scalar& distSq,
             const point& p,
-            const DynList<label>& patches,
+            const DynamicList<label>& patches,
             const scalar tol = 1e-4
         ) const;
 
@@ -237,7 +237,7 @@ public:
         (
             const meshOctreeCubeCoordinates&,
             const label eI,
-            DynList<label>& neighbourLeaves
+            DynamicList<label>& neighbourLeaves
         ) const;
 
         //- find neighbours over a leaf cube face in the given direction
@@ -245,21 +245,21 @@ public:
         (
             const meshOctreeCubeCoordinates&,
             const label dir,
-            DynList<label>& neighbourLeaves
+            DynamicList<label>& neighbourLeaves
         ) const;
 
         //- find neighbour leaf cubes over all faces
         void findNeighboursForLeaf
         (
             const meshOctreeCubeCoordinates&,
-            DynList<label>& neighbourLeaves
+            DynamicList<label>& neighbourLeaves
         ) const;
 
         //- find neighbour leaves over nodes, edges and faces
         void findAllLeafNeighbours
         (
             const meshOctreeCubeCoordinates&,
-            DynList<label>& neighbourLeaves
+            DynamicList<label>& neighbourLeaves
         ) const;
 
         //- find neighbours over a cube's node
@@ -274,7 +274,7 @@ public:
         (
             const label leafI,
             const label eI,
-            DynList<label>& neighbourLeaves
+            DynamicList<label>& neighbourLeaves
         ) const;
 
         //- find neighbouring leaves of a leaf cube
@@ -282,21 +282,21 @@ public:
         (
             const label leafI,
             const label dir,
-            DynList<label>&
+            DynamicList<label>&
         ) const;
 
         //- find neighbours over faces
         inline void findNeighboursForLeaf
         (
             const label,
-            DynList<label>&
+            DynamicList<label>&
         ) const;
 
         //- find neighbours over nodes, edges and faces
         inline void findAllLeafNeighbours
         (
             const label,
-            DynList<label>&
+            DynamicList<label>&
         ) const;
 
         //- return leaf cube for the given position
@@ -315,10 +315,10 @@ public:
 
         //- find all leaves contained within the given boundBox
         void findLeavesContainedInBox(const boundBox&, labelList&) const;
-        void findLeavesContainedInBox(const boundBox&, DynList<label>&) const;
+        void findLeavesContainedInBox(const boundBox&, DynamicList<label>&) const;
 
-        void findEdgesInBox(const boundBox&, DynList<label>&) const;
-        void findTrianglesInBox(const boundBox&, DynList<label>&) const;
+        void findEdgesInBox(const boundBox&, DynamicList<label>&) const;
+        void findTrianglesInBox(const boundBox&, DynamicList<label>&) const;
 
         //- return rootBox
         inline const boundBox& rootBox() const;

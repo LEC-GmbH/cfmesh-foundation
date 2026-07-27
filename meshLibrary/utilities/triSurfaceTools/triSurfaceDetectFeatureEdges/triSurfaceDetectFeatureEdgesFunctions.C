@@ -42,14 +42,14 @@ Foam::Module::triSurfaceDetectFeatureEdges::detectFeatureEdgesAngleCriterion()
 
     const vectorField& normals = surf_.facetNormals();
 
-    const VRWGraph& edgeFaces = surf_.edgeFacets();
+    const labelListList2D& edgeFaces = surf_.edgeFacets();
 
     # pragma omp parallel for schedule(dynamic, 40)
     forAll(edgeFaces, edgeI)
     {
-        const constRow eFaces = edgeFaces[edgeI];
+        const DynamicList<label>& eFaces = edgeFaces[edgeI];
 
-        if (edgeFaces.sizeOfRow(edgeI) != 2)
+        if (edgeFaces[edgeI].size() != 2)
         {
             featureEdges_[edgeI] |= 8;
             continue;
@@ -65,9 +65,9 @@ Foam::Module::triSurfaceDetectFeatureEdges::detectFeatureEdgesAngleCriterion()
 
         // check the orientation of triangles at this edge
         // check the sign of the angle if the orientation  is not consistent
-        const labelledTri& tri0 = surf_[edgeFaces(edgeI, 0)];
-        const labelledTri& tri1 = surf_[edgeFaces(edgeI, 1)];
-        DynList<labelPair> sharedIndices;
+        const labelledTri& tri0 = surf_[edgeFaces[edgeI][0]];
+        const labelledTri& tri1 = surf_[edgeFaces[edgeI][1]];
+        DynamicList<labelPair> sharedIndices;
         forAll(tri0, i)
         {
             forAll(tri1, j)

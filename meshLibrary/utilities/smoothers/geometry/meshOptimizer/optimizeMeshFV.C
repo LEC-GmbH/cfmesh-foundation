@@ -61,7 +61,7 @@ void Foam::Module::meshOptimizer::untangleMeshFV
     boolList changedFace(faces.size(), true);
 
     // check if any points in the tet mesh shall not move
-    labelLongList lockedPoints;
+    DynamicList<label> lockedPoints;
     forAll(vertexLocation_, pointI)
     {
         if (vertexLocation_[pointI] & LOCKED)
@@ -307,7 +307,7 @@ void Foam::Module::meshOptimizer::optimizeBoundaryLayer
         optimiser.optimiseLayer();
 
         // check if the bnd layer is tangled somewhere
-        labelLongList bndLayerCells;
+        DynamicList<label> bndLayerCells;
         const boolList& baseFace = optimiser.isBaseFace();
 
         forAll(baseFace, bfI)
@@ -409,7 +409,7 @@ void Foam::Module::meshOptimizer::optimizeLowQualityFaces
     boolList changedFace(faces.size(), true);
 
     // check if any points in the tet mesh shall not move
-    labelLongList lockedPoints;
+    DynamicList<label> lockedPoints;
     forAll(vertexLocation_, pointI)
     {
         if (vertexLocation_[pointI] & LOCKED)
@@ -468,7 +468,7 @@ void Foam::Module::meshOptimizer::optimizeMeshNearBoundaries
     boolList changedFace(faces.size(), true);
 
     // check if any points in the tet mesh shall not move
-    labelLongList lockedPoints;
+    DynamicList<label> lockedPoints;
     forAll(vertexLocation_, pointI)
     {
         if (vertexLocation_[pointI] & LOCKED)
@@ -529,7 +529,7 @@ void Foam::Module::meshOptimizer::optimizeMeshFVBestQuality
     boolList changedFace(faces.size(), true);
 
     // check if any points in the tet mesh shall not move
-    labelLongList lockedPoints;
+    DynamicList<label> lockedPoints;
     forAll(vertexLocation_, pointI)
     {
         if (vertexLocation_[pointI] & LOCKED)

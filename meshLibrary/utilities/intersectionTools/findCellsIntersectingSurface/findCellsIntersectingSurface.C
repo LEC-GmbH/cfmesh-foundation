@@ -63,13 +63,13 @@ void Foam::Module::findCellsIntersectingSurface::findIntersectedCells()
     const vectorField& cellCentres = mesh_.addressingData().cellCentres();
 
     meshOctreeModifier octreeModifier(*octreePtr_);
-    const LongList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
+    const DynamicList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
 
     intersectedCells_.setSize(cells.size());
     facetsIntersectingCell_.setSize(cells.size());
 
     const triSurf& surf = octreePtr_->surface();
-    const VRWGraph& pointFacets = surf.pointFacets();
+    const labelListList2D& pointFacets = surf.pointFacets();
     const pointField& sp = surf.points();
 
     # pragma omp parallel for schedule(dynamic, 40)
@@ -98,7 +98,7 @@ void Foam::Module::findCellsIntersectingSurface::findIntersectedCells()
         bb.min() -= spanCorr;
 
         // find surface triangles within the bounding box
-        DynList<label> leavesInBox;
+        DynamicList<label> leavesInBox;
         octreePtr_->findLeavesContainedInBox(bb, leavesInBox);
         labelHashSet triangles;
         forAll(leavesInBox, boxI)
@@ -112,7 +112,7 @@ void Foam::Module::findCellsIntersectingSurface::findIntersectedCells()
 
                 forAllRow(slot.containedTriangles_, ceI, tI)
                 {
-                    triangles.insert(slot.containedTriangles_(ceI, tI));
+                    triangles.insert(slot.containedTriangles_[ceI][tI]);
                 }
             }
         }
@@ -190,7 +190,7 @@ void Foam::Module::findCellsIntersectingSurface::findIntersectedCells()
                             {
                                 facetsInCell.insert
                                 (
-                                    pointFacets(nodei, ptI)
+                                    pointFacets[nodei][ptI]
                                 );
                             }
 
@@ -223,7 +223,7 @@ void Foam::Module::findCellsIntersectingSurface::findIntersectedCells()
                             {
                                 facetsInCell.insert
                                 (
-                                    pointFacets(nodei, ptI)
+                                    pointFacets[nodei][ptI]
                                 );
                             }
 
@@ -277,7 +277,7 @@ void Foam::Module::findCellsIntersectingSurface::findIntersectedCells()
         {
             # pragma omp critical
             {
-                facetsIntersectingCell_.setRow(cellI, facetsInCell.toc());
+                setRow(facetsIntersectingCell_, cellI, facetsInCell.toc());
             }
         }
     }

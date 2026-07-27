@@ -33,6 +33,7 @@ License
 #include "IOobjectList.H"
 #include "cellSet.H"
 #include "demandDrivenData.H"
+#include "DynamicList.H"
 
 #include "labelPair.H"
 
@@ -87,7 +88,7 @@ void Foam::Module::polyMeshGenCells::calculateOwnersAndNeighbours() const
 
     label nInternalFaces(0);
 
-    List<List<LongList<labelPair>>> dataForOtherThreads(nThreads);
+    List<List<DynamicList<labelPair>>> dataForOtherThreads(nThreads);
 
     # pragma omp parallel num_threads(nThreads) reduction(+ : nInternalFaces)
     {
@@ -97,7 +98,7 @@ void Foam::Module::polyMeshGenCells::calculateOwnersAndNeighbours() const
         const label endFace =
             Foam::min(startingFace + chunkSize, faces_.size());
 
-        List<LongList<labelPair>>& dot = dataForOtherThreads[threadI];
+        List<DynamicList<labelPair>>& dot = dataForOtherThreads[threadI];
         dot.setSize(nThreads);
 
         for (label faceI = startingFace; faceI < endFace; ++faceI)
@@ -152,7 +153,7 @@ void Foam::Module::polyMeshGenCells::calculateOwnersAndNeighbours() const
         # pragma omp critical
         for (label i = 0; i < nThreads; ++i)
         {
-            const LongList<labelPair>& data =
+            const DynamicList<labelPair>& data =
                 dataForOtherThreads[i][threadI];
 
             forAll(data, j)
@@ -483,7 +484,7 @@ void Foam::Module::polyMeshGenCells::write() const
             )
         );
 
-        labelLongList containedElements;
+        DynamicList<label> containedElements;
         setIt->second.containedElements(containedElements);
 
         forAll(containedElements, i)

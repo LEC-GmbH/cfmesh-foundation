@@ -42,7 +42,7 @@ SourceFiles
 #define triSurfacePartitioner_H
 
 #include "triSurf.H"
-#include "DynList.H"
+#include "DynamicList.H"
 #include "HashSet.H"
 
 #include <map>
@@ -67,7 +67,7 @@ class triSurfacePartitioner
 
         //- corner nodes
         labelList corners_;
-        List<DynList<label>> cornerPatches_;
+        List<DynamicList<label>> cornerPatches_;
 
         //- information which partitions share an edge with a given partition
         List<labelHashSet> patchPatches_;
@@ -127,7 +127,7 @@ public:
         const labelList& corners() const;
 
         //- return corner patches
-        const List<DynList<label>>& cornerPatches() const;
+        const List<DynamicList<label>>& cornerPatches() const;
 
         //- return patch-patches addressing
         const List<labelHashSet>& patchPatches() const;
@@ -144,7 +144,7 @@ public:
         (
             const label partition1,
             const label partition2,
-            DynList<label>& edgePartitions
+            DynamicList<label>& edgePartitions
         ) const;
 
         //- return corners shared shared by the given edge groups
@@ -152,7 +152,7 @@ public:
         (
             const label edgePartition1,
             const label edgePartition2,
-            DynList<label>& corners
+            DynamicList<label>& corners
         ) const;
 };
 

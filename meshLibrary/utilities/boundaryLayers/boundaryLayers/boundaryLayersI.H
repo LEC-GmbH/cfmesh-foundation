@@ -87,9 +87,15 @@ inline void Foam::Module::boundaryLayers::createNewCellFromEdge
     const edge& e,
     const label pKeyI,
     const label pKeyJ,
-    FixedList<FixedList<label, 4>, 6>& cellFaces
+    faceList& cellFaces
 ) const
 {
+    cellFaces.setSize(6);
+    forAll(cellFaces, i)
+    {
+        cellFaces[i].setSize(4);
+    }
+
     const std::map<std::pair<label, label>, label>& ms =
         otherVrts_.find(e.start())->second;
     const std::map<std::pair<label, label>, label>& me =
@@ -211,10 +217,16 @@ inline void Foam::Module::boundaryLayers::createNewCellFromEdge
 inline void Foam::Module::boundaryLayers::createNewCellFromNode
 (
     const label pointI,
-    const DynList<label, 3>& pKeys,
-    FixedList<FixedList<label, 4>, 6>& cellFaces
+    const DynamicList<label>& pKeys,
+    faceList& cellFaces
 ) const
 {
+    cellFaces.setSize(6);
+    forAll(cellFaces, i)
+    {
+        cellFaces[i].setSize(4);
+    }
+
     const std::map<std::pair<label, label>, label>& m =
         otherVrts_.find(pointI)->second;
 

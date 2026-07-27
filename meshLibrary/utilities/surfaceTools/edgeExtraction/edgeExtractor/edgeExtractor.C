@@ -29,6 +29,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "error.H"
+#include "DynamicList.H"
 #include "polyMeshGenModifier.H"
 #include "edgeExtractor.H"
 #include "meshSurfaceEngine.H"
@@ -38,7 +39,6 @@ License
 #include "triSurf.H"
 #include "triSurfModifier.H"
 #include "helperFunctions.H"
-#include "DynList.H"
 #include "labelPair.H"
 #include "labelledScalar.H"
 #include "labelledPoint.H"
@@ -75,8 +75,8 @@ void Foam::Module::edgeExtractor::calculateSingleCellEdge()
 {
     const meshSurfaceEngine& mse = this->surfaceEngine();
     const edgeList& edges = mse.edges();
-    const VRWGraph& bpEdges = mse.boundaryPointEdges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
+    const labelListList2D& bpEdges = mse.boundaryPointEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
     const labelList& faceCells = mse.faceOwners();
 
     // find the number of boundary faces for each cell in the mesh
@@ -85,10 +85,10 @@ void Foam::Module::edgeExtractor::calculateSingleCellEdge()
 
     forAll(edgeFaces, eI)
     {
-        if (edgeFaces.sizeOfRow(eI) == 2)
+        if (edgeFaces[eI].size() == 2)
         {
-            const label c0 = faceCells[edgeFaces(eI, 0)];
-            const label c1 = faceCells[edgeFaces(eI, 1)];
+            const label c0 = faceCells[edgeFaces[eI][0]];
+            const label c1 = faceCells[edgeFaces[eI][1]];
 
             if (c0 == c1)
                 edgeType_[eI] |= SINGLECELLEDGE;
@@ -108,7 +108,7 @@ void Foam::Module::edgeExtractor::calculateSingleCellEdge()
     {
         const cell& c = cells[cellI];
 
-        DynList<edge> foundEdge;
+        DynamicList<edge> foundEdge;
 
         forAll(c, fI)
         {
@@ -125,7 +125,7 @@ void Foam::Module::edgeExtractor::calculateSingleCellEdge()
 
                 forAllRow(bpEdges, bps, i)
                 {
-                    const label beI = bpEdges(bps, i);
+                    const label beI = bpEdges[bps][i];
                     const edge& be = edges[beI];
 
                     if ((e == be) && findIndex(foundEdge, be) == -1)
@@ -150,12 +150,13 @@ void Foam::Module::edgeExtractor::findPatchesNearSurfaceFace()
     const triSurf& surface = meshOctree_.surface();
 
     patchesNearFace_.setSize(bFaces.size());
-    labelLongList nPatchesAtFace(bFaces.size());
+    DynamicList<label> nPatchesAtFace;
+    nPatchesAtFace.setSize(bFaces.size());
 
     # pragma omp parallel
     {
-        labelLongList localData;
-        DynList<label> nearFacets;
+        DynamicList<label> localData;
+        DynamicList<label> nearFacets;
 
         # pragma omp for schedule(dynamic, 40)
         forAll(bFaces, bfI)
@@ -174,9 +175,9 @@ void Foam::Module::edgeExtractor::findPatchesNearSurfaceFace()
 
             // get the patches near the current boundary face
             meshOctree_.findTrianglesInBox(bb, nearFacets);
-            DynList<label> nearPatches;
+            DynamicList<label> nearPatches;
             forAll(nearFacets, i)
-                nearPatches.appendUniq(surface[nearFacets[i]].region());
+                appendUniq(nearPatches, surface[nearFacets[i]].region());
 
             localData.append(bfI);
             nPatchesAtFace[bfI] = nearPatches.size();
@@ -187,7 +188,7 @@ void Foam::Module::edgeExtractor::findPatchesNearSurfaceFace()
         # pragma omp barrier
 
         # pragma omp master
-        patchesNearFace_.setSizeAndRowSize(nPatchesAtFace);
+        setSizeAndRowSize(patchesNearFace_, nPatchesAtFace);
 
         # pragma omp barrier
 
@@ -200,7 +201,7 @@ void Foam::Module::edgeExtractor::findPatchesNearSurfaceFace()
             const label size = nPatchesAtFace[edgeI];
 
             for (label i = 0; i < size; ++i)
-                patchesNearFace_(edgeI, i) = localData[counter++];
+                patchesNearFace_[edgeI][i] = localData[counter++];
         }
     }
 }
@@ -213,12 +214,13 @@ void Foam::Module::edgeExtractor::findFeatureEdgesNearEdge()
     const edgeList& edges = mse.edges();
 
     featureEdgesNearEdge_.setSize(edges.size());
-    labelLongList nFeatureEdgesAtEdge(edges.size());
+    DynamicList<label> nFeatureEdgesAtEdge;
+    nFeatureEdgesAtEdge.setSize(edges.size());
 
     # pragma omp parallel
     {
-        labelLongList localData;
-        DynList<label> nearEdges;
+        DynamicList<label> localData;
+        DynamicList<label> nearEdges;
 
         # pragma omp for schedule(dynamic, 40)
         forAll(edges, edgeI)
@@ -236,7 +238,7 @@ void Foam::Module::edgeExtractor::findFeatureEdgesNearEdge()
                 const label pos = findIndex(nearEdges, nearEdges[i]);
 
                 if (pos < i)
-                    nearEdges.removeElement(i);
+                    nearEdges.erase(nearEdges.begin() + i);
             }
 
             localData.append(edgeI);
@@ -248,7 +250,7 @@ void Foam::Module::edgeExtractor::findFeatureEdgesNearEdge()
         # pragma omp barrier
 
         # pragma omp master
-        featureEdgesNearEdge_.setSizeAndRowSize(nFeatureEdgesAtEdge);
+        setSizeAndRowSize(featureEdgesNearEdge_, nFeatureEdgesAtEdge);
 
         # pragma omp barrier
 
@@ -261,7 +263,7 @@ void Foam::Module::edgeExtractor::findFeatureEdgesNearEdge()
             const label size = nFeatureEdgesAtEdge[edgeI];
 
             for (label i = 0; i < size; ++i)
-                featureEdgesNearEdge_(edgeI, i) = localData[counter++];
+                featureEdgesNearEdge_[edgeI][i] = localData[counter++];
         }
     }
 }
@@ -309,9 +311,8 @@ Foam::Module::edgeExtractor::partitioner() const
 
 void Foam::Module::edgeExtractor::findFaceCandidates
 (
-    labelLongList& faceCandidates,
-    const labelList* facePatchPtr,
-    const Map<label>* otherFacePatchPtr
+    DynamicList<label>& faceCandidates,
+    const labelList* facePatchPtr
 ) const
 {
     faceCandidates.clear();
@@ -320,41 +321,28 @@ void Foam::Module::edgeExtractor::findFaceCandidates
 
     const labelList& fPatches = *facePatchPtr;
 
-    bool deleteOtherFacePatchPtr(false);
-    if (!otherFacePatchPtr)
-    {
-        otherFacePatchPtr = new Map<label>();
-        deleteOtherFacePatchPtr = true;
-    }
-
-    const Map<label>& otherFacePatch = *otherFacePatchPtr;
-
     const meshSurfaceEngine& mse = surfaceEngine();
-    const VRWGraph& faceEdges = mse.faceEdges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
+    const labelListList2D& faceEdges = mse.faceEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
 
     # pragma omp parallel if (faceEdges.size() > 1000)
     {
-        labelLongList procCandidates;
+        DynamicList<label> procCandidates;
         # pragma omp for schedule(dynamic, 40)
         forAll(faceEdges, bfI)
         {
-            DynList<label> allNeiPatches;
+            DynamicList<label> allNeiPatches;
             forAllRow(faceEdges, bfI, feI)
             {
-                const label beI = faceEdges(bfI, feI);
+                const label beI = faceEdges[bfI][feI];
 
-                if (edgeFaces.sizeOfRow(beI) == 2)
+                if (edgeFaces[beI].size() == 2)
                 {
-                    label fNei = edgeFaces(beI, 0);
+                    label fNei = edgeFaces[beI][0];
                     if (fNei == bfI)
-                        fNei = edgeFaces(beI, 1);
+                        fNei = edgeFaces[beI][1];
 
-                    allNeiPatches.appendUniq(fPatches[fNei]);
-                }
-                else if (edgeFaces.sizeOfRow(beI) == 1)
-                {
-                    allNeiPatches.appendUniq(otherFacePatch[beI]);
+                    appendUniq(allNeiPatches, fPatches[fNei]);
                 }
             }
 
@@ -371,9 +359,6 @@ void Foam::Module::edgeExtractor::findFaceCandidates
                 faceCandidates.append(procCandidates[i]);
         }
     }
-
-    if (deleteOtherFacePatchPtr)
-        deleteDemandDrivenData(otherFacePatchPtr);
 }
 
 
@@ -430,7 +415,7 @@ void Foam::Module::edgeExtractor::moveVerticesTowardsDiscontinuities
 
     const meshSurfaceEngine& mse = this->surfaceEngine();
     const labelList& bPoints = mse.boundaryPoints();
-    const VRWGraph& pointFaces = mse.pointFaces();
+    const labelListList2D& pointFaces = mse.pointFaces();
     const pointFieldPMG& points = mse.points();
     const faceList::subList& bFaces = mse.boundaryFaces();
 
@@ -479,7 +464,7 @@ void Foam::Module::edgeExtractor::moveVerticesTowardsDiscontinuities
                 forAllRow(pointFaces, bpI, pfI)
                 {
                     pointDisplacements[bpI].coordinates() +=
-                        faceCentreDisplacement[pointFaces(bpI, pfI)];
+                        faceCentreDisplacement[pointFaces[bpI][pfI]];
                     ++pointDisplacements[bpI].pointLabel();
                 }
             }
@@ -602,14 +587,13 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
     const pointFieldPMG& points = mesh_.points();
     const meshSurfaceEngine& mse = this->surfaceEngine();
     const faceList::subList& bFaces = mse.boundaryFaces();
-    const VRWGraph& faceEdges = mse.faceEdges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
+    const labelListList2D& faceEdges = mse.faceEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
 
     const triSurf& surf = meshOctree_.surface();
     const pointField& sPoints = surf.points();
 
     label nCorrected, nIterations(0);
-    Map<label> otherProcNewPatch;
 
     do
     {
@@ -619,8 +603,8 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
         labelList newBoundaryPatches(facePatch_);
 
         // find the faces which have neighbouring faces in other patches
-        labelLongList candidates;
-        findFaceCandidates(candidates, &facePatch_, &otherProcNewPatch);
+        DynamicList<label> candidates;
+        findFaceCandidates(candidates, &facePatch_);
 
         // go through the list of faces and check if they shall remain
         // in the current patch
@@ -631,27 +615,22 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
             const label bfI = candidates[i];
             const face& bf = bFaces[bfI];
 
-            DynList<label> allNeiPatches;
-            DynList<label> neiPatches;
-            neiPatches.setSize(faceEdges.sizeOfRow(bfI));
+            DynamicList<label> allNeiPatches;
+            DynamicList<label> neiPatches;
+            neiPatches.setSize(faceEdges[bfI].size());
 
             forAllRow(faceEdges, bfI, eI)
             {
-                const label beI = faceEdges(bfI, eI);
+                const label beI = faceEdges[bfI][eI];
 
-                if (edgeFaces.sizeOfRow(beI) == 2)
+                if (edgeFaces[beI].size() == 2)
                 {
-                    label fNei = edgeFaces(beI, 0);
+                    label fNei = edgeFaces[beI][0];
                     if (fNei == bfI)
-                        fNei = edgeFaces(faceEdges(bfI, eI), 1);
+                        fNei = edgeFaces[faceEdges[bfI][eI]][1];
 
-                    allNeiPatches.appendUniq(facePatch_[fNei]);
+                    appendUniq(allNeiPatches, facePatch_[fNei]);
                     neiPatches[eI] = facePatch_[fNei];
-                }
-                else if (edgeFaces.sizeOfRow(beI) == 1)
-                {
-                    allNeiPatches.appendUniq(otherProcNewPatch[beI]);
-                    neiPatches[eI] = otherProcNewPatch[beI];
                 }
             }
 
@@ -666,8 +645,10 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
             // check whether there exist edges which are more suitable for
             // projection onto feature edges than the currently selected ones
             label newPatch(-1);
-            DynList<scalar> normalAlignment(allNeiPatches.size());
-            DynList<scalar> distanceSq(allNeiPatches.size());
+            DynamicList<scalar> normalAlignment;
+            normalAlignment.setSize(allNeiPatches.size());
+            DynamicList<scalar> distanceSq;
+            distanceSq.setSize(allNeiPatches.size());
             scalar maxDSq(0.0);
             forAll(allNeiPatches, i)
             {
@@ -744,32 +725,27 @@ bool Foam::Module::edgeExtractor::distributeBoundaryFacesNormalAlignment()
 void Foam::Module::edgeExtractor::findNeiPatches
 (
     const label bfI,
-    const Map<label>& otherProcPatch,
-    DynList<label>& neiPatches
+    DynamicList<label>& neiPatches
 ) const
 {
     const meshSurfaceEngine& mse = surfaceEngine();
 
-    const VRWGraph& faceEdges = mse.faceEdges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
+    const labelListList2D& faceEdges = mse.faceEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
 
-    neiPatches.setSize(faceEdges.sizeOfRow(bfI));
+    neiPatches.setSize(faceEdges[bfI].size());
 
     forAllRow(faceEdges, bfI, feI)
     {
-        const label beI = faceEdges(bfI, feI);
+        const label beI = faceEdges[bfI][feI];
 
-        if (edgeFaces.sizeOfRow(beI) == 2)
+        if (edgeFaces[beI].size() == 2)
         {
-            label nei = edgeFaces(beI, 0);
+            label nei = edgeFaces[beI][0];
             if (nei == bfI)
-                nei = edgeFaces(beI, 1);
+                nei = edgeFaces[beI][1];
 
             neiPatches[feI] = facePatch_[nei];
-        }
-        else if (edgeFaces.sizeOfRow(beI) == 1)
-        {
-            neiPatches[feI] = otherProcPatch[beI];
         }
     }
 }
@@ -784,7 +760,8 @@ Foam::scalar Foam::Module::edgeExtractor::calculateAlignmentForEdge
 {
     scalar val(0.0);
 
-    DynList<label> patches(2);
+    DynamicList<label> patches;
+    patches.setSize(2);
     patches[0] = patch0;
     patches[1] = patch1;
 
@@ -825,7 +802,8 @@ Foam::scalar Foam::Module::edgeExtractor::calculateDeformationMetricForEdge
 {
     scalar val(0.0);
 
-    DynList<label> patches(2);
+    DynamicList<label> patches;
+    patches.setSize(2);
     patches[0] = patch0;
     patches[1] = patch1;
 
@@ -861,15 +839,15 @@ Foam::scalar Foam::Module::edgeExtractor::calculateDeformationMetricForEdge
 Foam::scalar Foam::Module::edgeExtractor::calculateDeformationMetricForFace
 (
     const label bfI,
-    const DynList<label>& neiPatches,
+    const DynamicList<label>& neiPatches,
     const label facePatch
 ) const
 {
     scalar Enorm(0.0);
 
-    const VRWGraph& faceEdges = surfaceEnginePtr_->faceEdges();
+    const labelListList2D& faceEdges = surfaceEnginePtr_->faceEdges();
 
-    if (neiPatches.size() != faceEdges.sizeOfRow(bfI))
+    if (neiPatches.size() != faceEdges[bfI].size())
     {
         FatalErrorInFunction
             << "Number of neiPatches and faceEdge does not match for face "
@@ -880,7 +858,7 @@ Foam::scalar Foam::Module::edgeExtractor::calculateDeformationMetricForFace
 
     forAllRow(faceEdges, bfI, i)
     {
-        const label beI = faceEdges(bfI, i);
+        const label beI = faceEdges[bfI][i];
 
         if (neiPatches[i] == patch0)
             continue;
@@ -899,11 +877,10 @@ bool Foam::Module::edgeExtractor::checkFacePatchesTopology()
     const meshSurfaceEngine& mse = this->surfaceEngine();
     const faceList::subList& bFaces = mse.boundaryFaces();
     const labelList& bp = mse.bp();
-    const VRWGraph& faceEdges = mse.faceEdges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
+    const labelListList2D& faceEdges = mse.faceEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
 
     label nCorrected;
-    Map<label> otherProcNewPatch;
 
     label nIter(0);
     do
@@ -914,8 +891,8 @@ bool Foam::Module::edgeExtractor::checkFacePatchesTopology()
         labelList newBoundaryPatches(facePatch_);
 
         // find the faces which have neighbouring faces in other patches
-        labelLongList candidates;
-        findFaceCandidates(candidates, &facePatch_, &otherProcNewPatch);
+        DynamicList<label> candidates;
+        findFaceCandidates(candidates, &facePatch_);
 
         // go through the list of faces and check if they shall remain
         // in the current patch
@@ -939,27 +916,22 @@ bool Foam::Module::edgeExtractor::checkFacePatchesTopology()
             if (allInSamePatch)
                 continue;
 
-            DynList<label> allNeiPatches;
-            DynList<label> neiPatches;
-            neiPatches.setSize(faceEdges.sizeOfRow(bfI));
+            DynamicList<label> allNeiPatches;
+            DynamicList<label> neiPatches;
+            neiPatches.setSize(faceEdges[bfI].size());
 
             forAllRow(faceEdges, bfI, eI)
             {
-                const label beI = faceEdges(bfI, eI);
+                const label beI = faceEdges[bfI][eI];
 
-                if (edgeFaces.sizeOfRow(beI) == 2)
+                if (edgeFaces[beI].size() == 2)
                 {
-                    label fNei = edgeFaces(beI, 0);
+                    label fNei = edgeFaces[beI][0];
                     if (fNei == bfI)
-                        fNei = edgeFaces(faceEdges(bfI, eI), 1);
+                        fNei = edgeFaces[faceEdges[bfI][eI]][1];
 
-                    allNeiPatches.appendUniq(facePatch_[fNei]);
+                    appendUniq(allNeiPatches, facePatch_[fNei]);
                     neiPatches[eI] = facePatch_[fNei];
-                }
-                else if (edgeFaces.sizeOfRow(beI) == 1)
-                {
-                    allNeiPatches.appendUniq(otherProcNewPatch[beI]);
-                    neiPatches[eI] = otherProcNewPatch[beI];
                 }
             }
 
@@ -1007,7 +979,7 @@ bool Foam::Module::edgeExtractor::checkFacePatchesTopology()
 
             // check whether the edges shared ith the neighbour patch form
             // a singly linked chain
-            DynList<bool> sharedEdge;
+            DynamicList<bool> sharedEdge;
             sharedEdge.setSize(bFaces[bfI].size());
             sharedEdge = false;
 
@@ -1122,11 +1094,11 @@ public:
         return isFeatureEdge_.size();
     }
 
-    void operator()(const label beI, DynList<label>& neighbourEdges) const
+    void operator()(const label beI, DynamicList<label>& neighbourEdges) const
     {
         neighbourEdges.clear();
 
-        const VRWGraph& bpEdges = mse_.boundaryPointEdges();
+        const labelListList2D& bpEdges = mse_.boundaryPointEdges();
         const labelList& bp = mse_.bp();
         const edgeList& edges = mse_.edges();
 
@@ -1139,7 +1111,7 @@ public:
         {
             forAllRow(bpEdges, bps, peI)
             {
-                const label beJ = bpEdges(bps, peI);
+                const label beJ = bpEdges[bps][peI];
 
                 if ((beJ == beI) || !isFeatureEdge_[beJ])
                     continue;
@@ -1152,7 +1124,7 @@ public:
         {
             forAllRow(bpEdges, bpe, peI)
             {
-                const label beJ = bpEdges(bpe, peI);
+                const label beJ = bpEdges[bpe][peI];
 
                 if ((beJ == beI) || !isFeatureEdge_[beJ])
                     continue;
@@ -1208,10 +1180,10 @@ bool Foam::Module::edgeExtractor::checkFacePatchesGeometry()
     labelList newBoundaryPatches(facePatch_.size());
 
     label nCorrected;
-    Map<label> otherProcNewPatch;
 
     boolList activePoints(bPoints.size(), true);
-    labelLongList activePointLabel(bPoints.size());
+    DynamicList<label> activePointLabel;
+    activePointLabel.setSize(bPoints.size());
     forAll(bPoints, bpI)
         activePointLabel[bpI] = bpI;
 
@@ -1264,7 +1236,7 @@ bool Foam::Module::edgeExtractor::checkFacePatchesGeometry()
         newBoundaryPatches = facePatch_;
 
         // find the faces which have neighbouring faces in other patches
-        labelLongList candidates;
+        DynamicList<label> candidates;
         forAll(bFaces, bfI)
         {
             const face& bf = bFaces[bfI];
@@ -1282,18 +1254,19 @@ bool Foam::Module::edgeExtractor::checkFacePatchesGeometry()
         {
             const label bfI = candidates[i];
 
-            DynList<label> neiPatches;
-            findNeiPatches(bfI, otherProcNewPatch, neiPatches);
+            DynamicList<label> neiPatches;
+            findNeiPatches(bfI, neiPatches);
 
-            DynList<label> allNeiPatches;
+            DynamicList<label> allNeiPatches;
             forAll(neiPatches, i)
-                allNeiPatches.appendUniq(neiPatches[i]);
+                appendUniq(allNeiPatches, neiPatches[i]);
 
             // check the deformation energy and find the minimum energy which
             // can be achieved by switching face patch
             scalar minE(VGREAT);
             label minEPatch(-1);
-            DynList<scalar> Enorm(allNeiPatches.size());
+            DynamicList<scalar> Enorm;
+            Enorm.setSize(allNeiPatches.size());
             forAll(allNeiPatches, i)
             {
                 Enorm[i] =
@@ -1329,7 +1302,7 @@ bool Foam::Module::edgeExtractor::checkFacePatchesGeometry()
 
         // compare face patches before and after
         // disallow modification which may trigger oscillating behaviour
-        labelLongList changedFaces;
+        DynamicList<label> changedFaces;
         forAll(newBoundaryPatches, bfI)
         {
             if (newBoundaryPatches[bfI] != facePatch_[bfI])
@@ -1456,7 +1429,7 @@ Foam::Module::edgeExtractor::surfaceWithPatches(const label bpI) const
     // surface of the volume mesh
     const meshSurfaceEngine& mse = surfaceEngine();
     const faceList::subList& bFaces = mse.boundaryFaces();
-    const VRWGraph& pFaces = mse.pointFaces();
+    const labelListList2D& pFaces = mse.pointFaces();
     const pointFieldPMG& points = mesh_.points();
 
     // modifier of the new surface mesh
@@ -1465,11 +1438,11 @@ Foam::Module::edgeExtractor::surfaceWithPatches(const label bpI) const
     pointField& sPts = surfModifier.pointsAccess();
 
     // create the triangulation of the volume mesh surface
-    labelLongList newPointLabel(points.size(), -1);
+    DynamicList<label> newPointLabel(points.size(), -1);
     label nPoints(0);
     forAllRow(pFaces, bpI, pfI)
     {
-        const label bfI = pFaces(bpI, pfI);
+        const label bfI = pFaces[bpI][pfI];
         const face& bf = bFaces[bfI];
 
         forAll(bf, pI)
@@ -1512,9 +1485,11 @@ void Foam::Module::edgeExtractor::updateMeshPatches()
     const labelList& faceOwner = mse.faceOwners();
 
     wordList patchNames(nPatches);
-    VRWGraph newBoundaryFaces;
-    labelLongList newBoundaryOwners(bFaces.size());
-    labelLongList newBoundaryPatches(bFaces.size());
+    DynamicList<DynamicList<label>> newBoundaryFaces;
+    DynamicList<label> newBoundaryOwners;
+    newBoundaryOwners.setSize(bFaces.size());
+    DynamicList<label> newBoundaryPatches;
+    newBoundaryPatches.setSize(bFaces.size());
 
     // set patchNames
     forAll(surface.patches(), patchI)
@@ -1523,7 +1498,7 @@ void Foam::Module::edgeExtractor::updateMeshPatches()
     // append boundary faces
     forAll(bFaces, bfI)
     {
-        newBoundaryFaces.appendList(bFaces[bfI]);
+        appendList(newBoundaryFaces, bFaces[bfI]);
         newBoundaryOwners[bfI] = faceOwner[bfI];
         newBoundaryPatches[bfI] = facePatch_[bfI];
     }

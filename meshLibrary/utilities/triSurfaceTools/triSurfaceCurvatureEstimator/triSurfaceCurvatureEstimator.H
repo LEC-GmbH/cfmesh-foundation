@@ -42,8 +42,7 @@ SourceFiles
 #define triSurfaceCurvatureEstimator_H
 
 #include "triSurf.H"
-#include "FRWGraph.H"
-#include "DynList.H"
+#include "FixedList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -67,13 +66,13 @@ class triSurfaceCurvatureEstimator
         scalarField edgePointCurvature_;
 
         //- curvatures of other points
-        FRWGraph<label, 3> patchPositions_;
-        List<DynList<scalar, 1>> gaussianCurvature_;
-        List<DynList<scalar, 1>> meanCurvature_;
-        List<DynList<scalar, 1>> maxCurvature_;
-        List<DynList<scalar, 1>> minCurvature_;
-        List<DynList<vector, 1>> maxCurvatureVector_;
-        List<DynList<vector, 1>> minCurvatureVector_;
+        List<FixedList<label, 3>> patchPositions_;
+        List<DynamicList<scalar>> gaussianCurvature_;
+        List<DynamicList<scalar>> meanCurvature_;
+        List<DynamicList<scalar>> maxCurvature_;
+        List<DynamicList<scalar>> minCurvature_;
+        List<DynamicList<vector>> maxCurvatureVector_;
+        List<DynamicList<vector>> minCurvatureVector_;
 
 
     // Private member functions

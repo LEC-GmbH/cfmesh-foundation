@@ -43,8 +43,7 @@ SourceFiles
 #include "polyMeshGenModifier.H"
 #include "SubList.H"
 #include "boolList.H"
-#include "DynList.H"
-#include "VRWGraph.H"
+#include "labelListListOps.H"
 #include "triangle.H"
 #include "Map.H"
 
@@ -84,32 +83,32 @@ class meshSurfaceEngine
         mutable labelList* boundaryFaceOwnersPtr_;
 
         //- point faces addressing
-        mutable VRWGraph* pointFacesPtr_;
-        mutable VRWGraph* pointInFacePtr_;
+        mutable labelListList2D* pointFacesPtr_;
+        mutable labelListList2D* pointInFacePtr_;
 
         //- pointBoundaryPoint addressing
         mutable labelList* bppPtr_;
 
         //- point points addressing
-        mutable VRWGraph* pointPointsPtr_;
+        mutable labelListList2D* pointPointsPtr_;
 
         //- edges
         mutable edgeList* edgesPtr_;
 
         //- boundary point-edges addressing
-        mutable VRWGraph* bpEdgesPtr_;
+        mutable labelListList2D* bpEdgesPtr_;
 
         //- edge faces addressing
-        mutable VRWGraph* edgeFacesPtr_;
+        mutable labelListList2D* edgeFacesPtr_;
 
         //- face edges addressing
-        mutable VRWGraph* faceEdgesPtr_;
+        mutable labelListList2D* faceEdgesPtr_;
 
         //- edge-patches addressing
-        mutable VRWGraph* edgePatchesPtr_;
+        mutable labelListList2D* edgePatchesPtr_;
 
         //- face-faces addressing
-        mutable VRWGraph* faceFacesPtr_;
+        mutable labelListList2D* faceFacesPtr_;
 
         //- point normals
         mutable vectorField* pointNormalsPtr_;
@@ -186,10 +185,10 @@ public:
 
         inline const labelList& faceOwners() const;
 
-        inline const VRWGraph& pointFaces() const;
-        inline const VRWGraph& pointInFaces() const;
+        inline const labelListList2D& pointFaces() const;
+        inline const labelListList2D& pointInFaces() const;
 
-        inline const VRWGraph& pointPoints() const;
+        inline const labelListList2D& pointPoints() const;
 
         inline const vectorField& pointNormals() const;
 
@@ -201,15 +200,15 @@ public:
 
         inline const edgeList& edges() const;
 
-        inline const VRWGraph& boundaryPointEdges() const;
+        inline const labelListList2D& boundaryPointEdges() const;
 
-        inline const VRWGraph& edgeFaces() const;
+        inline const labelListList2D& edgeFaces() const;
 
-        inline const VRWGraph& faceEdges() const;
+        inline const labelListList2D& faceEdges() const;
 
-        inline const VRWGraph& edgePatches() const;
+        inline const labelListList2D& edgePatches() const;
 
-        inline const VRWGraph& faceFaces() const;
+        inline const labelListList2D& faceFaces() const;
 };
 
 

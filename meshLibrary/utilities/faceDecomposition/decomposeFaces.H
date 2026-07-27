@@ -41,7 +41,7 @@ SourceFiles
 #define decomposeFaces_H
 
 #include "polyMeshGenModifier.H"
-#include "DynList.H"
+#include "labelListListOps.H"
 
 namespace Foam
 {
@@ -60,7 +60,7 @@ class decomposeFaces
         polyMeshGen& mesh_;
 
         //- number of points
-        VRWGraph newFacesForFace_;
+        labelListList2D newFacesForFace_;
 
         //- is decomposition performed
         bool done_;
@@ -91,7 +91,7 @@ public:
 
         //- reference to a graph containing label of new faces generated
         //- from each face
-        const VRWGraph& newFacesForFace() const;
+        const labelListList2D& newFacesForFace() const;
 };
 
 

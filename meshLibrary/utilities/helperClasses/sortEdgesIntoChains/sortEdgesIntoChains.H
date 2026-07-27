@@ -40,7 +40,8 @@ SourceFiles
 #ifndef sortEdgesIntoChains_H
 #define sortEdgesIntoChains_H
 
-#include "DynList.H"
+#include "DynamicList.H"
+#include "labelListListOps.H"
 #include "labelList.H"
 #include "edge.H"
 #include "Map.H"
@@ -59,15 +60,15 @@ class sortEdgesIntoChains
 {
     // Private data
 
-        const DynList<edge>& bEdges_;
+        const DynamicList<edge>& bEdges_;
 
         bool openEdges_;
 
         Map<label> newNodeLabel_;
 
-        DynList<DynList<label>> edgesAtPoint_;
+        labelListList2D edgesAtPoint_;
 
-        DynList<DynList<label>> createdChains_;
+        DynamicList<DynamicList<label>> createdChains_;
 
 
     // Private member functions
@@ -77,12 +78,12 @@ class sortEdgesIntoChains
         bool findPointsBelongingToTheChain
         (
             const label currPos,
-            DynList<bool>& chainEdges
+            DynamicList<bool>& chainEdges
         ) const;
 
-        void shrinkEdges(const DynList<bool>& chainEdges);
+        void shrinkEdges(const DynamicList<bool>& chainEdges);
 
-        void createChainFromEdges(const DynList<bool>& chainEdges);
+        void createChainFromEdges(const DynamicList<bool>& chainEdges);
 
         void sortEdges();
 
@@ -92,7 +93,7 @@ public:
     //- Constructor
     sortEdgesIntoChains
     (
-        const DynList<edge>& bEdges
+        const DynamicList<edge>& bEdges
     );
 
     //- Destructor
@@ -102,7 +103,7 @@ public:
     // Member functions
 
         //- a list of points which have not yet been resolved
-        const DynList<DynList<label>>& sortedChains() const;
+        const DynamicList<DynamicList<label>>& sortedChains() const;
 };
 
 

@@ -161,7 +161,7 @@ void Foam::Module::triSurf::writeToFMS(const fileName& fName) const
 void Foam::Module::triSurf::topologyCheck()
 {
     const pointField& pts = this->points();
-    const LongList<labelledTri>& trias = this->facets();
+    const DynamicList<labelledTri>& trias = this->facets();
 
     // check for inf and nan points
     # pragma omp parallel for schedule(dynamic, 100)
@@ -208,7 +208,7 @@ void Foam::Module::triSurf::topologyCheck()
     }
 
     // check feature edges
-    const edgeLongList& featureEdges = this->featureEdges();
+    const DynamicList<edge>& featureEdges = this->featureEdges();
 
     # pragma omp parallel for schedule(dynamic, 100)
     forAll(featureEdges, eI)
@@ -236,11 +236,11 @@ void Foam::Module::triSurf::topologyCheck()
     }
 
     // check point subsets
-    DynList<label> subsetIds;
+    DynamicList<label> subsetIds;
     this->pointSubsetIndices(subsetIds);
     forAll(subsetIds, i)
     {
-        labelLongList elmts;
+        DynamicList<label> elmts;
         this->pointsInSubset(subsetIds[i], elmts);
 
         forAll(elmts, elmtI)
@@ -263,7 +263,7 @@ void Foam::Module::triSurf::topologyCheck()
     this->facetSubsetIndices(subsetIds);
     forAll(subsetIds, i)
     {
-        labelLongList elmts;
+        DynamicList<label> elmts;
         this->facetsInSubset(subsetIds[i], elmts);
 
         forAll(elmts, elmtI)
@@ -286,7 +286,7 @@ void Foam::Module::triSurf::topologyCheck()
     this->edgeSubsetIndices(subsetIds);
     forAll(subsetIds, i)
     {
-        labelLongList elmts;
+        DynamicList<label> elmts;
         this->edgesInSubset(subsetIds[i], elmts);
 
         forAll(elmts, elmtI)
@@ -320,9 +320,9 @@ Foam::Module::triSurf::triSurf()
 
 Foam::Module::triSurf::triSurf
 (
-    const LongList<labelledTri>& triangles,
+    const DynamicList<labelledTri>& triangles,
     const geometricSurfacePatchList& patches,
-    const edgeLongList& featureEdges,
+    const DynamicList<edge>& featureEdges,
     const pointField& points
 )
 :
@@ -397,7 +397,7 @@ void Foam::Module::triSurf::writeSurface(const fileName& fName) const
     else
     {
         const pointField& pts = this->points();
-        const LongList<labelledTri>& facets = this->facets();
+        const DynamicList<labelledTri>& facets = this->facets();
         const geometricSurfacePatchList& patches = this->patches();
 
         List<labelledTri> newTrias(facets.size());

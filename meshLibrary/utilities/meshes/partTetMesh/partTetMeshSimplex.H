@@ -40,6 +40,7 @@ SourceFiles
 #define partTetMeshSimplex_H
 
 #include "partTetMesh.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -60,10 +61,10 @@ class partTetMeshSimplex
     // Private data
 
         //- points making the simplex
-        DynList<point, 128> pts_;
+        DynamicList<point> pts_;
 
         //- tets making the simplex
-        DynList<partTet, 128> tets_;
+        DynamicList<partTet> tets_;
 
 
 public:
@@ -77,8 +78,8 @@ public:
         //- ad a point label
         partTetMeshSimplex
         (
-            const DynList<point, 128>& pts,
-            const DynList<partTet, 128>& tets,
+            const DynamicList<point>& pts,
+            const DynamicList<partTet>& tets,
             const label pointI
         );
 
@@ -90,19 +91,19 @@ public:
     // Member functions
 
         //- return points
-        inline DynList<point, 128>& pts()
+        inline DynamicList<point>& pts()
         {
             return pts_;
         }
 
         //- return points
-        inline const DynList<point, 128>& pts() const
+        inline const DynamicList<point>& pts() const
         {
             return pts_;
         }
 
         //- return tets
-        inline const DynList<partTet, 128>& tets() const
+        inline const DynamicList<partTet>& tets() const
         {
             return tets_;
         }

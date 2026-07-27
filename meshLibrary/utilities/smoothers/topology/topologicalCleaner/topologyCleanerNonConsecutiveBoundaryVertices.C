@@ -65,7 +65,7 @@ void Foam::Module::topologicalCleaner::checkNonConsecutiveBoundaryVertices()
                 {
                     const face& f = faces[c[fI]];
 
-                    DynList<label> shN;
+                    DynamicList<label> shN;
 
                     forAll(bf, pI)
                         forAll(f, pJ)

@@ -38,7 +38,7 @@ License
 void Foam::Module::refineBoundaryLayers::generateNewCellsPrism
 (
     const label cellI,
-    DynList<DynList<DynList<label, 8>, 10>, 64>& cellsFromCell
+    List<DynamicList<DynamicList<label>>>& cellsFromCell
 ) const
 {
     cellsFromCell.clear();
@@ -77,16 +77,16 @@ void Foam::Module::refineBoundaryLayers::generateNewCellsPrism
     {
         if (fI == baseFace)
         {
-            const label faceI = facesFromFace_(c[fI], 0);
-            DynList<label, 8> f;
+            const label faceI = facesFromFace_[c[fI]][0];
+            DynamicList<label> f;
             f = newFaces_[faceI];
             cellsFromCell[nLayers - 1].append(f);
         }
-        else if (facesFromFace_.sizeOfRow(c[fI]) == 1)
+        else if (facesFromFace_[c[fI]].size() == 1)
         {
-            const label faceI = facesFromFace_(c[fI], 0);
+            const label faceI = facesFromFace_[c[fI]][0];
             otherBaseFace = fI;
-            DynList<label, 8> f;
+            DynamicList<label> f;
             f = newFaces_[faceI];
             cellsFromCell[0].append(f);
         }
@@ -94,9 +94,9 @@ void Foam::Module::refineBoundaryLayers::generateNewCellsPrism
         {
             forAllRow(facesFromFace_, c[fI], cfI)
             {
-                const label nfI = facesFromFace_(c[fI], cfI);
+                const label nfI = facesFromFace_[c[fI]][cfI];
 
-                DynList<label, 8> cf;
+                DynamicList<label> cf;
                 cf = newFaces_[nfI];
 
                 if (owner[c[fI]] != cellI)
@@ -116,21 +116,22 @@ void Foam::Module::refineBoundaryLayers::generateNewCellsPrism
     for (label layerI = 1; layerI < nLayers; ++layerI)
     {
         // create new face from points at the same height
-        DynList<label, 8> cf;
+        DynamicList<label> cf;
+        cf.reserve(8);
         forAll(bf, pI)
         {
             const label pointI = bf[pI];
 
             label seI(-1);
-            if (splitEdgesAtPoint_.sizeOfRow(pointI) == 1)
+            if (splitEdgesAtPoint_[pointI].size() == 1)
             {
-                seI = splitEdgesAtPoint_(pointI, 0);
+                seI = splitEdgesAtPoint_[pointI][0];
             }
             else
             {
                 forAllRow(splitEdgesAtPoint_, pointI, sepI)
                 {
-                    const label seJ = splitEdgesAtPoint_(pointI, sepI);
+                    const label seJ = splitEdgesAtPoint_[pointI][sepI];
                     const edge& se = splitEdges_[seJ];
 
                     if (obf.which(se.end()) >= 0 || obf.which(se.start()) >= 0)
@@ -141,7 +142,7 @@ void Foam::Module::refineBoundaryLayers::generateNewCellsPrism
                 }
             }
 
-            cf.append(newVerticesForSplitEdge_(seI, layerI));
+            cf.append(newVerticesForSplitEdge_[seI][layerI]);
         }
 
         // add faces to cells
@@ -160,10 +161,10 @@ void Foam::Module::refineBoundaryLayers::storeFacesIntoCells
     const label nLayersI,
     const label nLayersJ,
     const label nLayersK,
-    DynList<DynList<DynList<label, 4>, 6>, 256>& cellsFromCell
+    List<DynamicList<DynamicList<label>>>& cellsFromCell
 ) const
 {
-    DynList<DynList<label>> faceFaces;
+    labelListList2D faceFaces;
     sortFaceFaces(faceI, faceFaces, reverseOrientation);
 
     const label maxI = nLayersI - 1;
@@ -353,8 +354,8 @@ void Foam::Module::refineBoundaryLayers::refineEdgeHexCell::
 populateExistingFaces()
 {
     const cell& c = bndLayers_.mesh_.cells()[cellI_];
-    const VRWGraph& facesFromFace = bndLayers_.facesFromFace_;
-    const VRWGraph& newFaces = bndLayers_.newFaces_;
+    const labelListList2D& facesFromFace = bndLayers_.facesFromFace_;
+    const DynamicList<DynamicList<label>>& newFaces = bndLayers_.newFaces_;
 
     cellsFromCell_.setSize(nLayersI_*nLayersJ_);
     forAll(cellsFromCell_, cI)
@@ -383,7 +384,7 @@ populateExistingFaces()
     // store new faces at j = 0
     forAllRow(facesFromFace, c[faceInDirection_[2]], i)
     {
-        const label faceI = facesFromFace(c[faceInDirection_[2]], i);
+        const label faceI = facesFromFace[c[faceInDirection_[2]]][i];
         cellsFromCell_[i].append(newFaces[faceI]);
     }
 
@@ -391,14 +392,14 @@ populateExistingFaces()
     const label maxJ = nLayersJ_ - 1;
     forAllRow(facesFromFace, c[faceInDirection_[3]], i)
     {
-        const label faceI = facesFromFace(c[faceInDirection_[3]], i);
+        const label faceI = facesFromFace[c[faceInDirection_[3]]][i];
         cellsFromCell_[i + maxJ*nLayersI_].append(newFaces[faceI]);
     }
 
     // store new faces at i = 0
     forAllRow(facesFromFace, c[faceInDirection_[4]], j)
     {
-        const label faceI = facesFromFace(c[faceInDirection_[4]], j);
+        const label faceI = facesFromFace[c[faceInDirection_[4]]][j];
         cellsFromCell_[j*nLayersI_].append(newFaces[faceI]);
     }
 
@@ -406,7 +407,7 @@ populateExistingFaces()
     const label maxI = nLayersI_ - 1;
     forAllRow(facesFromFace, c[faceInDirection_[5]], j)
     {
-        const label faceI = facesFromFace(c[faceInDirection_[5]], j);
+        const label faceI = facesFromFace[c[faceInDirection_[5]]][j];
         cellsFromCell_[j*nLayersI_ + maxI].append(newFaces[faceI]);
     }
 }
@@ -419,7 +420,7 @@ generateMissingFaces()
 
     // fill up the matrix of points for this cell
     // the matrix is used for generation of new cells
-    FixedList<DynList<DynList<label>>, 2> cellPoints;
+    FixedList<labelListList2D, 2> cellPoints;
 
     // fill in the data for a cross-split faces
     bndLayers_.sortFacePoints
@@ -450,7 +451,8 @@ generateMissingFaces()
             if (j < maxJ)
             {
                 // generate a quad face
-                FixedList<label, 4> mf;
+                DynamicList<label> mf;
+                mf.setSize(4);
 
                 // populate the points form cellPoints
                 mf[0] = cellPoints[0][i][j];
@@ -463,7 +465,7 @@ generateMissingFaces()
             }
             else
             {
-                DynList<label> mf;
+                DynamicList<label> mf;
                 for (label index = j; index < cellPoints[0][i].size(); ++index)
                 {
                     mf.append(cellPoints[0][i][index]);
@@ -490,7 +492,8 @@ generateMissingFaces()
             if (i < maxI)
             {
                 // generate a quad face
-                FixedList<label, 4> mf;
+                DynamicList<label> mf;
+                mf.setSize(4);
 
                 // populate the points form cellPoints
                 mf[0] = cellPoints[0][i][j];
@@ -503,7 +506,7 @@ generateMissingFaces()
             }
             else
             {
-                DynList<label> mf;
+                DynamicList<label> mf;
                 for (label index = i; index < cellPoints[1].size(); ++index)
                 {
                     mf.append(cellPoints[1][index][j]);
@@ -582,7 +585,7 @@ determineFacesInDirections()
     }
 
     // find a common point for all three boundary faces
-    FixedList<DynList<label, 4>, 3> bndFaces;
+    FixedList<DynamicList<label>, 3> bndFaces;
     forAll(dirFace, i)
     {
         bndFaces[i] = faces[c[dirFace[i]]];
@@ -591,8 +594,8 @@ determineFacesInDirections()
     const label commonPoint = help::sharedVertex(bndFaces);
 
     // find the position of the common point in each boundary face
-    const edgeLongList& splitEdges = bndLayers_.splitEdges_;
-    const VRWGraph& splitEdgesAtPoint = bndLayers_.splitEdgesAtPoint_;
+    const DynamicList<edge>& splitEdges = bndLayers_.splitEdges_;
+    const labelListList2D& splitEdgesAtPoint = bndLayers_.splitEdgesAtPoint_;
 
     const face& baseFace = faces[c[dirFace[0]]];
     const label posInBndFace = baseFace.which(commonPoint);
@@ -600,22 +603,22 @@ determineFacesInDirections()
     // find split edges starting at the commonPoints
     forAllRow(splitEdgesAtPoint, commonPoint, i)
     {
-        const edge& se = splitEdges[splitEdgesAtPoint(commonPoint, i)];
+        const edge& se = splitEdges[splitEdgesAtPoint[commonPoint][i]];
 
         if (se == baseFace.faceEdge(posInBndFace))
         {
             // this edge is in j direction
-            splitEdgeInDirection_[1] = splitEdgesAtPoint(commonPoint, i);
+            splitEdgeInDirection_[1] = splitEdgesAtPoint[commonPoint][i];
         }
         else if (se == baseFace.faceEdge(baseFace.rcIndex(posInBndFace)))
         {
             // this edge is in i diretion
-            splitEdgeInDirection_[0] = splitEdgesAtPoint(commonPoint, i);
+            splitEdgeInDirection_[0] = splitEdgesAtPoint[commonPoint][i];
         }
-        else if (splitEdgesAtPoint.sizeOfRow(commonPoint) == 3)
+        else if (splitEdgesAtPoint[commonPoint].size() == 3)
         {
             // this point is in k direction
-            splitEdgeInDirection_[2] = splitEdgesAtPoint(commonPoint, i);
+            splitEdgeInDirection_[2] = splitEdgesAtPoint[commonPoint][i];
         }
         else
         {
@@ -789,11 +792,11 @@ generateNewPoints()
     }
 
     // useful data for generating missing points
-    const edgeLongList& splitEdges = bndLayers_.splitEdges_;
+    const DynamicList<edge>& splitEdges = bndLayers_.splitEdges_;
     const edge& seDirI = splitEdges[splitEdgeInDirection_[0]];
     const edge& seDirJ = splitEdges[splitEdgeInDirection_[1]];
     const edge& seDirK = splitEdges[splitEdgeInDirection_[2]];
-    const VRWGraph& ptsAtEdge = bndLayers_.newVerticesForSplitEdge_;
+    const labelListList2D& ptsAtEdge = bndLayers_.newVerticesForSplitEdge_;
 
     // const references to vertices of the cell ordered in a local
     // i, j, k coordinate system
@@ -813,7 +816,7 @@ generateNewPoints()
         (
             Foam::mag
             (
-                points[ptsAtEdge(splitEdgeInDirection_[0], i)] -
+                points[ptsAtEdge[splitEdgeInDirection_[0]][i]] -
                 points[seDirI.start()]
             ) /
             seDirI.mag(points)
@@ -825,7 +828,7 @@ generateNewPoints()
             (
                 Foam::mag
                 (
-                    points[ptsAtEdge(splitEdgeInDirection_[1], j)] -
+                    points[ptsAtEdge[splitEdgeInDirection_[1]][j]] -
                     points[seDirJ.start()]
                 ) /
                 seDirJ.mag(points)
@@ -837,7 +840,7 @@ generateNewPoints()
                 (
                     Foam::mag
                     (
-                        points[ptsAtEdge(splitEdgeInDirection_[2], k)] -
+                        points[ptsAtEdge[splitEdgeInDirection_[2]][k]] -
                         points[seDirK.start()]
                     ) /
                     seDirK.mag(points)
@@ -889,7 +892,8 @@ generateMissingFaces()
                 );
                 const label nei = own + 1;
 
-                FixedList<label, 4> mf;
+                DynamicList<label> mf;
+                mf.setSize(4);
 
                 mf[0] = cellPoints_[i][j][k];
                 mf[1] = cellPoints_[i][j + 1][k];
@@ -902,20 +906,20 @@ generateMissingFaces()
         }
 
         // generate faces which might not be a quads
-        DynList<label> mf;
+        DynamicList<label> mf;
 
         mf.append(cellPoints_[i][nLayersJ_ - 1][nLayersK_ - 1]);
 
         // this face might not be a quad
         // add points fom the last face in direction j
-        const DynList<DynList<label>>& f3 = facePoints_[3];
+        const labelListList2D& f3 = facePoints_[3];
         for (label index = nLayersK_ - 1; index < f3.size()-1; ++index)
         {
             mf.append(f3[index][i]);
         }
 
         // add points from the last face in direction k
-        const DynList<DynList<label>>& f1 = facePoints_[1];
+        const labelListList2D& f1 = facePoints_[1];
         for (label index = f1[i].size()-1; index>=nLayersJ_ - 1; --index)
         {
             mf.append(f1[i][index]);
@@ -962,7 +966,8 @@ generateMissingFaces()
                     i
                 );
 
-                FixedList<label, 4> mf;
+                DynamicList<label> mf;
+                mf.setSize(4);
 
                 mf[0] = cellPoints_[i][j][k];
                 mf[1] = cellPoints_[i][j][k + 1];
@@ -975,19 +980,19 @@ generateMissingFaces()
         }
 
         // generate a face which might not be a quad
-        DynList<label> mf;
+        DynamicList<label> mf;
 
         mf.append(cellPoints_[nLayersI_ - 1][j][nLayersK_ - 1]);
 
         // add points from the last face in direction k
-        const DynList<DynList<label>>& fp1 = facePoints_[1];
+        const labelListList2D& fp1 = facePoints_[1];
         for (label index = nLayersI_ - 1; index < fp1.size()-1; ++index)
         {
             mf.append(fp1[index][j]);
         }
 
         // add points from the last face in direction i
-        const DynList<DynList<label>>& fp5 = facePoints_[5];
+        const labelListList2D& fp5 = facePoints_[5];
         for (label index = fp5[j].size()-1; index>=nLayersK_ - 1; --index)
         {
             mf.append(fp5[j][index]);
@@ -1039,7 +1044,8 @@ generateMissingFaces()
                     i
                 );
 
-                FixedList<label, 4> mf;
+                DynamicList<label> mf;
+                mf.setSize(4);
 
                 mf[0] = cellPoints_[i][j][k];
                 mf[1] = cellPoints_[i + 1][j][k];
@@ -1052,20 +1058,20 @@ generateMissingFaces()
         }
 
         // generate a face which might not be a quad
-        DynList<label> mf;
+        DynamicList<label> mf;
 
         mf.append(cellPoints_[nLayersI_ - 1][nLayersJ_ - 1][k]);
 
         // this face might not be a quad
         // add points from the last face in direction i
-        const DynList<DynList<label>>& fp5 = facePoints_[5];
+        const labelListList2D& fp5 = facePoints_[5];
         for (label index = nLayersJ_ - 1; index < fp5.size()-1; ++index)
         {
             mf.append(fp5[index][k]);
         }
 
         // add points from the last face in direction j
-        const DynList<DynList<label>>& fp3 = facePoints_[3];
+        const labelListList2D& fp3 = facePoints_[3];
         for (label index = fp3[k].size()-1; index>=nLayersI_ - 1; --index)
         {
             mf.append(fp3[k][index]);
@@ -1189,10 +1195,10 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
     // start creating new cells
     // store the information which new cells were generated from
     // an existing cell
-    VRWGraph newCellsFromCell(refType.size());
+    labelListList2D newCellsFromCell(refType.size());
 
-    VRWGraph pointNewFaces;
-    pointNewFaces.reverseAddressing(newFaces_);
+    labelListList2D pointNewFaces;
+    reverseAddressing(pointNewFaces, newFaces_);
 
     forAll(nCellsFromCell, cellI)
     {
@@ -1200,17 +1206,18 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
         {
             // this cell is not refined
             // update face labels
-            newCellsFromCell.append(cellI, cellI);
+            newCellsFromCell[cellI].append(cellI);
 
             cell& c = cells[cellI];
 
             // copy the new faces of this cell
-            DynList<label, 64> newC;
+            DynamicList<label> newC;
+            newC.reserve(64);
             forAll(c, fI)
             {
                 forAllRow(facesFromFace_, c[fI], cfI)
                 {
-                    newC.append(facesFromFace_(c[fI], cfI));
+                    newC.append(facesFromFace_[c[fI]][cfI]);
                 }
             }
 
@@ -1224,16 +1231,16 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
         else if (refType[cellI] == 1)
         {
             // generate new cells from this prism refined in one direction
-            DynList<DynList<DynList<label, 8>, 10>, 64> cellsFromCell;
+            List<DynamicList<DynamicList<label>>> cellsFromCell;
             generateNewCellsPrism(cellI, cellsFromCell);
 
             forAll(cellsFromCell, cI)
             {
-                const DynList<DynList<label, 8>, 10>& nc = cellsFromCell[cI];
+                const DynamicList<DynamicList<label>>& nc = cellsFromCell[cI];
 
                 const label newCellI = cI == 0?cellI:nCells++;
 
-                newCellsFromCell.append(cellI, newCellI);
+                newCellsFromCell[cellI].append(newCellI);
 
                 cell& c = cells[newCellI];
                 c.setSize(nc.size());
@@ -1241,12 +1248,12 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
                 // find face labels for this cell
                 forAll(nc, fI)
                 {
-                    const DynList<label, 8>& nf = nc[fI];
+                    const DynamicList<label>& nf = nc[fI];
 
                     label faceLabel(-1);
                     forAllRow(pointNewFaces, nf[0], pfI)
                     {
-                        const label nfI = pointNewFaces(nf[0], pfI);
+                        const label nfI = pointNewFaces[nf[0]][pfI];
 
                         if (help::areFacesEqual(nf, newFaces_[nfI]))
                         {
@@ -1260,10 +1267,10 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
                     {
                         forAll(nf, pI)
                         {
-                            pointNewFaces.append(nf[pI], newFaces_.size());
+                            pointNewFaces[nf[pI]].append(newFaces_.size());
                         }
                         c[fI] = newFaces_.size();
-                        newFaces_.appendList(nf);
+                        appendList(newFaces_, nf);
                     }
                 }
             }
@@ -1273,16 +1280,16 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
             // generate new cell from a hex cell where two layers intersect
             // generate mostly hex cells;
             refineEdgeHexCell refEdgeHex(cellI, *this);
-            const DynList<DynList<DynList<label, 4>, 6>, 256>& cellsFromCell =
+            const List<DynamicList<DynamicList<label>>>& cellsFromCell =
                 refEdgeHex.newCells();
 
             forAll(cellsFromCell, cI)
             {
-                const DynList<DynList<label, 4>, 6>& nc = cellsFromCell[cI];
+                const DynamicList<DynamicList<label>>& nc = cellsFromCell[cI];
 
                 const label newCellI = cI == 0?cellI:nCells++;
 
-                newCellsFromCell.append(cellI, newCellI);
+                newCellsFromCell[cellI].append(newCellI);
 
                 cell& c = cells[newCellI];
                 c.setSize(nc.size());
@@ -1290,12 +1297,12 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
                 // find face labels for this cell
                 forAll(nc, fI)
                 {
-                    const DynList<label, 4>& nf = nc[fI];
+                    const DynamicList<label>& nf = nc[fI];
 
                     label faceLabel(-1);
                     forAllRow(pointNewFaces, nf[0], pfI)
                     {
-                        const label nfI = pointNewFaces(nf[0], pfI);
+                        const label nfI = pointNewFaces[nf[0]][pfI];
 
                         if (help::areFacesEqual(nf, newFaces_[nfI]))
                         {
@@ -1309,10 +1316,10 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
                     {
                         forAll(nf, pI)
                         {
-                            pointNewFaces.append(nf[pI], newFaces_.size());
+                            pointNewFaces[nf[pI]].append(newFaces_.size());
                         }
                         c[fI] = newFaces_.size();
-                        newFaces_.appendList(nf);
+                        appendList(newFaces_, nf);
                     }
                 }
             }
@@ -1323,7 +1330,7 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
             // layers intersect
             // generate mostly hex cells
             refineCornerHexCell refCell(cellI, *this);
-            const DynList<DynList<DynList<label, 4>, 6>, 256>& cellsFromCell =
+            const List<DynamicList<DynamicList<label>>>& cellsFromCell =
                 refCell.newCells();
 
             // new points have been generated
@@ -1332,11 +1339,11 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
             // recognise face cells in the graph of new faces
             forAll(cellsFromCell, cI)
             {
-                const DynList<DynList<label, 4>, 6>& nc = cellsFromCell[cI];
+                const DynamicList<DynamicList<label>>& nc = cellsFromCell[cI];
 
                 const label newCellI = cI == 0?cellI:nCells++;
 
-                newCellsFromCell.append(cellI, newCellI);
+                newCellsFromCell[cellI].append(newCellI);
 
                 cell& c = cells[newCellI];
                 c.setSize(nc.size());
@@ -1344,12 +1351,12 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
                 // find face labels for this cell
                 forAll(nc, fI)
                 {
-                    const DynList<label, 4>& nf = nc[fI];
+                    const DynamicList<label>& nf = nc[fI];
 
                     label faceLabel(-1);
                     forAllRow(pointNewFaces, nf[0], pfI)
                     {
-                        const label nfI = pointNewFaces(nf[0], pfI);
+                        const label nfI = pointNewFaces[nf[0]][pfI];
 
                         if (help::areFacesEqual(nf, newFaces_[nfI]))
                         {
@@ -1363,10 +1370,10 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
                     {
                         forAll(nf, pI)
                         {
-                            pointNewFaces.append(nf[pI], newFaces_.size());
+                            pointNewFaces[nf[pI]].append(newFaces_.size());
                         }
                         c[fI] = newFaces_.size();
-                        newFaces_.appendList(nf);
+                        appendList(newFaces_, nf);
                     }
                 }
             }
@@ -1394,56 +1401,56 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
             const label own = owner[fI];
             const label nei = neighbour[fI];
 
-            if (facesFromFace_.sizeOfRow(fI) == 1)
+            if (facesFromFace_[fI].size() == 1)
             {
                 continue;
             }
 
             forAllRow(facesFromFace_, fI, cfI)
             {
-                const label nfI = facesFromFace_(fI, cfI);
+                const label nfI = facesFromFace_[fI][cfI];
 
                 // find the new owner and neighbour cells of the new face
                 label newOwner(-1), newNeighbour(-1);
                 forAllRow(newCellsFromCell, own, cI)
                 {
-                    const cell& cOwn = cells[newCellsFromCell(own, cI)];
+                    const cell& cOwn = cells[newCellsFromCell[own][cI]];
 
                     const label pos = help::positionInList(nfI, cOwn);
 
                     if (pos >= 0)
                     {
-                        newOwner = newCellsFromCell(own, cI);
+                        newOwner = newCellsFromCell[own][cI];
                         break;
                     }
                 }
 
                 forAllRow(newCellsFromCell, nei, cI)
                 {
-                    const cell& cNei = cells[newCellsFromCell(nei, cI)];
+                    const cell& cNei = cells[newCellsFromCell[nei][cI]];
 
                     const label pos = help::positionInList(nfI, cNei);
 
                     if (pos >= 0)
                     {
-                        newNeighbour = newCellsFromCell(nei, cI);
+                        newNeighbour = newCellsFromCell[nei][cI];
                         break;
                     }
                 }
 
                 if (newOwner > newNeighbour)
                 {
-                    DynList<label> rf;
-                    rf.setSize(newFaces_.sizeOfRow(nfI));
+                    DynamicList<label> rf;
+                    rf.setSize(newFaces_[nfI].size());
 
                     forAll(rf, i)
                     {
-                        rf[i] = newFaces_(nfI, i);
+                        rf[i] = newFaces_[nfI][i];
                     }
 
                     rf = help::reverseFace(rf);
 
-                    newFaces_.setRow(nfI, rf);
+                    setRow(newFaces_, nfI, rf);
                 }
             }
         }
@@ -1459,7 +1466,8 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
     // copy newFaces to the mesh
 
     // store internal faces originating from existing faces
-    labelLongList newFaceLabel(newFaces_.size());
+    DynamicList<label> newFaceLabel;
+    newFaceLabel.setSize(newFaces_.size());
     faces.setSize(newFaces_.size());
 
     label currFace = 0;
@@ -1471,13 +1479,13 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
             newFaceLabel[currFace] = currFace;
             ++currFace;
 
-            const label newFaceI = facesFromFace_(faceI, ffI);
+            const label newFaceI = facesFromFace_[faceI][ffI];
 
-            f.setSize(newFaces_.sizeOfRow(newFaceI));
+            f.setSize(newFaces_[newFaceI].size());
 
             forAll(f, pI)
             {
-                f[pI] = newFaces_(newFaceI, pI);
+                f[pI] = newFaces_[newFaceI][pI];
             }
         }
     }
@@ -1490,11 +1498,11 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
         face& f = faces[currFace];
         ++currFace;
 
-        f.setSize(newFaces_.sizeOfRow(faceI));
+        f.setSize(newFaces_[faceI].size());
 
         forAll(f, pI)
         {
-            f[pI] = newFaces_(faceI, pI);
+            f[pI] = newFaces_[faceI][pI];
         }
     }
 
@@ -1517,16 +1525,16 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
                 face& f = faces[currFace];
 
                 // update the new label
-                const label origFaceI = facesFromFace_(faceI, nfI);
+                const label origFaceI = facesFromFace_[faceI][nfI];
                 newFaceLabel[origFaceI] = currFace;
-                facesFromFace_(faceI, nfI) = currFace;
+                facesFromFace_[faceI][nfI] = currFace;
                 ++currFace;
 
                 // copy the face into the mesh
-                f.setSize(newFaces_.sizeOfRow(origFaceI));
+                f.setSize(newFaces_[origFaceI].size());
                 forAll(f, pI)
                 {
-                    f[pI] = newFaces_(origFaceI, pI);
+                    f[pI] = newFaces_[origFaceI][pI];
                 }
 
                 ++nNewFacesInPatch;

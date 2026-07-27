@@ -32,15 +32,18 @@ License
 #include "helperFunctions.H"
 #include "meshSurfaceEngine.H"
 #include "meshSurfacePartitioner.H"
+#include "DynamicList.H"
+
+#include <omp.h>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::Module::extrudeLayer::addressingCalculator::addressingCalculator
 (
     const faceListPMG& faces,
-    const LongList<labelPair>& extrudedFaces,
-    const LongList<bool>& pairOrientation,
-    const VRWGraph& pointExtruded
+    const DynamicList<labelPair>& extrudedFaces,
+    const DynamicList<bool>& pairOrientation,
+    const labelListList2D& pointExtruded
 )
 :
     faces_(faces),
@@ -54,7 +57,7 @@ Foam::Module::extrudeLayer::addressingCalculator::addressingCalculator
 
 void Foam::Module::extrudeLayer::createDuplicateFrontFaces
 (
-    const LongList<labelPair>& front
+    const DynamicList<labelPair>& front
 )
 {
     polyMeshGenModifier meshModifier(mesh_);
@@ -65,7 +68,7 @@ void Foam::Module::extrudeLayer::createDuplicateFrontFaces
     cellListPMG& cells = meshModifier.cellsAccess();
 
     labelList faceInFront(faces.size(), -1);
-    LongList<labelPair> newFaceLabels;
+    DynamicList<labelPair> newFaceLabels;
     label counter(0);
     forAll(front, ffI)
     {
@@ -230,8 +233,8 @@ void Foam::Module::extrudeLayer::createNewVertices()
     // create a new vertex for each group of faces
     // faces are grouped such that the faces belonging to the same group
     // can be visited over cells without crossing any front faces
-    VRWGraph pointFaces;
-    pointFaces.reverseAddressing(points.size(), faces);
+    labelListList2D pointFaces;
+    reverseAddressing(pointFaces, points.size(), faces);
 
     // treat local points
     forAll(pointFaces, pointI)
@@ -242,15 +245,15 @@ void Foam::Module::extrudeLayer::createNewVertices()
         }
 
         // assign groups to faces and cells
-        DynList<label> faceGroup;
-        faceGroup.setSize(pointFaces.sizeOfRow(pointI));
+        DynamicList<label> faceGroup;
+        faceGroup.setSize(pointFaces[pointI].size());
         faceGroup = -1;
 
         label group(0);
 
         forAllRow(pointFaces, pointI, pfI)
         {
-            if (pointFaces(pointI, pfI) < nOrigFaces_)
+            if (pointFaces[pointI][pfI] < nOrigFaces_)
             {
                 continue;
             }
@@ -259,7 +262,7 @@ void Foam::Module::extrudeLayer::createNewVertices()
                 continue;
             }
 
-            DynList<label> front;
+            DynamicList<label> front;
             front.append(pfI);
             faceGroup[pfI] = group;
 
@@ -267,8 +270,8 @@ void Foam::Module::extrudeLayer::createNewVertices()
             {
                 const label fLabel = front.remove();
 
-                const label own = owner[pointFaces(pointI, fLabel)];
-                const label nei = neighbour[pointFaces(pointI, fLabel)];
+                const label own = owner[pointFaces[pointI][fLabel]];
+                const label nei = neighbour[pointFaces[pointI][fLabel]];
 
                 forAllRow(pointFaces, pointI, pfJ)
                 {
@@ -277,7 +280,7 @@ void Foam::Module::extrudeLayer::createNewVertices()
                         continue;
                     }
 
-                    const label faceJ = pointFaces(pointI, pfJ);
+                    const label faceJ = pointFaces[pointI][pfJ];
 
                     if (owner[faceJ] < 0)
                     {
@@ -344,7 +347,7 @@ void Foam::Module::extrudeLayer::createNewVertices()
                 continue;
             }
 
-            face& f = faces[pointFaces(pointI, pfI)];
+            face& f = faces[pointFaces[pointI][pfI]];
 
             const label pos = f.which(pointI);
             f[pos] = currentNumPoints + faceGroup[pfI];
@@ -363,8 +366,8 @@ void Foam::Module::extrudeLayer::movePoints()
 
     vectorField displacements(points.size()-nOrigPoints_);
 
-    VRWGraph pointFaces;
-    pointFaces.reverseAddressing(points.size(), mesh_.faces());
+    labelListList2D pointFaces;
+    reverseAddressing(pointFaces, points.size(), mesh_.faces());
 
     # pragma omp parallel if (displacements.size() > 100)
     {
@@ -379,7 +382,7 @@ void Foam::Module::extrudeLayer::movePoints()
 
             forAllRow(pointFaces, pointI, pfI)
             {
-                const label faceI = pointFaces(pointI, pfI);
+                const label faceI = pointFaces[pointI][pfI];
 
                 if (faceI >= nOrigFaces_)
                 {
@@ -430,14 +433,21 @@ void Foam::Module::extrudeLayer::movePoints()
 
 void Foam::Module::extrudeLayer::createLayerCells()
 {
+    if (omp_in_parallel())
+    {
+        FatalErrorInFunction
+            << "Building newCells inside a parallel region."
+            << " This is not thread safe" << exit(FatalError);
+    }
+
     const faceListPMG& faces = mesh_.faces();
 
-    VRWGraphList newCells;
+    DynamicList<faceList> newCells;
 
     // create cells from corners and edges
     faceList::subList newFaces(faces, faces.size()-nOrigFaces_, nOrigFaces_);
-    VRWGraph pointFaces;
-    pointFaces.reverseAddressing(mesh_.points().size(), newFaces);
+    labelListList2D pointFaces;
+    reverseAddressing(pointFaces, mesh_.points().size(), newFaces);
 
     // create new cells extruded from the faces in the selected front
     forAll(extrudedFaces_, extrudedI)
@@ -446,8 +456,7 @@ void Foam::Module::extrudeLayer::createLayerCells()
         const face& of = faces[extrudedFaces_[extrudedI].second()];
 
         // create new cell from the front pair
-        DynList<DynList<label, 4>> newCell;
-        newCell.setSize(f.size()+2);
+        faceList newCell(f.size()+2);
 
         newCell[0] = f;
         newCell[1] = of;
@@ -457,7 +466,7 @@ void Foam::Module::extrudeLayer::createLayerCells()
             // create a new cell. Faces are of the same orientation
             forAll(f, pI)
             {
-                DynList<label, 4>& ef = newCell[pI + 2];
+                face& ef = newCell[pI + 2];
 
                 ef.setSize(4);
                 ef[0] = f[pI];
@@ -471,7 +480,7 @@ void Foam::Module::extrudeLayer::createLayerCells()
             // create a new cell. Faces are of the opposite orientation
             forAll(f, pI)
             {
-                DynList<label, 4>& ef = newCell[pI + 2];
+                face& ef = newCell[pI + 2];
 
                 ef.setSize(4);
                 ef[0] = f[pI];
@@ -481,7 +490,7 @@ void Foam::Module::extrudeLayer::createLayerCells()
             }
         }
 
-        newCells.appendGraph(newCell);
+        newCells.append(newCell);
     }
 
     addressingCalculator adc
@@ -501,12 +510,12 @@ void Foam::Module::extrudeLayer::createLayerCells()
         forAll(f, eI)
         {
             const label pointI = f[eI];
-            if (pointFaces.sizeOfRow(pointI) == 0)
+            if (pointFaces[pointI].size() == 0)
             {
                 continue;
             }
             const label nextI = f.nextLabel(eI);
-            if (pointFaces.sizeOfRow(nextI) == 0)
+            if (pointFaces[nextI].size() == 0)
             {
                 continue;
             }
@@ -555,7 +564,7 @@ void Foam::Module::extrudeLayer::createLayerCells()
                 // find an extruded face attached to edge
                 // (origFacePointI, origFaceNextI). The must exist only one
                 // such face
-                DynList<label> fc;
+                DynamicList<label> fc;
                 adc.facesSharingEdge(origFacePointI, origFaceNextI, fc);
 
                 if (fc.size() != 1)
@@ -574,7 +583,11 @@ void Foam::Module::extrudeLayer::createLayerCells()
             }
 
             // create new cell and add it to the list
-            FixedList<FixedList<label, 4>, 6> newCell;
+            faceList newCell(6);
+            forAll(newCell, i)
+            {
+                newCell[i].setSize(4);
+            }
 
             // face 0
             newCell[0][0] = pointI;
@@ -612,26 +625,26 @@ void Foam::Module::extrudeLayer::createLayerCells()
             newCell[5][2] = origNextI;
             newCell[5][3] = otherOrigFaceNextI;
 
-            newCells.appendGraph(newCell);
+            newCells.append(newCell);
         }
     }
 
     // create cells at points where three or more self-intersecting layers meet
     forAll(pointFaces, pointI)
     {
-        if (pointFaces.sizeOfRow(pointI) < 3)
+        if (pointFaces[pointI].size() < 3)
         {
             continue;
         }
 
         // find labels of points
-        DynList<label> origFacePoints;
-        origFacePoints.setSize(pointFaces.sizeOfRow(pointI));
+        DynamicList<label> origFacePoints;
+        origFacePoints.setSize(pointFaces[pointI].size());
         origFacePoints = -1;
 
         forAllRow(pointFaces, pointI, pfI)
         {
-            const label extI = pointFaces(pointI, pfI);
+            const label extI = pointFaces[pointI][pfI];
 
             origFacePoints[pfI] = adc.origPoint(extI, pointI);
         }
@@ -660,8 +673,11 @@ void Foam::Module::extrudeLayer::createLayerCells()
             continue;
         }
 
-        DynList<FixedList<label, 4>, 6> newCell;
-        newCell.setSize(2*origFacePoints.size());
+        faceList newCell(2*origFacePoints.size());
+        forAll(newCell, i)
+        {
+            newCell[i].setSize(4);
+        }
 
         // start creating faces attached to the pointI
         // this is performed by finding original points with respect to
@@ -669,7 +685,7 @@ void Foam::Module::extrudeLayer::createLayerCells()
         // this is needed to ensure correct normal orientation
         forAllRow(pointFaces, pointI, pfI)
         {
-            const label extI = pointFaces(pointI, pfI);
+            const label extI = pointFaces[pointI][pfI];
 
             // find original labels of points making a forward circular edge
             // with respect to pointI
@@ -680,16 +696,16 @@ void Foam::Module::extrudeLayer::createLayerCells()
 
             // find another face attached to the edge eI
             const label fFace = adc.faceSharingEdge(extI, eI);
-            const label pos = pointFaces.find(pointI, fFace);
+            const label pos = find(pointFaces, pointI, fFace);
 
             // find an extrusion face attached to the edge consisting of points
             // origFacePointI and origFaceNextI
-            DynList<label> fe;
+            DynamicList<label> fe;
             adc.facesSharingEdge(origFacePointI, origFaceNextI, fe);
             const label origPointI = adc.origPoint(fe[0], origFacePointI);
 
             // create a face attached to pointI
-            FixedList<label, 4>& cf = newCell[pfI];
+            face& cf = newCell[pfI];
             cf[0] = pointI;
             cf[1] = origFacePoints[pfI];
             cf[2] = origPointI;
@@ -705,7 +721,7 @@ void Foam::Module::extrudeLayer::createLayerCells()
         // is the original points from which all these points were generated.
         forAll(origFacePoints, opI)
         {
-            FixedList<label, 4>& cf = newCell[opI + origFacePoints.size()];
+            face& cf = newCell[opI + origFacePoints.size()];
 
             // find previous and next point
             label prev(-1), next(-1);
@@ -733,7 +749,7 @@ void Foam::Module::extrudeLayer::createLayerCells()
             cf[3] = origPointLabel_[pointI];
         }
 
-        newCells.appendGraph(newCell);
+        newCells.append(newCell);
     }
 
     // add cells into the mesh
@@ -751,9 +767,9 @@ void Foam::Module::extrudeLayer::updateBoundary()
         patchTypes[patchI] = mesh_.boundaries()[patchI].patchType();
     }
 
-    VRWGraph newBoundaryFaces;
-    labelLongList newBoundaryOwners;
-    labelLongList newBoundaryPatches;
+    DynamicList<DynamicList<label>> newBoundaryFaces;
+    DynamicList<label> newBoundaryOwners;
+    DynamicList<label> newBoundaryPatches;
 
     meshSurfaceEngine mse(mesh_);
     const faceList::subList& bFaces = mse.boundaryFaces();
@@ -762,12 +778,12 @@ void Foam::Module::extrudeLayer::updateBoundary()
     const labelList& bp = mse.bp();
 
     meshSurfacePartitioner mPart(mse);
-    const VRWGraph& pointPatches = mPart.pointPatches();
+    const labelListList2D& pointPatches = mPart.pointPatches();
 
     // store existing boundary faces. They remain in the mesh
     forAll(bFaces, bfI)
     {
-        newBoundaryFaces.appendList(bFaces[bfI]);
+        appendList(newBoundaryFaces, bFaces[bfI]);
         newBoundaryOwners.append(bfOwner[bfI]);
         newBoundaryPatches.append(facePatch[bfI]);
     }
@@ -792,16 +808,16 @@ void Foam::Module::extrudeLayer::updateBoundary()
             continue;
         }
 
-        DynList<label> origPts, newPts;
+        DynamicList<label> origPts, newPts;
         forAll(f, pI)
         {
             if (origPointLabel_[f[pI]] < 0)
             {
-                origPts.appendUniq(f[pI]);
+                appendUniq(origPts, f[pI]);
             }
             else
             {
-                origPts.appendUniq(origPointLabel_[f[pI]]);
+                appendUniq(origPts, origPointLabel_[f[pI]]);
                 newPts.append(f[pI]);
             }
         }
@@ -817,8 +833,8 @@ void Foam::Module::extrudeLayer::updateBoundary()
 
         // this face belongs to the extruded layer
         // find patches of boundary faces attached to the newly created points
-        DynList<label> patches;
-        DynList<label> nAppearances;
+        DynamicList<label> patches;
+        DynamicList<label> nAppearances;
         forAll(newPts, npI)
         {
             const label bpI = bp[newPts[npI]];
@@ -830,7 +846,7 @@ void Foam::Module::extrudeLayer::updateBoundary()
 
             forAllRow(pointPatches, bpI, ppI)
             {
-                const label patchI = pointPatches(bpI, ppI);
+                const label patchI = pointPatches[bpI][ppI];
                 if (findIndex(patches, patchI) != -1)
                 {
                     ++nAppearances[findIndex(patches, patchI)];
@@ -862,7 +878,7 @@ void Foam::Module::extrudeLayer::updateBoundary()
         if (patch != -1)
         {
             // append boundary face
-            newBoundaryFaces.appendList(f);
+            appendList(newBoundaryFaces, f);
             newBoundaryOwners.append(owner[faceI]);
             newBoundaryPatches.append(patch);
         }
@@ -893,7 +909,7 @@ void Foam::Module::extrudeLayer::updateBoundary()
 Foam::Module::extrudeLayer::extrudeLayer
 (
     polyMeshGen& mesh,
-    const LongList<labelPair>& extrusionFront,
+    const DynamicList<labelPair>& extrusionFront,
     const scalar thickness
 )
 :

@@ -31,7 +31,6 @@ License
 #include "demandDrivenData.H"
 #include "partTriMesh.H"
 #include "meshSurfacePartitioner.H"
-#include "VRWGraphList.H"
 #include "triSurfModifier.H"
 #include "helperFunctions.H"
 
@@ -70,7 +69,7 @@ Foam::Module::partTriMesh::partTriMesh
     pointType_()
 {
     const meshSurfaceEngine& meshSurface = mPart.surfaceEngine();
-    const VRWGraph& pointFaces = meshSurface.pointFaces();
+    const labelListList2D& pointFaces = meshSurface.pointFaces();
     const faceList::subList& bFaces = meshSurface.boundaryFaces();
     const labelList& bPoints = meshSurface.boundaryPoints();
     const labelList& bp = meshSurface.bp();
@@ -84,7 +83,7 @@ Foam::Module::partTriMesh::partTriMesh
         {
             forAllRow(pointFaces, bpI, pfI)
             {
-                useFace[pointFaces(bpI, pfI)] = 1;
+                useFace[pointFaces[bpI][pfI]] = 1;
             }
         }
     }
@@ -109,7 +108,7 @@ Foam::Module::partTriMesh::partTriMesh
 
                     forAllRow(pointFaces, bpI, pfI)
                     {
-                        const label fLabel = pointFaces(bpI, pfI);
+                        const label fLabel = pointFaces[bpI][pfI];
 
                         if (!useFace[fLabel])
                             useFace[fLabel] = layerI + 1;
@@ -134,7 +133,7 @@ void Foam::Module::partTriMesh::updateVertex(const label pI, const point& newP)
 {
     triSurfModifier sMod(surf_);
     pointField& pts = sMod.pointsAccess();
-    const VRWGraph& pointFacets = surf_.pointFacets();
+    const labelListList2D& pointFacets = surf_.pointFacets();
 
     pts[pI] = newP;
 
@@ -146,13 +145,13 @@ void Foam::Module::partTriMesh::updateVertex(const label pI, const point& newP)
     }
 
     // find face centres attached
-    DynList<label> helper;
+    DynamicList<label> helper;
     forAllRow(pointFacets, pI, ptI)
     {
-        const label centreI = surf_[pointFacets(pI, ptI)][2];
+        const label centreI = surf_[pointFacets[pI][ptI]][2];
         if (pointType_[centreI] & FACECENTRE)
         {
-            helper.appendUniq(centreI);
+            appendUniq(helper, centreI);
         }
     }
 
@@ -165,7 +164,7 @@ void Foam::Module::partTriMesh::updateVertex(const label pI, const point& newP)
         scalar faceArea(0.0);
         forAllRow(pointFacets, centreI, ptI)
         {
-            const labelledTri& tri = surf_[pointFacets(centreI, ptI)];
+            const labelledTri& tri = surf_[pointFacets[centreI][ptI]];
             point c(vector::zero);
             for (label i = 0; i < 3; ++i)
             {
@@ -186,18 +185,18 @@ void Foam::Module::partTriMesh::updateVertex(const label pI, const point& newP)
 
 void Foam::Module::partTriMesh::updateVerticesSMP
 (
-    const List<LongList<labelledPoint>>& np
+    const List<DynamicList<labelledPoint>>& np
 )
 {
     triSurfModifier sMod(surf_);
     pointField& pts = sMod.pointsAccess();
-    const VRWGraph& pointFacets = surf_.pointFacets();
+    const labelListList2D& pointFacets = surf_.pointFacets();
 
     List<direction> updateType(pts.size(), direction(0));
 
     # pragma omp parallel num_threads(np.size())
     {
-        const LongList<labelledPoint>& newPoints = np[omp_get_thread_num()];
+        const DynamicList<labelledPoint>& newPoints = np[omp_get_thread_num()];
 
         forAll(newPoints, i)
         {
@@ -209,7 +208,7 @@ void Foam::Module::partTriMesh::updateVerticesSMP
 
             forAllRow(pointFacets, pointI, ptI)
             {
-                const labelledTri& tri = surf_[pointFacets(pointI, ptI)];
+                const labelledTri& tri = surf_[pointFacets[pointI][ptI]];
 
                 if (pointType_[tri[2]] & FACECENTRE)
                 {
@@ -230,7 +229,7 @@ void Foam::Module::partTriMesh::updateVerticesSMP
             scalar faceArea(0.0);
             forAllRow(pointFacets, pI, ptI)
             {
-                const labelledTri& tri = surf_[pointFacets(pI, ptI)];
+                const labelledTri& tri = surf_[pointFacets[pI][ptI]];
                 point c(vector::zero);
                 for (label i = 0; i < 3; ++i)
                 {
@@ -254,7 +253,8 @@ void Foam::Module::partTriMesh::updateVertices()
 {
     const meshSurfaceEngine& mse = mPart_.surfaceEngine();
     const labelList& bPoints = mse.boundaryPoints();
-    labelLongList movedPoints(bPoints.size());
+    DynamicList<label> movedPoints;
+    movedPoints.setSize(bPoints.size());
     forAll(movedPoints, i)
     {
         movedPoints[i] = i;
@@ -264,7 +264,7 @@ void Foam::Module::partTriMesh::updateVertices()
 }
 
 
-void Foam::Module::partTriMesh::updateVertices(const labelLongList& movedPoints)
+void Foam::Module::partTriMesh::updateVertices(const DynamicList<label>& movedPoints)
 {
     const meshSurfaceEngine& mse = mPart_.surfaceEngine();
     const pointFieldPMG& points = mse.points();
@@ -272,7 +272,7 @@ void Foam::Module::partTriMesh::updateVertices(const labelLongList& movedPoints)
 
     triSurfModifier sMod(surf_);
     pointField& pts = sMod.pointsAccess();
-    const VRWGraph& pointFacets = surf_.pointFacets();
+    const labelListList2D& pointFacets = surf_.pointFacets();
 
     List<direction> updateType(pts.size(), direction(0));
 
@@ -295,7 +295,7 @@ void Foam::Module::partTriMesh::updateVertices(const labelLongList& movedPoints)
 
         forAllRow(pointFacets, triPointI, ptI)
         {
-            const labelledTri& tri = surf_[pointFacets(triPointI, ptI)];
+            const labelledTri& tri = surf_[pointFacets[triPointI][ptI]];
 
             if (pointType_[tri[2]] & FACECENTRE)
             {
@@ -315,7 +315,7 @@ void Foam::Module::partTriMesh::updateVertices(const labelLongList& movedPoints)
             scalar faceArea(0.0);
             forAllRow(pointFacets, pI, ptI)
             {
-                const labelledTri& tri = surf_[pointFacets(pI, ptI)];
+                const labelledTri& tri = surf_[pointFacets[pI][ptI]];
                 point c(vector::zero);
                 for (label i = 0; i < 3; ++i)
                 {

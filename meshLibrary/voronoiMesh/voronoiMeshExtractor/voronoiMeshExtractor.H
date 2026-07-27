@@ -43,7 +43,8 @@ SourceFiles
 #include "polyMeshGenModifier.H"
 #include "partTet.H"
 #include "tetCreatorOctree.H"
-#include "VRWGraph.H"
+#include "labelListListOps.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -67,13 +68,16 @@ class voronoiMeshExtractor
         polyMeshGen& mesh_;
 
         //- edges connected to a vertex in the tet mesh
-        mutable VRWGraph* pointEdgesPtr_;
+        mutable labelListList2D* pointEdgesPtr_;
 
         //- edges of the tetrahedrization
-        mutable LongList<edge>* edgesPtr_;
+        mutable DynamicList<edge>* edgesPtr_;
 
         //- tets around each edge
-        mutable VRWGraph* edgeTetsPtr_;
+        //  DynamicList<DynamicList<label>>, not labelListList2D: grown
+        //  one new row at a time up to tet-edge scale in
+        //  createAddressing() - needs O(1) amortized outer-array growth
+        mutable DynamicList<DynamicList<label>>* edgeTetsPtr_;
 
         //- is edge at the boundary
         mutable boolList* boundaryEdgePtr_;
@@ -84,9 +88,9 @@ class voronoiMeshExtractor
         //- create and return addressing
         void createAddressing() const;
 
-        const VRWGraph& pointEdges() const;
-        const LongList<edge>& edges() const;
-        const VRWGraph& edgeTets() const;
+        const labelListList2D& pointEdges() const;
+        const DynamicList<edge>& edges() const;
+        const DynamicList<DynamicList<label>>& edgeTets() const;
         const boolList& boundaryEdge() const;
 
         //- create points of the voronoi mesh

@@ -89,8 +89,8 @@ void Foam::Module::meshSurfaceOptimizer::nodeDisplacementSurfaceOptimizer
 
     const plane pl(points[bPoints[bpI]], pNormal);
 
-    DynList<point> pts;
-    DynList<triFace> trias;
+    DynamicList<point> pts;
+    DynamicList<triFace> trias;
     vector vecX, vecY;
     if (!transformIntoPlane(bpI, pl, vecX, vecY, pts, trias))
     {

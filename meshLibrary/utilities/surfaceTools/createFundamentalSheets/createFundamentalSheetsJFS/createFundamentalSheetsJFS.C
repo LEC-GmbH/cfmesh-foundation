@@ -114,7 +114,8 @@ void Foam::Module::createFundamentalSheetsJFS::createInitialSheet()
 
     const labelList& owner = mesh_.owner();
 
-    LongList<labelPair> extrudeFaces(end - start);
+    DynamicList<labelPair> extrudeFaces;
+    extrudeFaces.setSize(end - start);
 
     # pragma omp parallel for schedule(guided, 100)
     for (label faceI = start; faceI < end; ++faceI)
@@ -165,13 +166,13 @@ void Foam::Module::createFundamentalSheetsJFS::createSheetsAtFeatureEdges()
     forAll(facePatch, bfI)
         patchCell[owner[start + bfI]] = facePatch[bfI];
 
-    LongList<labelPair> front;
+    DynamicList<labelPair> front;
 
     const label nThreads = 3*omp_get_num_procs();
     # pragma omp parallel num_threads(nThreads)
     {
         // create the front faces
-        LongList<labelPair> localFront;
+        DynamicList<labelPair> localFront;
 
         # pragma omp for
         forAll(facePatch, bfI)

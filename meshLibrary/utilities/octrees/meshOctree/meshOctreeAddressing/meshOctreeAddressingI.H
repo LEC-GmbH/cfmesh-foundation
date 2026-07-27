@@ -55,7 +55,7 @@ Foam::Module::meshOctreeAddressing::octreePoints() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshOctreeAddressing::nodeLabels() const
 {
     if (!nodeLabelsPtr_)
@@ -67,7 +67,7 @@ Foam::Module::meshOctreeAddressing::nodeLabels() const
 }
 
 
-inline const Foam::Module::FRWGraph<Foam::label, 8>&
+inline const Foam::List<Foam::FixedList<Foam::label, 8>>&
 Foam::Module::meshOctreeAddressing::nodeLeaves() const
 {
     if (!nodeLeavesPtr_)
@@ -124,7 +124,7 @@ Foam::Module::meshOctreeAddressing::nodeType() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshOctreeAddressing::octreeFaces() const
 {
     if (!octreeFacesPtr_)
@@ -136,7 +136,7 @@ Foam::Module::meshOctreeAddressing::octreeFaces() const
 }
 
 
-inline const Foam::Module::labelLongList&
+inline const Foam::DynamicList<Foam::label>&
 Foam::Module::meshOctreeAddressing::octreeFaceOwner() const
 {
     if (!octreeFacesOwnersPtr_)
@@ -148,7 +148,7 @@ Foam::Module::meshOctreeAddressing::octreeFaceOwner() const
 }
 
 
-inline const Foam::Module::labelLongList&
+inline const Foam::DynamicList<Foam::label>&
 Foam::Module::meshOctreeAddressing::octreeFaceNeighbour() const
 {
     if (!octreeFacesNeighboursPtr_)
@@ -160,7 +160,7 @@ Foam::Module::meshOctreeAddressing::octreeFaceNeighbour() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshOctreeAddressing::leafFaces() const
 {
     if (!leafFacesPtr_)
@@ -172,7 +172,7 @@ Foam::Module::meshOctreeAddressing::leafFaces() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshOctreeAddressing::leafLeaves() const
 {
     if (!leafLeavesPtr_)
@@ -184,7 +184,7 @@ Foam::Module::meshOctreeAddressing::leafLeaves() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshOctreeAddressing::nodeFaces() const
 {
     if (!nodeFacesPtr_)
@@ -196,7 +196,7 @@ Foam::Module::meshOctreeAddressing::nodeFaces() const
 }
 
 
-inline const Foam::Module::LongList<Foam::edge>&
+inline const Foam::DynamicList<Foam::edge>&
 Foam::Module::meshOctreeAddressing::octreeEdges() const
 {
     if (!octreeEdgesPtr_)
@@ -208,7 +208,7 @@ Foam::Module::meshOctreeAddressing::octreeEdges() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshOctreeAddressing::edgeLeaves() const
 {
     if (!edgeLeavesPtr_)
@@ -220,7 +220,7 @@ Foam::Module::meshOctreeAddressing::edgeLeaves() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshOctreeAddressing::leafEdges() const
 {
     if (!leafEdgesPtr_)
@@ -232,7 +232,7 @@ Foam::Module::meshOctreeAddressing::leafEdges() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshOctreeAddressing::nodeEdges() const
 {
     if (!nodeEdgesPtr_)
@@ -244,7 +244,7 @@ Foam::Module::meshOctreeAddressing::nodeEdges() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshOctreeAddressing::faceEdges() const
 {
     if (!faceEdgesPtr_)
@@ -256,7 +256,7 @@ Foam::Module::meshOctreeAddressing::faceEdges() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::meshOctreeAddressing::edgeFaces() const
 {
     if (!edgeFacesPtr_)

@@ -82,8 +82,8 @@ void Foam::Module::triSurfaceExtrude2DEdges::extrudeSurface
     }
 
     // create triangles from feature edges
-    LongList<labelledTri>& triangles = sMod.facetsAccess();
-    const edgeLongList& edges = surf_.featureEdges();
+    DynamicList<labelledTri>& triangles = sMod.facetsAccess();
+    const DynamicList<edge>& edges = surf_.featureEdges();
 
     triangles.setSize(2*edges.size());
     forAll(edges, eI)

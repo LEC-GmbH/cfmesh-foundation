@@ -39,7 +39,7 @@ SourceFiles
 #ifndef triSurface2DCheck_H
 #define triSurface2DCheck_H
 
-#include "labelLongList.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -62,7 +62,7 @@ namespace triSurfaceChecks
 label checkAngles
 (
     const triSurf&,
-    labelLongList&,
+    DynamicList<label>&,
     const scalar angleTol = 5.0
 );
 
@@ -74,15 +74,15 @@ label checkAngles
 );
 
 //- check for existence of boudary and non-manifold edges
-label checkSurfaceManifolds(const triSurf&, labelLongList&triangleInManifold);
+label checkSurfaceManifolds(const triSurf&, DynamicList<label>&triangleInManifold);
 label checkSurfaceManifolds(triSurf&, const word subsetPrefix = "manifold_");
 
 //- check for existence of holes in the surface mesh
-label checkForHoles(const triSurf&, labelLongList&);
+label checkForHoles(const triSurf&, DynamicList<label>&);
 label checkForHoles(triSurf&, const word subsetName = "holes");
 
 //- check for existence of non-manifold edges
-label checkForNonManifoldEdges(const triSurf&, labelLongList&);
+label checkForNonManifoldEdges(const triSurf&, DynamicList<label>&);
 label checkForNonManifoldEdges
 (
     triSurf&,
@@ -90,11 +90,11 @@ label checkForNonManifoldEdges
 );
 
 //- check orientation of triangles
-label checkOrientation(const triSurf&, labelLongList& triangleInGroup);
+label checkOrientation(const triSurf&, DynamicList<label>& triangleInGroup);
 label checkOrientation(triSurf&, const word subsetPrefix = "orientation_");
 
 //- check for disconnected surface parts
-label checkDisconnectedParts(const triSurf&, labelLongList& triangleInRegion);
+label checkDisconnectedParts(const triSurf&, DynamicList<label>& triangleInRegion);
 label checkDisconnectedParts(triSurf&, const word subsetPrefix = "region_");
 
 //- calculate bounding box of the surface mesh
@@ -104,7 +104,7 @@ void calculateBoundingBox(const triSurf&, boundBox&);
 label checkCollocatedPoints
 (
     const triSurf&,
-    labelLongList&,
+    DynamicList<label>&,
     const scalar distTol = 1e-6
 );
 label checkCollocatedPoints
@@ -118,7 +118,7 @@ label checkCollocatedPoints
 label checkSelfIntersections
 (
     const triSurf&,
-    labelLongList&,
+    DynamicList<label>&,
     const scalar tol = 1e-6
 );
 label checkSelfIntersections
@@ -132,7 +132,7 @@ label checkSelfIntersections
 label checkOverlaps
 (
     const triSurf&,
-    labelLongList&,
+    DynamicList<label>&,
     const scalar tol = 1e-6,
     const scalar angleTol = 5.0
 );

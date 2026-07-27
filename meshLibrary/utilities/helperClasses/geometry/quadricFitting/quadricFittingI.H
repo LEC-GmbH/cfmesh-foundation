@@ -119,8 +119,7 @@ void Foam::Module::quadricFitting::calculateQuadricCoeffs()
     }
 
     simpleMatrix<scalar> mat(5, 0.0, 0.0);
-    DynList<scalar> helper;
-    helper.setSize(5);
+    FixedList<scalar, 5> helper;
 
     forAll(transformedPoints_, i)
     {

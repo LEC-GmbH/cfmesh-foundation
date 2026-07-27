@@ -44,6 +44,7 @@ SourceFiles
 
 #include "polyMeshGenFaces.H"
 #include "cellListPMG.H"
+#include "DynamicList.H"
 
 namespace Foam
 {
@@ -145,13 +146,13 @@ public:
         label cellSubsetIndex(const word&) const;
         inline void addCellToSubset(const label, const label);
         inline void removeCellFromSubset(const label, const label);
-        inline void cellInSubsets(const label, DynList<label>&) const;
-        inline void cellSubsetIndices(DynList<label>&) const;
+        inline void cellInSubsets(const label, DynamicList<label>&) const;
+        inline void cellSubsetIndices(DynamicList<label>&) const;
         template<class ListType>
         inline void cellsInSubset(const label, ListType&) const;
         template<class ListType>
         inline void updateCellSubsets(const ListType&);
-        inline void updateCellSubsets(const VRWGraph&);
+        inline void updateCellSubsets(const labelListList2D&);
 
         //- Read mesh
         void read();

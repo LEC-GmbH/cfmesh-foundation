@@ -73,7 +73,7 @@ inline void Foam::Module::polyMeshGenCells::removeCellFromSubset
 inline void Foam::Module::polyMeshGenCells::cellInSubsets
 (
     const label cellI,
-    DynList<label>& cellSubsets
+    DynamicList<label>& cellSubsets
 ) const
 {
     cellSubsets.clear();
@@ -90,7 +90,7 @@ inline void Foam::Module::polyMeshGenCells::cellInSubsets
 
 inline void Foam::Module::polyMeshGenCells::cellSubsetIndices
 (
-    DynList<label>& indices
+    DynamicList<label>& indices
 ) const
 {
     indices.clear();
@@ -136,7 +136,7 @@ inline void Foam::Module::polyMeshGenCells::updateCellSubsets
 
 inline void Foam::Module::polyMeshGenCells::updateCellSubsets
 (
-    const VRWGraph& newCellsForCell
+    const labelListList2D& newCellsForCell
 )
 {
     for (std::map<label, meshSubset>::iterator it = cellSubsets_.begin(); it != cellSubsets_.end(); ++it)

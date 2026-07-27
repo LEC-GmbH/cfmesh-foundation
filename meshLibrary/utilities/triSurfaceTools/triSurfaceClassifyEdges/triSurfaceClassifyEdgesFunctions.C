@@ -34,6 +34,7 @@ License
 #include "triSurf.H"
 #include "meshOctree.H"
 #include "labelPair.H"
+#include "labelListListOps.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -42,14 +43,14 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
     const triSurf& surf = octree_.surface();
     const boundBox& rootBox = octree_.rootBox();
     const pointField& points = surf.points();
-    const VRWGraph& facetEdges = surf.facetEdges();
-    const VRWGraph& edgeFacets = surf.edgeFacets();
+    const labelListList2D& facetEdges = surf.facetEdges();
+    const labelListList2D& edgeFacets = surf.edgeFacets();
 
     facetOrientation_.setSize(surf.size());
 
     // sort all surface facets into groups consisting of facets with consistent
     // orientation. Do not cross non-manifold edges
-    labelLongList orientationGroup(surf.size(), -1);
+    DynamicList<label> orientationGroup(surf.size(), -1);
     label nGroups(0);
 
     forAll(surf, triI)
@@ -58,7 +59,7 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
             continue;
 
         orientationGroup[triI] = nGroups;
-        labelLongList front;
+        DynamicList<label> front;
         front.append(triI);
 
         while (front.size() != 0)
@@ -69,14 +70,14 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
 
             forAll(facet, eI)
             {
-                const label edgeI = facetEdges(tLabel, eI);
+                const label edgeI = facetEdges[tLabel][eI];
 
-                if (edgeFacets.sizeOfRow(edgeI) != 2)
+                if (edgeFacets[edgeI].size() != 2)
                     continue;
 
                 forAllRow(edgeFacets, edgeI, efI)
                 {
-                    const label neiFacetI = edgeFacets(edgeI, efI);
+                    const label neiFacetI = edgeFacets[edgeI][efI];
 
                     if (orientationGroup[neiFacetI] != -1)
                         continue;
@@ -88,7 +89,7 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
                     // check the orientation of triangles at this edge
                     // check the sign of the angle
                     // if the orientation  is not consistent
-                    DynList<labelPair, 2> sharedIndices;
+                    DynamicList<labelPair> sharedIndices;
                     forAll(facet, i)
                     {
                         forAll(neiFacet, j)
@@ -130,10 +131,10 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
          << " groups of triangles with consistent orientation" << endl;
 
     // find the octree leaves containing each triangle
-    VRWGraph triangleInLeaves(surf.size());
-    labelLongList ntl(surf.size(), 0);
+    labelListList2D triangleInLeaves(surf.size());
+    DynamicList<label> ntl(surf.size(), 0);
 
-    DynList<label> helper;
+    DynamicList<label> helper;
     for (label leafI = 0; leafI < octree_.numberOfLeaves(); ++leafI)
     {
         helper.clear();
@@ -144,7 +145,7 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
     }
 
     forAll(ntl, triI)
-        triangleInLeaves.setRowSize(triI, ntl[triI]);
+        triangleInLeaves[triI].setSize(ntl[triI]);
 
     ntl = 0;
     for (label leafI = 0; leafI < octree_.numberOfLeaves(); ++leafI)
@@ -156,18 +157,18 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
         {
             const label triI = helper[i];
 
-            triangleInLeaves(triI, ntl[triI]++) = leafI;
+            triangleInLeaves[triI][ntl[triI]++] = leafI;
         }
     }
 
     // check the orientation of all facets in a group and collect their votes
-    DynList<labelPair> groupVotes;
+    DynamicList<labelPair> groupVotes;
     groupVotes.setSize(nGroups);
     groupVotes = labelPair(0, 0);
 
     # pragma omp parallel if (surf.size() > 1000) private(helper)
     {
-        DynList<labelPair> localVotes;
+        DynamicList<labelPair> localVotes;
         localVotes.setSize(nGroups);
         localVotes = labelPair(0, 0);
 
@@ -188,7 +189,7 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
             // and check the orientation of the triangle
             forAllRow(triangleInLeaves, triI, tlI)
             {
-                const label leafI = triangleInLeaves(triI, tlI);
+                const label leafI = triangleInLeaves[triI][tlI];
 
                 octree_.findAllLeafNeighbours(leafI, helper);
 
@@ -266,10 +267,10 @@ void Foam::Module::triSurfaceClassifyEdges::classifyEdgesTypes()
 {
     const triSurf& surf = octree_.surface();
     const pointField& points = surf.points();
-    const VRWGraph& edgeFacets = surf.edgeFacets();
-    const edgeLongList& edges = surf.edges();
-    const VRWGraph& pointEdges = surf.pointEdges();
-    const edgeLongList& featureEdges = surf.featureEdges();
+    const labelListList2D& edgeFacets = surf.edgeFacets();
+    const DynamicList<edge>& edges = surf.edges();
+    const labelListList2D& pointEdges = surf.pointEdges();
+    const DynamicList<edge>& featureEdges = surf.featureEdges();
 
     edgeTypes_.setSize(edgeFacets.size());
     edgeTypes_ = NONE;
@@ -282,8 +283,8 @@ void Foam::Module::triSurfaceClassifyEdges::classifyEdgesTypes()
 
         forAllRow(pointEdges, e.start(), peI)
         {
-            if (edges[pointEdges(e.start(), peI)] == e)
-                edgeTypes_[pointEdges(e.start(), peI)] |= FEATUREEDGE;
+            if (edges[pointEdges[e.start()][peI]] == e)
+                edgeTypes_[pointEdges[e.start()][peI]] |= FEATUREEDGE;
         }
     }
 
@@ -291,7 +292,7 @@ void Foam::Module::triSurfaceClassifyEdges::classifyEdgesTypes()
     # pragma omp parallel for schedule(dynamic, 40)
     forAll(edgeFacets, edgeI)
     {
-        if (edgeFacets.sizeOfRow(edgeI) != 2)
+        if (edgeFacets[edgeI].size() != 2)
         {
             // this is not a manifold edge
             edgeTypes_[edgeI] = NONE;
@@ -299,8 +300,8 @@ void Foam::Module::triSurfaceClassifyEdges::classifyEdgesTypes()
         }
 
         // surface is a manifold at this edge
-        const label f0 = edgeFacets(edgeI, 0);
-        const label f1 = edgeFacets(edgeI, 1);
+        const label f0 = edgeFacets[edgeI][0];
+        const label f1 = edgeFacets[edgeI][1];
 
         const labelledTri& tri0 = surf[f0];
         const labelledTri& tri1 = surf[f1];

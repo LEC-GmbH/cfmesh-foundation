@@ -38,7 +38,7 @@ License
 #include "triSurf.H"
 #include "triSurfModifier.H"
 #include "helperFunctions.H"
-#include "DynList.H"
+#include "labelListListOps.H"
 #include "labelPair.H"
 #include "labelledScalar.H"
 #include "labelledPoint.H"
@@ -52,25 +52,25 @@ License
 void Foam::Module::edgeExtractor::faceEvaluator::neiFacesOverEdges
 (
     const label bfI,
-    DynList<label>& neiFaces
+    DynamicList<label>& neiFaces
 ) const
 {
     const meshSurfaceEngine& mse = extractor_.surfaceEngine();
 
-    const VRWGraph& faceEdges = mse.faceEdges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
+    const labelListList2D& faceEdges = mse.faceEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
 
-    neiFaces.setSize(faceEdges.sizeOfRow(bfI));
+    neiFaces.setSize(faceEdges[bfI].size());
 
     forAllRow(faceEdges, bfI, feI)
     {
-        const label beI = faceEdges(bfI, feI);
+        const label beI = faceEdges[bfI][feI];
 
-        if (edgeFaces.sizeOfRow(beI) == 2)
+        if (edgeFaces[beI].size() == 2)
         {
-            neiFaces[feI] = edgeFaces(beI, 0);
+            neiFaces[feI] = edgeFaces[beI][0];
             if (neiFaces[feI] == bfI)
-                neiFaces[feI] = edgeFaces(beI, 1);
+                neiFaces[feI] = edgeFaces[beI][1];
         }
         else
         {
@@ -84,25 +84,25 @@ void Foam::Module::edgeExtractor::faceEvaluator::neiPatchesOverEdges
 (
     const label bfI,
     const labelList& fPatches,
-    DynList<label> &neiPatches
+    DynamicList<label>& neiPatches
 ) const
 {
     const meshSurfaceEngine& mse = extractor_.surfaceEngine();
 
-    const VRWGraph& faceEdges = mse.faceEdges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
+    const labelListList2D& faceEdges = mse.faceEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
 
-    neiPatches.setSize(faceEdges.sizeOfRow(bfI));
+    neiPatches.setSize(faceEdges[bfI].size());
 
     forAllRow(faceEdges, bfI, feI)
     {
-        const label beI = faceEdges(bfI, feI);
+        const label beI = faceEdges[bfI][feI];
 
-        if (edgeFaces.sizeOfRow(beI) == 2)
+        if (edgeFaces[beI].size() == 2)
         {
-            label nei = edgeFaces(beI, 0);
+            label nei = edgeFaces[beI][0];
             if (nei == bfI)
-                nei = edgeFaces(beI, 1);
+                nei = edgeFaces[beI][1];
 
             neiPatches[feI] = fPatches[nei];
         }
@@ -112,14 +112,14 @@ void Foam::Module::edgeExtractor::faceEvaluator::neiPatchesOverEdges
 
 Foam::label Foam::Module::edgeExtractor::faceEvaluator::bestPatchTopological
 (
-    const DynList<label>& neiPatches,
+    const DynamicList<label>& neiPatches,
     const label currentPatch
 )
 {
     // find indices of all neighbour patches
-    DynList<label> allNeiPatches;
+    DynamicList<label> allNeiPatches;
     forAll(neiPatches, i)
-        allNeiPatches.appendUniq(neiPatches[i]);
+        appendUniq(allNeiPatches, neiPatches[i]);
 
     if ((allNeiPatches.size() == 1) && (allNeiPatches[0] == currentPatch))
         return currentPatch;
@@ -160,7 +160,7 @@ Foam::label Foam::Module::edgeExtractor::faceEvaluator::bestPatchTopological
 
     // check whether the edges shared ith the neighbour patch form
     // a singly linked chain
-    DynList<bool> sharedEdge;
+    DynamicList<bool> sharedEdge;
     sharedEdge.setSize(neiPatches.size());
     sharedEdge = false;
 
@@ -207,7 +207,7 @@ void Foam::Module::edgeExtractor::faceEvaluator::setNewBoundaryPatches
 void Foam::Module::edgeExtractor::faceEvaluator::neiPatchesOverEdges
 (
     const label bfI,
-    DynList<label>& neiPatches
+    DynamicList<label>& neiPatches
 ) const
 {
     neiPatchesOverEdges
@@ -225,7 +225,7 @@ Foam::label Foam::Module::edgeExtractor::faceEvaluator::bestPatchTopological
 ) const
 {
     // get neighbour patches over edges
-    DynList<label> neiPatches;
+    DynamicList<label> neiPatches;
     neiPatchesOverEdges
     (
         bfI,
@@ -247,7 +247,7 @@ Foam::Module::edgeExtractor::faceEvaluator::bestPatchAfterModification
 
     if (patchI != extractor_.facePatch_[bfI])
     {
-        DynList<label> newNeiPatches, oldNeiPatches;
+        DynamicList<label> newNeiPatches, oldNeiPatches;
         neiPatchesOverEdges
         (
             bfI,
@@ -262,7 +262,7 @@ Foam::Module::edgeExtractor::faceEvaluator::bestPatchAfterModification
             oldNeiPatches
         );
 
-        DynList<label> neiFaces;
+        DynamicList<label> neiFaces;
         neiFacesOverEdges(bfI, neiFaces);
 
         forAll(neiFaces, eI)
@@ -287,22 +287,22 @@ Foam::Module::edgeExtractor::faceEvaluator::bestPatchAfterModification
 void Foam::Module::edgeExtractor::cornerEvaluator::sortedFacesAtPoint
 (
     const label bpI,
-    DynList<label>& pFaces
+    DynamicList<label>& pFaces
 ) const
 {
     const meshSurfaceEngine& mse = extractor_.surfaceEngine();
     const faceList::subList& bFaces = mse.boundaryFaces();
-    const VRWGraph& pointFaces = mse.pointFaces();
-    const VRWGraph& pointInFace = mse.pointInFaces();
+    const labelListList2D& pointFaces = mse.pointFaces();
+    const labelListList2D& pointInFace = mse.pointInFaces();
 
     pFaces = pointFaces[bpI];
 
     forAll(pFaces, i)
     {
         const face& bf = bFaces[pFaces[i]];
-        const label pos = pointFaces.find(bpI, pFaces[i]);
+        const label pos = Foam::Module::find(pointFaces, bpI, pFaces[i]);
 
-        const edge e = bf.faceEdge(bf.rcIndex(pointInFace(bpI, pos)));
+        const edge e = bf.faceEdge(bf.rcIndex(pointInFace[bpI][pos]));
 
         for (label j = i + 2; j < pFaces.size(); ++j)
         {
@@ -356,14 +356,14 @@ void Foam::Module::edgeExtractor::cornerEvaluator::improveCorners
 
             // get faces attached to this point
             // sorted in the counter-clocwise order
-            DynList<label> pFaces;
+            DynamicList<label> pFaces;
             sortedFacesAtPoint(corneri, pFaces);
 
             Info<< "Faces at corner " << pFaces << endl;
 
             // find feature edges attached to the point
-            DynList<labelPair> edgePatches;
-            DynList<label> edgeIndex;
+            DynamicList<labelPair> edgePatches;
+            DynamicList<label> edgeIndex;
             forAll(pFaces, i)
             {
                 const label patch0 = facePatch[pFaces[i]];
@@ -380,12 +380,14 @@ void Foam::Module::edgeExtractor::cornerEvaluator::improveCorners
             Info<< "Edge indices " << edgeIndex << endl;
 
             // find the best aligned feature edge to the feature edge
-            DynList<label> bestEdgeIndices(edgePatches.size());
+            DynamicList<label> bestEdgeIndices;
+            bestEdgeIndices.setSize(edgePatches.size());
             forAll(edgePatches, i)
             {
                 const label patch0 = edgePatches[i].first();
                 const label patch1 = edgePatches[i].second();
-                DynList<label> patches(2);
+                DynamicList<label> patches;
+                patches.setSize(2);
                 patches[0] = patch0;
                 patches[1] = patch1;
 
@@ -436,7 +438,8 @@ void Foam::Module::edgeExtractor::cornerEvaluator::improveCorners
             Info<< "Orig edge indices " << edgeIndex << endl;
             Info<< "New edge indices " << bestEdgeIndices << endl;
 
-            DynList<label> newFacePatches(pFaces.size());
+            DynamicList<label> newFacePatches;
+            newFacePatches.setSize(pFaces.size());
             forAll(bestEdgeIndices, i)
             {
                 const label patch = edgePatches[i].first();

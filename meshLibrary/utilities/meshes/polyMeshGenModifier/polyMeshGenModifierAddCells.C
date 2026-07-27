@@ -29,14 +29,13 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "polyMeshGenModifier.H"
-#include "VRWGraphList.H"
 #include "demandDrivenData.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::polyMeshGenModifier::addCells
 (
-    const LongList<faceList>& cellFaces
+    const DynamicList<faceList>& cellFaces
 )
 {
     Info<< "Adding cells to the mesh" << endl;
@@ -44,7 +43,7 @@ void Foam::Module::polyMeshGenModifier::addCells
     faceListPMG& faces = mesh_.faces_;
     cellListPMG& cells = mesh_.cells_;
 
-    VRWGraph& pointFaces = this->pointFaces();
+    labelListList2D& pointFaces = this->pointFaces();
 
     // start adding cells into the mesh
     label nFaces = faces.size();
@@ -66,7 +65,7 @@ void Foam::Module::polyMeshGenModifier::addCells
             label fLabel(-1);
             forAllRow(pointFaces, pointI, pfI)
             {
-                const label faceI = pointFaces(pointI, pfI);
+                const label faceI = pointFaces[pointI][pfI];
 
                 if (faces[faceI] == f)
                 {
@@ -82,83 +81,7 @@ void Foam::Module::polyMeshGenModifier::addCells
 
                 forAll(f, pI)
                 {
-                    pointFaces.append(f[pI], nFaces);
-                }
-
-                ++nFaces;
-            }
-            else
-            {
-                c[fI++] = fLabel;
-            }
-        }
-
-        cells.append(c);
-        ++nCells;
-    }
-
-    this->clearOut();
-    mesh_.clearOut();
-
-    Info<< "Finished adding cells to the mesh" << endl;
-}
-
-
-void Foam::Module::polyMeshGenModifier::addCells(const VRWGraphList& cellFaces)
-{
-    Info<< "Adding " << cellFaces.size() << " cells to the mesh" << endl;
-
-    faceListPMG& faces = mesh_.faces_;
-    cellListPMG& cells = mesh_.cells_;
-
-    VRWGraph& pointFaces = this->pointFaces();
-
-    // start adding cells into the mesh
-    label nFaces = faces.size();
-    label nCells = cells.size();
-
-    forAll(cellFaces, cI)
-    {
-        faceList facesInCell(cellFaces.sizeOfGraph(cI));
-        forAll(facesInCell, fI)
-        {
-            facesInCell[fI].setSize(cellFaces.sizeOfRow(cI, fI));
-
-            forAll(facesInCell[fI], pI)
-            {
-                facesInCell[fI][pI] = cellFaces(cI, fI, pI);
-            }
-        }
-
-        label fI(0);
-        cell c(facesInCell.size());
-
-        forAll(facesInCell, faceI)
-        {
-            const face& f = facesInCell[faceI];
-
-            const label pointI = f[0];
-
-            label fLabel(-1);
-            forAllRow(pointFaces, pointI, pfI)
-            {
-                const label faceI = pointFaces(pointI, pfI);
-
-                if (faces[faceI] == f)
-                {
-                    fLabel = faceI;
-                    break;
-                }
-            }
-
-            if (fLabel == -1)
-            {
-                faces.append(f);
-                c[fI++] = nFaces;
-
-                forAll(f, pI)
-                {
-                    pointFaces.append(f[pI], nFaces);
+                    pointFaces[f[pI]].append(nFaces);
                 }
 
                 ++nFaces;
@@ -187,7 +110,7 @@ void Foam::Module::polyMeshGenModifier::addCell(const faceList& cellFaces)
 
     label nFaces = faces.size();
 
-    VRWGraph& pointFaces = this->pointFaces();
+    labelListList2D& pointFaces = this->pointFaces();
 
     cell c(cellFaces.size());
     label fI(0);
@@ -201,7 +124,7 @@ void Foam::Module::polyMeshGenModifier::addCell(const faceList& cellFaces)
         label fLabel(-1);
         forAllRow(pointFaces, pointI, pfI)
         {
-            const label faceI = pointFaces(pointI, pfI);
+            const label faceI = pointFaces[pointI][pfI];
 
             if (faces[faceI] == f)
             {
@@ -217,7 +140,7 @@ void Foam::Module::polyMeshGenModifier::addCell(const faceList& cellFaces)
 
             forAll(f, pI)
             {
-                pointFaces.append(f[pI], nFaces);
+                pointFaces[f[pI]].append(nFaces);
             }
 
             ++nFaces;

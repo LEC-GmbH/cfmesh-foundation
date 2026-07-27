@@ -47,12 +47,12 @@ License
 
 void Foam::Module::meshSurfaceMapper2D::findMappingDistance
 (
-    const labelLongList& edgesToMap,
+    const DynamicList<label>& edgesToMap,
     std::map<label, scalar>& mappingDistance
 ) const
 {
     const vectorField& faceCentres = surfaceEngine_.faceCentres();
-    const VRWGraph& eFaces = surfaceEngine_.edgeFaces();
+    const labelListList2D& eFaces = surfaceEngine_.edgeFaces();
     const edgeList& edges = surfaceEngine_.edges();
     const pointFieldPMG& points = surfaceEngine_.points();
 
@@ -68,7 +68,7 @@ void Foam::Module::meshSurfaceMapper2D::findMappingDistance
         const point p = edges[beI].centre(points);
         forAllRow(eFaces, beI, efI)
         {
-            const scalar d = magSqr(faceCentres[eFaces(beI, efI)] - p);
+            const scalar d = magSqr(faceCentres[eFaces[beI][efI]] - p);
             mIter->second = Foam::max(mIter->second, d);
         }
 
@@ -121,7 +121,7 @@ void Foam::Module::meshSurfaceMapper2D::adjustZCoordinates()
 
 void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurface()
 {
-    labelLongList edgesToMap;
+    DynamicList<label> edgesToMap;
 
     forAll(activeBoundaryEdges_, beI)
         edgesToMap.append(activeBoundaryEdges_[beI]);
@@ -132,14 +132,14 @@ void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurface()
 
 void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurface
 (
-    const labelLongList& edgesToMap
+    const DynamicList<label>& edgesToMap
 )
 {
     const edgeList& edges = surfaceEngine_.edges();
     const labelList& bp = surfaceEngine_.bp();
     const pointFieldPMG& points = surfaceEngine_.points();
 
-    labelLongList nodesToMap;
+    DynamicList<label> nodesToMap;
     forAll(edgesToMap, i)
     {
         const edge& e = edges[edgesToMap[i]];
@@ -188,7 +188,7 @@ void Foam::Module::meshSurfaceMapper2D::mapCorners()
     const meshSurfacePartitioner& mPart = meshPartitioner();
     const labelHashSet& cornerPoints = mPart.corners();
 
-    labelLongList selectedEdges;
+    DynamicList<label> selectedEdges;
     forAll(activeBoundaryEdges_, eI)
     {
         const edge& e = edges[activeBoundaryEdges_[eI]];
@@ -203,12 +203,12 @@ void Foam::Module::meshSurfaceMapper2D::mapCorners()
 
 void Foam::Module::meshSurfaceMapper2D::mapCorners
 (
-    const labelLongList& edgesToMap
+    const DynamicList<label>& edgesToMap
 )
 {
     const meshSurfacePartitioner& mPart = meshPartitioner();
     const labelHashSet& corners = mPart.corners();
-    const VRWGraph& pPatches = mPart.pointPatches();
+    const labelListList2D& pPatches = mPart.pointPatches();
 
     const pointFieldPMG& points = surfaceEngine_.points();
     const edgeList& edges = surfaceEngine_.edges();
@@ -230,11 +230,11 @@ void Foam::Module::meshSurfaceMapper2D::mapCorners
         const label bps = bp[be.start()];
         const label bpe = bp[be.end()];
 
-        DynList<label> ePatches;
+        DynamicList<label> ePatches;
         forAllRow(pPatches, bps, i)
         {
-            if (pPatches.found(bpe, pPatches(bps, i)))
-                ePatches.append(pPatches(bps, i));
+            if (found(pPatches, bpe, pPatches[bps][i]))
+                ePatches.append(pPatches[bps][i]);
         }
 
         if (!corners.found(bps) || !corners.found(bpe))
@@ -305,7 +305,7 @@ void Foam::Module::meshSurfaceMapper2D::mapCorners
         sMod.moveBoundaryVertexNoUpdate(bpe, mapPoint);
     }
 
-    labelLongList nodesToMap;
+    DynamicList<label> nodesToMap;
     forAll(edgesToMap, eI)
     {
         const edge& be = edges[edgesToMap[eI]];
@@ -320,7 +320,7 @@ void Foam::Module::meshSurfaceMapper2D::mapCorners
 
 void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurfacePatches()
 {
-    labelLongList edgesToMap;
+    DynamicList<label> edgesToMap;
 
     forAll(activeBoundaryEdges_, beI)
         edgesToMap.append(activeBoundaryEdges_[beI]);
@@ -331,17 +331,17 @@ void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurfacePatches()
 
 void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurfacePatches
 (
-    const labelLongList& edgesToMap
+    const DynamicList<label>& edgesToMap
 )
 {
     // map the selected edges on their patches
     const edgeList& edges = surfaceEngine_.edges();
     const pointFieldPMG& points = surfaceEngine_.points();
-    const VRWGraph& edgePatches = surfaceEngine_.edgePatches();
+    const labelListList2D& edgePatches = surfaceEngine_.edgePatches();
     const labelList& bp = surfaceEngine_.bp();
 
     meshSurfaceEngineModifier surfaceModifier(surfaceEngine_);
-    labelLongList selectedCorners;
+    DynamicList<label> selectedCorners;
 
     const label size = edgesToMap.size();
     # pragma omp parallel for if (size > 1000) \
@@ -350,7 +350,7 @@ void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurfacePatches
     {
         const label beI = edgesToMap[nI];
 
-        if (edgePatches.sizeOfRow(beI) == 2)
+        if (edgePatches[beI].size() == 2)
         {
             # pragma omp critical
             selectedCorners.append(beI);
@@ -370,7 +370,7 @@ void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurfacePatches
             mapPoint,
             dSq,
             nt,
-            edgePatches(beI, 0),
+            edgePatches[beI][0],
             p
         );
 

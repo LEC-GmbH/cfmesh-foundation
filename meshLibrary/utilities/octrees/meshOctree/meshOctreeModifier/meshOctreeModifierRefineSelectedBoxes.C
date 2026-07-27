@@ -47,13 +47,13 @@ void Foam::Module::meshOctreeModifier::markAdditionalLayers
     const label nLayers
 ) const
 {
-    const LongList<meshOctreeCube*>& leaves = octree_.leaves_;
+    const DynamicList<meshOctreeCube*>& leaves = octree_.leaves_;
 
-    DynList<label> neiLeaves;
+    DynamicList<label> neiLeaves;
 
     for (label i = 1; i<=nLayers; ++i)
     {
-        labelLongList activeLeaves;
+        DynamicList<label> activeLeaves;
         forAll(leaves, leafI)
             if (refineBox[leafI] == i)
                 activeLeaves.append(leafI);
@@ -90,13 +90,13 @@ void Foam::Module::meshOctreeModifier::markAdditionalLayersOfFaceNeighbours
     const label nLayers
 ) const
 {
-    const LongList<meshOctreeCube*>& leaves = octree_.leaves_;
+    const DynamicList<meshOctreeCube*>& leaves = octree_.leaves_;
 
-    DynList<label> neiLeaves;
+    DynamicList<label> neiLeaves;
 
     for (label i = 1; i<=nLayers; ++i)
     {
-        labelLongList activeLeaves;
+        DynamicList<label> activeLeaves;
         forAll(leaves, leafI)
             if (refineBox[leafI] == i)
                 activeLeaves.append(leafI);
@@ -134,12 +134,12 @@ Foam::label Foam::Module::meshOctreeModifier::markAdditionalLayers
     List<direction>& targetRefLevel
 ) const
 {
-    const LongList<meshOctreeCube*>& leaves = octree_.leaves_;
+    const DynamicList<meshOctreeCube*>& leaves = octree_.leaves_;
 
     // sort leaves based on the number of additional layers
     label maxLevel = Foam::max(nLayers);
 
-    List<labelLongList> leavesForLayer(maxLevel + 1);
+    List<DynamicList<label>> leavesForLayer(maxLevel + 1);
     forAll(nLayers, leafI)
     {
         if (nLayers[leafI] < 1)
@@ -153,7 +153,7 @@ Foam::label Foam::Module::meshOctreeModifier::markAdditionalLayers
 
     forAllReverse(leavesForLayer, layerI)
     {
-        const labelLongList& activeLeaves = leavesForLayer[layerI];
+        const DynamicList<label>& activeLeaves = leavesForLayer[layerI];
 
         if (activeLeaves.size() == 0 )
             continue;
@@ -221,6 +221,45 @@ Foam::label Foam::Module::meshOctreeModifier::markAdditionalLayers
 }
 
 
+void Foam::Module::meshOctreeModifier::reserveSlotCapacity
+(
+    const label nRefinedCubes
+)
+{
+    const label rowsPerCube = octree_.isQuadtree() ? 4 : 8;
+    const label maxNewRows = nRefinedCubes*rowsPerCube;
+
+    forAll(octree_.dataSlots_, slotI)
+    {
+        meshOctreeSlot& slot = octree_.dataSlots_[slotI];
+
+        slot.nextContainedTrianglesRow_ = slot.containedTriangles_.size();
+        slot.containedTriangles_.setSize
+        (
+            slot.nextContainedTrianglesRow_ + maxNewRows
+        );
+
+        slot.nextContainedEdgesRow_ = slot.containedEdges_.size();
+        slot.containedEdges_.setSize
+        (
+            slot.nextContainedEdgesRow_ + maxNewRows
+        );
+    }
+}
+
+
+void Foam::Module::meshOctreeModifier::trimSlotCapacity()
+{
+    forAll(octree_.dataSlots_, slotI)
+    {
+        meshOctreeSlot& slot = octree_.dataSlots_[slotI];
+
+        slot.containedTriangles_.setSize(slot.nextContainedTrianglesRow_);
+        slot.containedEdges_.setSize(slot.nextContainedEdgesRow_);
+    }
+}
+
+
 void Foam::Module::meshOctreeModifier::refineSelectedBoxes
 (
     labelList& refineBox,
@@ -235,13 +274,20 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxes
 
     const triSurf& surface = octree_.surface();
     const boundBox& rootBox = octree_.rootBox();
-    const LongList<meshOctreeCube*>& leaves = octree_.leaves_;
+    const DynamicList<meshOctreeCube*>& leaves = octree_.leaves_;
 
     // this is needed for thread safety
     // such solutions make me a sad bunny :(
     surface.facetEdges();
     surface.edgeFacets();
     surface.edges();
+
+    label nRefined(0);
+    forAll(refineBox, leafI)
+        if (refineBox[leafI])
+            ++nRefined;
+
+    reserveSlotCapacity(nRefined);
 
     # pragma omp parallel num_threads(octree_.dataSlots_.size())
     {
@@ -267,6 +313,11 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxes
         }
     }
 
+    // the #pragma omp parallel region above has an implicit barrier at
+    // its closing brace, so every thread has finished all refinement
+    // work for this round by this point - safe to trim now
+    trimSlotCapacity();
+
     // update the list of leaves
     createListOfLeaves();
 
@@ -279,10 +330,10 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
     const scalarList& refThickness
 )
 {
-    const LongList<meshOctreeCube*>& leaves = octree_.leaves_;
+    const DynamicList<meshOctreeCube*>& leaves = octree_.leaves_;
 
     typedef std::pair<direction, label> mapKey;
-    typedef std::map<mapKey, LongList<meshOctreeCube*>> lMap;
+    typedef std::map<mapKey, DynamicList<meshOctreeCube*>> lMap;
     lMap leavesMap;
 
     // find the maximum refinement level of leaves marked for refinement
@@ -304,7 +355,7 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
     }
 
     // sort leaves based on the current level
-    List<labelLongList> leavesForLevel(maxLevel + 1);
+    List<DynamicList<label>> leavesForLevel(maxLevel + 1);
     forAll(refineBox, leafI)
     {
         if (!refineBox[leafI])
@@ -316,12 +367,13 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
     // find leaves with the same number of additional layers
     forAllReverse(leavesForLevel, levelI)
     {
-        const labelLongList& activeLeaves = leavesForLevel[levelI];
+        const DynamicList<label>& activeLeaves = leavesForLevel[levelI];
 
         if (activeLeaves.size() == 0 )
             continue;
 
-        labelLongList nLayersForActive(activeLeaves.size());
+        DynamicList<label> nLayersForActive;
+        nLayersForActive.setSize(activeLeaves.size());
         label maxNLayers(0);
         # pragma omp parallel
         {
@@ -347,7 +399,7 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
         for (label layerI = 0; layerI<=maxNLayers; ++layerI)
         {
             mapKey key(levelI, layerI);
-            LongList<meshOctreeCube*>& currLeaves = leavesMap[key];
+            DynamicList<meshOctreeCube*>& currLeaves = leavesMap[key];
             currLeaves.clear();
         }
 
@@ -364,7 +416,7 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
         const label nLayers = it->first.second;
         const direction levelI = it->first.first;
 
-        const LongList<meshOctreeCube*>& selectedLeaves = it->second;
+        const DynamicList<meshOctreeCube*>& selectedLeaves = it->second;
 
         if (selectedLeaves.size() == 0 )
             continue;
@@ -395,7 +447,7 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
             markAdditionalLayers(markedLeaves, nLayers);
 
             // find the leaves in the additional layers
-            labelLongList activeLeaves;
+            DynamicList<label> activeLeaves;
             forAll(markedLeaves, leafI)
             {
                 if (markedLeaves[leafI])

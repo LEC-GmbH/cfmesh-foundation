@@ -45,11 +45,11 @@ bool Foam::Module::polyMeshGenChecks::checkPoints
     label nFaceErrors = 0;
     label nCellErrors = 0;
 
-    const VRWGraph& pf = mesh.addressingData().pointFaces();
+    const labelListList2D& pf = mesh.addressingData().pointFaces();
 
     forAll(pf, pointI)
     {
-        if (pf.sizeOfRow(pointI) == 0)
+        if (pf[pointI].size() == 0)
         {
             WarningInFunction
                 << "Point " << pointI << " not used by any faces." << endl;
@@ -63,11 +63,11 @@ bool Foam::Module::polyMeshGenChecks::checkPoints
         }
     }
 
-    const VRWGraph& pc = mesh.addressingData().pointCells();
+    const labelListList2D& pc = mesh.addressingData().pointCells();
 
     forAll(pc, pointI)
     {
-        if (pc.sizeOfRow(pointI) == 0)
+        if (pc[pointI].size() == 0)
         {
             WarningInFunction
                 << "Point " << pointI << " not used by any cells." << endl;
@@ -115,7 +115,7 @@ bool Foam::Module::polyMeshGenChecks::checkUpperTriangular
     const labelList& nei = mesh.neighbour();
 
     const cellListPMG& cells = mesh.cells();
-    const VRWGraph& cc = mesh.addressingData().cellCells();
+    const labelListList2D& cc = mesh.addressingData().cellCells();
 
     const label internal = mesh.nInternalFaces();
 
@@ -157,7 +157,7 @@ bool Foam::Module::polyMeshGenChecks::checkUpperTriangular
 
         // Using the fact that cell neighbour always appear
         // in the increasing order
-        boolList usedNbr(cc.sizeOfRow(cellI), false);
+        boolList usedNbr(cc[cellI].size(), false);
 
         for (label nSweeps = 0; nSweeps < usedNbr.size(); ++nSweeps)
         {
@@ -167,7 +167,7 @@ bool Foam::Module::polyMeshGenChecks::checkUpperTriangular
 
             forAllRow(cc, cellI, nbrI)
             {
-                const label neiI = cc(cellI, nbrI);
+                const label neiI = cc[cellI][nbrI];
                 if ((neiI > cellI) && !usedNbr[nbrI] && (neiI < minNei))
                 {
                     nextNei = nbrI;
@@ -184,7 +184,7 @@ bool Foam::Module::polyMeshGenChecks::checkUpperTriangular
                 {
                     if (curFaces[faceI] < internal)
                     {
-                        if (nei[curFaces[faceI]] == cc(cellI, nextNei))
+                        if (nei[curFaces[faceI]] == cc[cellI][nextNei])
                         {
                             checkInternalFaces[nChecks] = curFaces[faceI];
                             ++nChecks;
@@ -257,8 +257,8 @@ bool Foam::Module::polyMeshGenChecks::checkCellsZipUp
     {
         const labelList& c = cells[cellI];
 
-        DynList<edge> cellEdges;
-        DynList<label> edgeUsage;
+        DynamicList<edge> cellEdges;
+        DynamicList<label> edgeUsage;
 
         forAll(c, faceI)
         {
@@ -282,7 +282,7 @@ bool Foam::Module::polyMeshGenChecks::checkCellsZipUp
             }
         }
 
-        DynList<edge> singleEdges;
+        DynamicList<edge> singleEdges;
 
         forAll(edgeUsage, edgeI)
         {

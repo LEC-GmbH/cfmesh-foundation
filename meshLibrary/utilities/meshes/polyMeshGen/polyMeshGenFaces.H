@@ -46,6 +46,7 @@ SourceFiles
 #include "faceListPMG.H"
 #include "labelIOList.H"
 #include "boundaryPatch.H"
+#include "DynamicList.H"
 
 namespace Foam
 {
@@ -172,13 +173,13 @@ public:
         label faceSubsetIndex(const word&) const;
         inline void addFaceToSubset(const label, const label);
         inline void removeFaceFromSubset(const label, const label);
-        inline void faceInSubsets(const label, DynList<label>&) const;
-        inline void faceSubsetIndices(DynList<label>&) const;
+        inline void faceInSubsets(const label, DynamicList<label>&) const;
+        inline void faceSubsetIndices(DynamicList<label>&) const;
         template<class ListType>
         inline void facesInSubset(const label, ListType&) const;
         template<class ListType>
         inline void updateFaceSubsets(const ListType&);
-        inline void updateFaceSubsets(const VRWGraph&);
+        inline void updateFaceSubsets(const labelListList2D&);
 
         //- Read mesh
         void read();

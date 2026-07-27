@@ -69,7 +69,7 @@ void Foam::Module::triSurfaceCopyParts::markFacetsForCopying
     }
 
     // mark facets contained in selected subsets
-    DynList<label> facetSubsetsIDs;
+    DynamicList<label> facetSubsetsIDs;
     surf_.facetSubsetIndices(facetSubsetsIDs);
 
     forAll(facetSubsetsIDs, i)
@@ -80,7 +80,7 @@ void Foam::Module::triSurfaceCopyParts::markFacetsForCopying
         {
             if (parts[partI] == fsName)
             {
-                labelLongList containedFacets;
+                DynamicList<label> containedFacets;
                 surf_.facetsInSubset(facetSubsetsIDs[i], containedFacets);
 
                 forAll(containedFacets, cfI)
@@ -103,7 +103,7 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
 
     const pointField& pts = surf_.points();
 
-    labelLongList newPointLabel(pts.size(), -1);
+    DynamicList<label> newPointLabel(pts.size(), -1);
 
     label nPoints(0);
 
@@ -116,7 +116,7 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
         sm.patchesAccess()[patchI] = surf_.patches()[patchI];
 
     // copy selected patches
-    labelLongList newTriangleLabel(surf_.size(), -1);
+    DynamicList<label> newTriangleLabel(surf_.size(), -1);
     forAll(copyFacets, triI)
     {
         if (!copyFacets[triI])
@@ -158,14 +158,14 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
     }
 
     // copy point subsets
-    DynList<label> subsetIds;
+    DynamicList<label> subsetIds;
     surf_.pointSubsetIndices(subsetIds);
     forAll(subsetIds, subsetI)
     {
         const label origId = subsetIds[subsetI];
         const word sName = surf_.pointSubsetName(origId);
 
-        labelLongList pointsInSubset;
+        DynamicList<label> pointsInSubset;
         surf_.pointsInSubset(origId, pointsInSubset);
 
         const label newId = s.addPointSubset(sName);
@@ -187,7 +187,7 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
         const label origId = subsetIds[subsetI];
         const word sName = surf_.facetSubsetName(origId);
 
-        labelLongList trianglesInSubset;
+        DynamicList<label> trianglesInSubset;
         surf_.facetsInSubset(origId, trianglesInSubset);
 
         const label newId = s.addFacetSubset(sName);
@@ -203,17 +203,17 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
     }
 
     // copy feature edges
-    labelLongList newEdgeLabel(surf_.nFeatureEdges(), -1);
-    const VRWGraph& pointEdges = surf_.pointEdges();
-    const edgeLongList& edges = surf_.edges();
-    const VRWGraph& edgeFacets = surf_.edgeFacets();
+    DynamicList<label> newEdgeLabel(surf_.nFeatureEdges(), -1);
+    const labelListList2D& pointEdges = surf_.pointEdges();
+    const DynamicList<edge>& edges = surf_.edges();
+    const labelListList2D& edgeFacets = surf_.edgeFacets();
     forAll(newEdgeLabel, edgeI)
     {
         const edge& e = surf_.featureEdges()[edgeI];
         label eI(-1);
         forAllRow(pointEdges, e.start(), peI)
         {
-            const label eJ = pointEdges(e.start(), peI);
+            const label eJ = pointEdges[e.start()][peI];
             if (edges[eJ] == e)
             {
                 eI = eJ;
@@ -228,7 +228,7 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
         bool foundTriangle(false);
         forAllRow(edgeFacets, eI, efI)
         {
-            if (newTriangleLabel[edgeFacets(eI, efI)] >= 0)
+            if (newTriangleLabel[edgeFacets[eI][efI]] >= 0)
             {
                 foundTriangle = true;
                 break;
@@ -251,7 +251,7 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
         const label origId = subsetIds[subsetI];
         const word sName = surf_.edgeSubsetName(origId);
 
-        labelLongList edgesInSubset;
+        DynamicList<label> edgesInSubset;
         surf_.edgesInSubset(origId, edgesInSubset);
 
         const label newId = s.addEdgeSubset(sName);

@@ -40,10 +40,13 @@ Foam::Module::polyMeshGenModifierAddCellByCell::polyMeshGenModifierAddCellByCell
 :
     polyMeshGenModifier(mesh),
     nFaces_(mesh.faces().size()),
-    newFaces_(nFaces_),
+    newFaces_(),
     nCells_(mesh.cells().size()),
-    newCells_(nCells_)
+    newCells_()
 {
+    newFaces_.setSize(nFaces_);
+    newCells_.setSize(nCells_);
+
     this->pointFaces();
     faceListPMG& faces = this->facesAccess();
     forAll(faces, faceI)
@@ -79,7 +82,7 @@ void Foam::Module::polyMeshGenModifierAddCellByCell::addCell
 {
     cell c(cellFaces.size());
 
-    VRWGraph& pointFaces = this->pointFaces();
+    labelListList2D& pointFaces = this->pointFaces();
 
     forAll(cellFaces, faceI)
     {
@@ -90,7 +93,7 @@ void Foam::Module::polyMeshGenModifierAddCellByCell::addCell
         label fLabel(-1);
         forAllRow(pointFaces, pointI, pfI)
         {
-            const label faceI = pointFaces(pointI, pfI);
+            const label faceI = pointFaces[pointI][pfI];
 
             if (newFaces_[faceI] == f)
             {
@@ -105,7 +108,7 @@ void Foam::Module::polyMeshGenModifierAddCellByCell::addCell
             c[faceI] = nFaces_;
             forAll(f, pI)
             {
-                pointFaces.append(f[pI], nFaces_);
+                pointFaces[f[pI]].append(nFaces_);
             }
 
             ++nFaces_;

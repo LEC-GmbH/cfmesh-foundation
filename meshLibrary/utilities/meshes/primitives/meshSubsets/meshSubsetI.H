@@ -151,7 +151,10 @@ inline void Foam::Module::meshSubset::updateSubset(const ListType& newLabels)
 }
 
 
-inline void Foam::Module::meshSubset::updateSubset(const VRWGraph& newLabels)
+inline void Foam::Module::meshSubset::updateSubset
+(
+    const labelListList2D& newLabels
+)
 {
     std::set<label> newData;
 
@@ -159,7 +162,7 @@ inline void Foam::Module::meshSubset::updateSubset(const VRWGraph& newLabels)
     {
         forAllRow(newLabels, elemi, i)
         {
-            newData.insert(newLabels(elemi, i));
+            newData.insert(newLabels[elemi][i]);
         }
     }
 

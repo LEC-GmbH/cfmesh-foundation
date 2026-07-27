@@ -37,8 +37,8 @@ void Foam::Module::meshSurfacePartitioner::calculateCornersEdgesAndAddressing()
     const labelList& bPoints = meshSurface_.boundaryPoints();
     const labelList& bp = meshSurface_.bp();
     const edgeList& edges = meshSurface_.edges();
-    const VRWGraph& edgeFaces = meshSurface_.edgeFaces();
-    const VRWGraph& pointFaces = meshSurface_.pointFaces();
+    const labelListList2D& edgeFaces = meshSurface_.edgeFaces();
+    const labelListList2D& pointFaces = meshSurface_.pointFaces();
 
     corners_.clear();
     edgePoints_.clear();
@@ -69,11 +69,11 @@ void Foam::Module::meshSurfacePartitioner::calculateCornersEdgesAndAddressing()
 
     forAll(edgeFaces, edgeI)
     {
-        if (edgeFaces.sizeOfRow(edgeI) != 2)
+        if (edgeFaces[edgeI].size() != 2)
             continue;
 
-        const label patch0 = facePatch_[edgeFaces(edgeI, 0)];
-        const label patch1 = facePatch_[edgeFaces(edgeI, 1)];
+        const label patch0 = facePatch_[edgeFaces[edgeI][0]];
+        const label patch1 = facePatch_[edgeFaces[edgeI][1]];
 
         if (patch0 != patch1)
         {
@@ -106,7 +106,7 @@ void Foam::Module::meshSurfacePartitioner::calculateCornersEdgesAndAddressing()
     forAll(pointFaces, bpI)
     {
         forAllRow(pointFaces, bpI, pfI)
-            pointPatches_.appendUniq(bpI, facePatch_[pointFaces(bpI, pfI)]);
+            appendUniq(pointPatches_[bpI], facePatch_[pointFaces[bpI][pfI]]);
     }
 
     label counter = corners_.size();

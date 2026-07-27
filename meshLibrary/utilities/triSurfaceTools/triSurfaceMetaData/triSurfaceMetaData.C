@@ -62,14 +62,14 @@ void Foam::Module::triSurfaceMetaData::createMetaData()
     metaDict_.add("patches", dict);
 
     // store information about point subsets
-    DynList<label> subsetIds;
+    DynamicList<label> subsetIds;
     surf_.pointSubsetIndices(subsetIds);
     dict.clear();
     forAll(subsetIds, i)
     {
         dictionary sDict;
 
-        labelLongList inSubset;
+        DynamicList<label> inSubset;
         surf_.pointsInSubset(subsetIds[i], inSubset);
         sDict.add("nPoints", inSubset.size());
 
@@ -86,7 +86,7 @@ void Foam::Module::triSurfaceMetaData::createMetaData()
     {
         dictionary sDict;
 
-        labelLongList inSubset;
+        DynamicList<label> inSubset;
         surf_.facetsInSubset(subsetIds[i], inSubset);
         sDict.add("nFacets", inSubset.size());
 
@@ -103,7 +103,7 @@ void Foam::Module::triSurfaceMetaData::createMetaData()
     {
         dictionary sDict;
 
-        labelLongList inSubset;
+        DynamicList<label> inSubset;
         surf_.edgesInSubset(subsetIds[i], inSubset);
         sDict.add("nEdges", inSubset.size());
 

@@ -29,7 +29,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "polyMeshGenAddressing.H"
-#include "VRWGraphSMPModifier.H"
 
 #include <omp.h>
 
@@ -45,12 +44,12 @@ void Foam::Module::polyMeshGenAddressing::calcFaceEdges() const
     }
     else
     {
-        fePtr_ = new VRWGraph();
-        VRWGraph& faceEdgesAddr = *fePtr_;
+        fePtr_ = new labelListList2D();
+        labelListList2D& faceEdgesAddr = *fePtr_;
 
         const edgeList& edges = this->edges();
 
-        const VRWGraph& pointFaces = this->pointFaces();
+        const labelListList2D& pointFaces = this->pointFaces();
         const faceListPMG& faces = mesh_.faces();
 
         labelList nfe(faces.size());
@@ -68,7 +67,7 @@ void Foam::Module::polyMeshGenAddressing::calcFaceEdges() const
             # pragma omp barrier
 
             # pragma omp master
-            VRWGraphSMPModifier(faceEdgesAddr).setSizeAndRowSize(nfe);
+            setSizeAndRowSize(faceEdgesAddr, nfe);
 
             # pragma omp barrier
 
@@ -80,7 +79,7 @@ void Foam::Module::polyMeshGenAddressing::calcFaceEdges() const
 
                 forAllRow(pointFaces, s, pfI)
                 {
-                    const label faceI = pointFaces(s, pfI);
+                    const label faceI = pointFaces[s][pfI];
 
                     const face& f = faces[faceI];
                     forAll(f, eI)
@@ -100,7 +99,7 @@ void Foam::Module::polyMeshGenAddressing::calcFaceEdges() const
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-const Foam::Module::VRWGraph&
+const Foam::Module::labelListList2D&
 Foam::Module::polyMeshGenAddressing::faceEdges() const
 {
     if (!fePtr_)

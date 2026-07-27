@@ -41,12 +41,12 @@ SourceFiles
 #ifndef meshOctreeAddressing_H
 #define meshOctreeAddressing_H
 
-#include "FRWGraph.H"
-#include "VRWGraph.H"
+#include "FixedList.H"
+#include "DynamicList.H"
+#include "labelListListOps.H"
 #include "meshOctreeCubeCoordinates.H"
 #include "face.H"
 #include "edge.H"
-#include "DynList.H"
 #include "Map.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -84,10 +84,10 @@ class meshOctreeAddressing
         mutable pointField* octreePointsPtr_;
 
         //- node labels
-        mutable VRWGraph* nodeLabelsPtr_;
+        mutable labelListList2D* nodeLabelsPtr_;
 
         //- node leaves
-        mutable FRWGraph<label, 8>* nodeLeavesPtr_;
+        mutable List<FixedList<label, 8>>* nodeLeavesPtr_;
 
         //- identify which boxes should be used as mesh cells
         mutable List<direction>* boxTypePtr_;
@@ -99,36 +99,36 @@ class meshOctreeAddressing
     // Additional addressing useful for some algorithms
 
         //- faces of the octree
-        mutable VRWGraph* octreeFacesPtr_;
-        mutable labelLongList* octreeFacesOwnersPtr_;
-        mutable labelLongList* octreeFacesNeighboursPtr_;
+        mutable labelListList2D* octreeFacesPtr_;
+        mutable DynamicList<label>* octreeFacesOwnersPtr_;
+        mutable DynamicList<label>* octreeFacesNeighboursPtr_;
 
         //- octree box-faces addressing
-        mutable VRWGraph* leafFacesPtr_;
+        mutable labelListList2D* leafFacesPtr_;
 
         //- node-faces addressing
-        mutable VRWGraph* nodeFacesPtr_;
+        mutable labelListList2D* nodeFacesPtr_;
 
         //- leaf-leaves addressing
-        mutable VRWGraph* leafLeavesPtr_;
+        mutable labelListList2D* leafLeavesPtr_;
 
         //- edges of the octree
-        mutable LongList<edge>* octreeEdgesPtr_;
+        mutable DynamicList<edge>* octreeEdgesPtr_;
 
         //- edges-leaves addressing
-        mutable VRWGraph* edgeLeavesPtr_;
+        mutable labelListList2D* edgeLeavesPtr_;
 
         //- leaf-edges addressing
-        mutable VRWGraph* leafEdgesPtr_;
+        mutable labelListList2D* leafEdgesPtr_;
 
         //- node-edges addressing
-        mutable VRWGraph* nodeEdgesPtr_;
+        mutable labelListList2D* nodeEdgesPtr_;
 
         //- face-edges addressing
-        mutable VRWGraph* faceEdgesPtr_;
+        mutable labelListList2D* faceEdgesPtr_;
 
         //- edge-faces addressing
-        mutable VRWGraph* edgeFacesPtr_;
+        mutable labelListList2D* edgeFacesPtr_;
 
 
     // Private member functions
@@ -233,10 +233,10 @@ public:
         inline const pointField& octreePoints() const;
 
         //- return nodeLabels
-        inline const VRWGraph& nodeLabels() const;
+        inline const labelListList2D& nodeLabels() const;
 
         //- return nodeLeaves
-        inline const FRWGraph<label, 8>& nodeLeaves() const;
+        inline const List<FixedList<label, 8>>& nodeLeaves() const;
 
         //- return which octree boxes are used for mesh creation
         inline const List<direction>& boxType() const;
@@ -248,46 +248,46 @@ public:
         inline void setBoxType(const label boxI, const direction type);
 
         //- return octree faces, created for MESHCELL boxes
-        inline const VRWGraph& octreeFaces() const;
+        inline const labelListList2D& octreeFaces() const;
 
         //- return owners of octree faces
-        inline const labelLongList& octreeFaceOwner() const;
+        inline const DynamicList<label>& octreeFaceOwner() const;
 
         //- return neighbours of octree faces
-        inline const labelLongList& octreeFaceNeighbour() const;
+        inline const DynamicList<label>& octreeFaceNeighbour() const;
 
         //- return octree box-faces addressing
-        inline const VRWGraph& leafFaces() const;
+        inline const labelListList2D& leafFaces() const;
 
         //- return leaf-leaves addressing
-        inline const VRWGraph& leafLeaves() const;
+        inline const labelListList2D& leafLeaves() const;
 
         //- return node-faces addressing
-        inline const VRWGraph& nodeFaces() const;
+        inline const labelListList2D& nodeFaces() const;
 
         //- return octree edges, created for MESHCELL boxes
-        inline const LongList<edge>& octreeEdges() const;
+        inline const DynamicList<edge>& octreeEdges() const;
 
         //- return edge-leaves addressing
-        inline const VRWGraph& edgeLeaves() const;
+        inline const labelListList2D& edgeLeaves() const;
 
         //- return leaf-edges addressing
-        inline const VRWGraph& leafEdges() const;
+        inline const labelListList2D& leafEdges() const;
 
         void edgeIntersections
         (
             const label eI,
-            DynList<point>& intersections
+            DynamicList<point>& intersections
         ) const;
 
         //- return node-edges addressing
-        inline const VRWGraph& nodeEdges() const;
+        inline const labelListList2D& nodeEdges() const;
 
         //- return face-edges addressing
-        inline const VRWGraph& faceEdges() const;
+        inline const labelListList2D& faceEdges() const;
 
         //- return edge-faces addressing
-        inline const VRWGraph& edgeFaces() const;
+        inline const labelListList2D& edgeFaces() const;
 
         //- return const reference to meshOctree
         inline const meshOctree& octree() const;

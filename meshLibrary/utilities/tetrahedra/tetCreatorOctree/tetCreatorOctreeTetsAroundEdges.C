@@ -31,6 +31,7 @@ License
 #include "tetCreatorOctree.H"
 #include "demandDrivenData.H"
 #include "meshOctree.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -39,10 +40,10 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
     Info<< "Creating tets around edges" << endl;
 
     const labelList& cubeLabel = *cubeLabelPtr_;
-    const VRWGraph& nodeLabels = octreeCheck_.nodeLabels();
-    const FRWGraph<label, 8>& pLeaves = octreeCheck_.nodeLeaves();
-    const VRWGraph& subNodeLabels = *subNodeLabelsPtr_;
-    const VRWGraph& faceCentreLabel = *faceCentreLabelPtr_;
+    const labelListList2D& nodeLabels = octreeCheck_.nodeLabels();
+    const List<FixedList<label, 8>>& pLeaves = octreeCheck_.nodeLeaves();
+    const labelListList2D& subNodeLabels = *subNodeLabelsPtr_;
+    const labelListList2D& faceCentreLabel = *faceCentreLabelPtr_;
     const meshOctree& octree = octreeCheck_.octree();
     const FixedList<FixedList<meshOctreeCubeCoordinates, 8>, 8>& vlPos =
         octree.positionsOfLeavesAtNodes();
@@ -56,7 +57,7 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
 
         for (label plI = 0; plI < 8; ++plI)
         {
-            const label leafI = pLeaves(nodeI, plI);
+            const label leafI = pLeaves[nodeI][plI];
 
             if (leafI < 0)
                 continue;
@@ -72,7 +73,7 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
     // incident to such edges
     forAllReverse(sortedLeaves_, levelI)
     {
-        const labelLongList& curLevelLeaves = sortedLeaves_[levelI];
+        const DynamicList<label>& curLevelLeaves = sortedLeaves_[levelI];
 
         forAll(curLevelLeaves, leafI)
         {
@@ -90,13 +91,12 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                 const label startNode =
                     meshOctreeCubeCoordinates::edgeNodes_[eI][0];
 
-                const label start = nodeLabels(curLeaf, startNode);
+                const label start = nodeLabels[curLeaf][startNode];
                 const label end =
-                    nodeLabels
-                    (
-                        curLeaf,
+                    nodeLabels[curLeaf]
+                    [
                         meshOctreeCubeCoordinates::edgeNodes_[eI][1]
-                    );
+                    ];
 
                 bool create(true);
 
@@ -117,9 +117,9 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                     // store octree leaves at this edge
                     // they are all adjacent to the start point
                     for (label i = 0; i < 4; ++i)
-                        edgeCubes[i] = pLeaves(start, fNodes[i]);
+                        edgeCubes[i] = pLeaves[start][fNodes[i]];
 
-                    DynList<label> centreNodes;
+                    DynamicList<label> centreNodes;
 
                     forAll(edgeCubes, i)
                     {
@@ -145,16 +145,14 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                             centreNodes.append(cubeLabel[cLabel]);
 
                             // adding face centre labels
-                            if (faceCentreLabel.sizeOfRow(cLabel) != 0)
+                            if (faceCentreLabel[cLabel].size() != 0)
                             {
                                 const label helpFace = eI/4;
 
                                 const label fcl =
                                     faceCentreLabel
-                                    (
-                                        cLabel,
-                                        faceCentreHelper_[helpFace][i]
-                                    );
+                                    [cLabel]
+                                    [faceCentreHelper_[helpFace][i]];
 
                                 if (fcl != -1)
                                     centreNodes.append(fcl);
@@ -183,7 +181,7 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                                     << "Cannot find cube position"
                                     << abort(FatalError);
 
-                            centreNodes.append(subNodeLabels(cLabel, pos));
+                            centreNodes.append(subNodeLabels[cLabel][pos]);
                         }
                     }
 

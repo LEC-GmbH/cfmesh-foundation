@@ -218,7 +218,7 @@ void Foam::Module::tetMeshGenerator::refBoundaryLayers()
 
         refLayers.refineLayers();
 
-        labelLongList pointsInLayer;
+        DynamicList<label> pointsInLayer;
         refLayers.pointsInBndLayer(pointsInLayer);
 
         meshOptimizer opt(mesh_);

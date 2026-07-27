@@ -50,7 +50,7 @@ Foam::Module::meshSurfaceOptimizer::triMesh() const
 
 inline void Foam::Module::meshSurfaceOptimizer::updateTriMesh
 (
-    const labelLongList& selPoints
+    const DynamicList<label>& selPoints
 )
 {
     if (!triMeshPtr_)
@@ -77,8 +77,8 @@ inline bool Foam::Module::meshSurfaceOptimizer::transformIntoPlane
     const plane& pl,
     vector& vecX,
     vector& vecY,
-    DynList<point>& pts,
-    DynList<triFace>& trias
+    DynamicList<point>& pts,
+    DynamicList<triFace>& trias
 ) const
 {
     const partTriMesh& triMesh = this->triMesh();
@@ -88,7 +88,7 @@ inline bool Foam::Module::meshSurfaceOptimizer::transformIntoPlane
 
     partTriMeshSimplex simplex(triMesh, triPointI);
 
-    const DynList<point, 32>& sPts = simplex.pts();
+    const DynamicList<point>& sPts = simplex.pts();
 
     //- create vecX and vecY
     const point& p = simplex.centrePoint();
@@ -139,7 +139,7 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacian
     const bool transformIntoPlane
 ) const
 {
-    const VRWGraph& pPoints = surfaceEngine_.pointPoints();
+    const labelListList2D& pPoints = surfaceEngine_.pointPoints();
     const pointFieldPMG& points = surfaceEngine_.points();
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
 
@@ -156,11 +156,11 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacian
 
         plane pl(points[bPoints[bpI]], pNormal);
 
-        DynList<point> projectedPoints;
-        projectedPoints.setSize(pPoints.sizeOfRow(bpI));
+        DynamicList<point> projectedPoints;
+        projectedPoints.setSize(pPoints[bpI].size());
         forAllRow(pPoints, bpI, pI)
             projectedPoints[pI] =
-                pl.nearestPoint(points[bPoints[pPoints(bpI, pI)]]);
+                pl.nearestPoint(points[bPoints[pPoints[bpI][pI]]]);
 
         forAll(projectedPoints, pI)
             newP += projectedPoints[pI];
@@ -170,9 +170,9 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacian
     else
     {
         forAllRow(pPoints, bpI, pI)
-            newP += points[bPoints[pPoints(bpI, pI)]];
+            newP += points[bPoints[pPoints[bpI][pI]]];
 
-        newP /= pPoints.sizeOfRow(bpI);
+        newP /= pPoints[bpI].size();
     }
 
     return newP;
@@ -185,7 +185,7 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacianFC
     const bool transformIntoPlane
 ) const
 {
-    const VRWGraph& pointFaces = surfaceEngine_.pointFaces();
+    const labelListList2D& pointFaces = surfaceEngine_.pointFaces();
     const pointFieldPMG& points = surfaceEngine_.points();
     const vectorField& faceCentres = surfaceEngine_.faceCentres();
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
@@ -204,11 +204,11 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacianFC
 
         plane pl(points[bPoints[bpI]], pNormal);
 
-        DynList<point> projectedPoints;
-        projectedPoints.setSize(pointFaces.sizeOfRow(bpI));
+        DynamicList<point> projectedPoints;
+        projectedPoints.setSize(pointFaces[bpI].size());
         forAllRow(pointFaces, bpI, pfI)
             projectedPoints[pfI] =
-                pl.nearestPoint(faceCentres[pointFaces(bpI, pfI)]);
+                pl.nearestPoint(faceCentres[pointFaces[bpI][pfI]]);
 
         forAll(projectedPoints, pI)
             newP += projectedPoints[pI];
@@ -218,9 +218,9 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacianFC
     else
     {
         forAllRow(pointFaces, bpI, pfI)
-            newP += faceCentres[pointFaces(bpI, pfI)];
+            newP += faceCentres[pointFaces[bpI][pfI]];
 
-        newP /= pointFaces.sizeOfRow(bpI);
+        newP /= pointFaces[bpI].size();
     }
 
     return newP;
@@ -233,7 +233,7 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacianWFC
     const bool transformIntoPlane
 ) const
 {
-    const VRWGraph& pointFaces = surfaceEngine_.pointFaces();
+    const labelListList2D& pointFaces = surfaceEngine_.pointFaces();
     const pointFieldPMG& points = surfaceEngine_.points();
     const vectorField& faceAreas = surfaceEngine_.faceNormals();
     const vectorField& faceCentres = surfaceEngine_.faceCentres();
@@ -253,16 +253,16 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacianWFC
 
         plane pl(points[bPoints[bpI]], pNormal);
 
-        DynList<point> projectedPoints;
-        projectedPoints.setSize(pointFaces.sizeOfRow(bpI));
+        DynamicList<point> projectedPoints;
+        projectedPoints.setSize(pointFaces[bpI].size());
         forAllRow(pointFaces, bpI, pfI)
             projectedPoints[pfI] =
-                pl.nearestPoint(faceCentres[pointFaces(bpI, pfI)]);
+                pl.nearestPoint(faceCentres[pointFaces[bpI][pfI]]);
 
         scalar sumW(0.0);
         forAll(projectedPoints, pI)
         {
-            const label bfI = pointFaces(bpI, pI);
+            const label bfI = pointFaces[bpI][pI];
             const scalar w = (faceAreas[bfI] & faceAreas[bfI]);
             newP += w*projectedPoints[pI];
             sumW += w;
@@ -275,9 +275,9 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacianWFC
         scalar sumW(0.0);
         forAllRow(pointFaces, bpI, pfI)
         {
-            const label bfI = pointFaces(bpI, pfI);
+            const label bfI = pointFaces[bpI][pfI];
             const scalar w = (faceAreas[bfI] & faceAreas[bfI]);
-            newP += w*faceCentres[pointFaces(bpI, pfI)];
+            newP += w*faceCentres[pointFaces[bpI][pfI]];
             sumW += w;
         }
 
@@ -308,8 +308,8 @@ Foam::Module::meshSurfaceOptimizer::newPositionSurfaceOptimizer
 
     const plane pl(points[bPoints[bpI]], pNormal);
 
-    DynList<point> pts;
-    DynList<triFace> trias;
+    DynamicList<point> pts;
+    DynamicList<triFace> trias;
     vector vecX, vecY;
     bool success = this->transformIntoPlane(bpI, pl, vecX, vecY, pts, trias);
     if (!success)
@@ -347,7 +347,7 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newEdgePositionLaplacian
 {
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
     const edgeList& edges = surfaceEngine_.edges();
-    const VRWGraph& bpEdges = surfaceEngine_.boundaryPointEdges();
+    const labelListList2D& bpEdges = surfaceEngine_.boundaryPointEdges();
     const pointFieldPMG& points = surfaceEngine_.points();
 
     if (vertexType_[bpI] & LOCKED)
@@ -355,11 +355,11 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newEdgePositionLaplacian
 
     const labelHashSet& featureEdges = partitionerPtr_->featureEdges();
 
-    DynList<label> edgePoints;
+    DynamicList<label> edgePoints;
 
     forAllRow(bpEdges, bpI, i)
     {
-        const label beI = bpEdges(bpI, i);
+        const label beI = bpEdges[bpI][i];
 
         if (featureEdges.found(beI))
         {

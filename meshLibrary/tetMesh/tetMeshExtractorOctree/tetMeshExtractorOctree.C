@@ -41,7 +41,7 @@ void Foam::Module::tetMeshExtractorOctree::createPoints()
     polyMeshGenModifier meshModifier(mesh_);
     pointFieldPMG& points = meshModifier.pointsAccess();
 
-    const LongList<point>& tetPoints = tetCreator_.tetPoints();
+    const DynamicList<point>& tetPoints = tetCreator_.tetPoints();
 
     points.setSize(tetPoints.size());
 
@@ -59,10 +59,10 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
     cellListPMG& cells = meshModifier.cellsAccess();
     meshModifier.boundariesAccess().setSize(0);
 
-    const LongList<partTet>& tets = tetCreator_.tets();
+    const DynamicList<partTet>& tets = tetCreator_.tets();
 
-    VRWGraph pTets;
-    pTets.reverseAddressing(mesh_.points().size(), tets);
+    labelListList2D pTets;
+    reverseAddressing(pTets, mesh_.points().size(), tets);
 
     // set the number of cells
     cells.setSize(tets.size());
@@ -152,10 +152,10 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
                 {
                     // do not check cells with greater labels
                     // they cannot be face owners
-                    if (pTets(pointI, ptI) >= cellI)
+                    if (pTets[pointI][ptI] >= cellI)
                         continue;
 
-                    const cell& otherTet = cells[pTets(pointI, ptI)];
+                    const cell& otherTet = cells[pTets[pointI][ptI]];
 
                     // check faces created from a tet
                     forAll(otherTet, ofI)
@@ -179,7 +179,7 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
 
     // remove duplicate faces
     label nFaces(0);
-    labelLongList newFaceLabel(faces.size(), -1);
+    DynamicList<label> newFaceLabel(faces.size(), -1);
 
     forAll(faces, faceI)
     {
@@ -202,7 +202,7 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
     {
         cell& c = cells[cellI];
 
-        DynList<label> newC;
+        DynamicList<label> newC;
 
         forAll(c, fI)
         {

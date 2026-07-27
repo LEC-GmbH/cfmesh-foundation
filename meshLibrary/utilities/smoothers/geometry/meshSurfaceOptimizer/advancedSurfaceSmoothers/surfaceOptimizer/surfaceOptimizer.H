@@ -42,7 +42,7 @@ SourceFiles
 
 #include "point.H"
 #include "triFace.H"
-#include "DynList.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -66,10 +66,10 @@ class surfaceOptimizer
     // Private data
 
         //- reference to the simplex points
-        DynList<point>& pts_;
+        DynamicList<point>& pts_;
 
         //- reference to the triangles forming a simplex
-        const DynList<triFace>& trias_;
+        const DynamicList<triFace>& trias_;
 
         //- min position of the bnd box
         point pMin_;
@@ -107,8 +107,8 @@ public:
     //- Construct from transformed points and triangles forming a simplex
     surfaceOptimizer
     (
-        DynList<point>& pts,
-        const DynList<triFace>& trias
+        DynamicList<point>& pts,
+        const DynamicList<triFace>& trias
     );
 
 

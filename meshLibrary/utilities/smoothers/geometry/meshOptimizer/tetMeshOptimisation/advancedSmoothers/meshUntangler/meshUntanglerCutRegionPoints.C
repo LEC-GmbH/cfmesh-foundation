@@ -42,7 +42,7 @@ bool Foam::Module::meshUntangler::cutRegion::findNewVertices
     const plane& plane
 )
 {
-    const DynList<point, 64>& points = *pointsPtr_;
+    const DynamicList<point>& points = *pointsPtr_;
 
     newVertexLabel_.setSize(points.size());
     newVertexLabel_ = -1;
@@ -54,7 +54,7 @@ bool Foam::Module::meshUntangler::cutRegion::findNewVertices
 
     origNumVertices_ = 0;
 
-    cPtsPtr_ = new DynList<point, 64>();
+    cPtsPtr_ = new DynamicList<point>();
 
     const point& rp = plane.refPoint();
     const vector& n = plane.normal();
@@ -93,9 +93,9 @@ bool Foam::Module::meshUntangler::cutRegion::findNewVertices
 
 void Foam::Module::meshUntangler::cutRegion::removeCoincidentVertices()
 {
-    const DynList<point, 64>& points = *pointsPtr_;
-    DynList<edge, 128>& edges = *edgesPtr_;
-    DynList<label, 64> newLabelForPoint;
+    const DynamicList<point>& points = *pointsPtr_;
+    DynamicList<edge>& edges = *edgesPtr_;
+    DynamicList<label> newLabelForPoint;
     newLabelForPoint.setSize(points.size());
     newLabelForPoint = -1;
 
@@ -127,7 +127,7 @@ void Foam::Module::meshUntangler::cutRegion::removeCoincidentVertices()
     newEdgeLabel_ = -1;
     label edgeLabel(0);
 
-    cEdgesPtr_ = new DynList<edge, 128>();
+    cEdgesPtr_ = new DynamicList<edge>();
     forAll(edges, eI)
         if (edges[eI].start() != edges[eI].end())
         {
@@ -140,13 +140,13 @@ void Foam::Module::meshUntangler::cutRegion::removeCoincidentVertices()
     cEdgesPtr_ = nullptr;
 
     // renumber faces
-    const DynList<DynList<label, 8>, 64>& faces = *facesPtr_;
-    cFacesPtr_ = new DynList<DynList<label, 8>, 64>();
+    const DynamicList<DynamicList<label>>& faces = *facesPtr_;
+    cFacesPtr_ = new DynamicList<DynamicList<label>>();
     forAll(faces, fI)
     {
-        const DynList<label, 8>& f = faces[fI];
+        const DynamicList<label>& f = faces[fI];
 
-        DynList<label, 8> nf;
+        DynamicList<label> nf;
 
         forAll(f, eI)
             if (newEdgeLabel_[f[eI]] != -1)

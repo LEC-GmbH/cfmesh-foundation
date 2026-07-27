@@ -36,17 +36,17 @@ inline Foam::pointField& Foam::Module::triSurfModifier::pointsAccess()
 }
 
 
-inline Foam::Module::LongList<Foam::labelledTri>&
+inline Foam::DynamicList<Foam::labelledTri>&
 Foam::Module::triSurfModifier::facetsAccess()
 {
-    return const_cast<LongList<labelledTri>&>(surface_.facets());
+    return const_cast<DynamicList<labelledTri>&>(surface_.facets());
 }
 
 
-inline Foam::Module::edgeLongList&
+inline Foam::DynamicList<Foam::edge>&
 Foam::Module::triSurfModifier::featureEdgesAccess()
 {
-    return const_cast<edgeLongList&>(surface_.featureEdges());
+    return const_cast<DynamicList<edge>&>(surface_.featureEdges());
 }
 
 

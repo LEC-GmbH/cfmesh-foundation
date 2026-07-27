@@ -44,15 +44,13 @@ SourceFiles
 
 #include "polyMeshGen.H"
 #include "boolList.H"
-#include "VRWGraph.H"
+#include "labelListListOps.H"
 #include "demandDrivenData.H"
 
 namespace Foam
 {
 namespace Module
 {
-// Forward declarations
-class VRWGraphList;
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -64,7 +62,7 @@ class polyMeshGenModifier
         polyMeshGen& mesh_;
 
         //- helper data for adding cells
-        VRWGraph* pointFacesPtr_;
+        labelListList2D* pointFacesPtr_;
 
 
     // Private member functions
@@ -74,10 +72,10 @@ class polyMeshGenModifier
         {
             const faceListPMG& faces = mesh_.faces();
 
-            pointFacesPtr_ = new VRWGraph();
-            VRWGraph& pointFaces = *pointFacesPtr_;
+            pointFacesPtr_ = new labelListList2D();
+            labelListList2D& pointFaces = *pointFacesPtr_;
 
-            pointFaces.reverseAddressing(mesh_.points().size(), faces);
+            reverseAddressing(pointFaces, mesh_.points().size(), faces);
         }
 
 
@@ -85,7 +83,7 @@ protected:
 
     // Protected member functions
 
-        VRWGraph& pointFaces()
+        labelListList2D& pointFaces()
         {
             if (!pointFacesPtr_)
             {
@@ -154,22 +152,20 @@ public:
         //- remove cells
         void removeCells
         (
-            const boolList& removeCell,
-            const bool removeProcFaces = true
+            const boolList& removeCell
         );
 
         //- add cells (vertices must be added)
-        void addCells(const LongList<faceList>& cellFaces);
-        void addCells(const VRWGraphList& cellFaces);
+        void addCells(const DynamicList<faceList>& cellFaces);
         void addCell(const faceList& cellFaces);
 
         //- replace the boundary with new boundary faces
         void replaceBoundary
         (
             const wordList& patchNames,
-            const VRWGraph& boundaryFaces,
-            const labelLongList& faceOwners,
-            const labelLongList& facePatches
+            const DynamicList<DynamicList<label>>& boundaryFaces,
+            const DynamicList<label>& faceOwners,
+            const DynamicList<label>& facePatches
         );
 
         //- reorder the cells and faces to reduce the matrix bandwidth

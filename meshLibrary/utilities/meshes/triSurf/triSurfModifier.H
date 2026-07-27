@@ -85,10 +85,10 @@ public:
         inline pointField& pointsAccess();
 
         //- access to facets
-        inline LongList<labelledTri>& facetsAccess();
+        inline DynamicList<labelledTri>& facetsAccess();
 
         //- non-const access to feature edges
-        inline edgeLongList& featureEdgesAccess();
+        inline DynamicList<edge>& featureEdgesAccess();
 
         //- access to patches
         inline geometricSurfacePatchList& patchesAccess();

@@ -43,8 +43,7 @@ SourceFiles
 #define decomposeCells_H
 
 #include "polyMeshGenModifier.H"
-#include "VRWGraphList.H"
-#include "DynList.H"
+#include "DynamicList.H"
 
 namespace Foam
 {
@@ -65,10 +64,10 @@ class decomposeCells
         //- new boundary faces
         wordList patchNames_;
         wordList patchTypes_;
-        VRWGraph newBoundaryFaces_;
-        labelLongList newBoundaryPatches_;
+        DynamicList<DynamicList<label>> newBoundaryFaces_;
+        DynamicList<label> newBoundaryPatches_;
 
-        VRWGraphList facesOfNewCells_;
+        DynamicList<faceList> facesOfNewCells_;
 
 
     // Private member functions
@@ -82,19 +81,19 @@ class decomposeCells
         void findAddressingForCell
         (
             const label cellI,
-            DynList<label, 32>& vrt,
-            DynList<edge, 64>& edges,
-            DynList<DynList<label, 8>>& faceEdges,
-            DynList<DynList<label, 2>, 64>& edgeFaces
+            DynamicList<label>& vrt,
+            DynamicList<edge>& edges,
+            labelListList2D& faceEdges,
+            DynamicList<DynamicList<label>>& edgeFaces
         ) const;
 
         //- find the apex of the pyramids
         label findTopVertex
         (
             const label cellI,
-            const DynList<label, 32>& vrt,
-            const DynList<edge, 64>& edges,
-            const DynList<DynList<label, 2>, 64>& edgeFaces
+            const DynamicList<label>& vrt,
+            const DynamicList<edge>& edges,
+            const DynamicList<DynamicList<label>>& edgeFaces
         );
 
         void decomposeCellIntoPyramids(const label cellI);

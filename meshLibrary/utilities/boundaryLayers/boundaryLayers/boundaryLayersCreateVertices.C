@@ -46,7 +46,7 @@ void Foam::Module::boundaryLayers::findPatchVertices
 ) const
 {
     const meshSurfacePartitioner& mPart = surfacePartitioner();
-    const VRWGraph& pPatches = mPart.pointPatches();
+    const labelListList2D& pPatches = mPart.pointPatches();
 
     pVertices.setSize(pPatches.size());
     pVertices = NONE;
@@ -60,7 +60,7 @@ void Foam::Module::boundaryLayers::findPatchVertices
 
         forAllRow(pPatches, bpI, patchI)
         {
-            const label patch = pPatches(bpI, patchI);
+            const label patch = pPatches[bpI][patchI];
             if (treatPatches[patch])
             {
                 hasTreated = true;
@@ -96,12 +96,12 @@ Foam::point Foam::Module::boundaryLayers::createNewVertex
     const labelList& bPoints = mse.boundaryPoints();
     const faceList::subList& bFaces = mse.boundaryFaces();
     const vectorField& pNormals = mse.pointNormals();
-    const VRWGraph& pFaces = mse.pointFaces();
+    const labelListList2D& pFaces = mse.pointFaces();
     const labelList& boundaryFacePatches = mse.boundaryFacePatches();
-    const VRWGraph& pointPoints = mse.pointPoints();
+    const labelListList2D& pointPoints = mse.pointPoints();
 
     const meshSurfacePartitioner& mPart = surfacePartitioner();
-    const VRWGraph& pPatches = mPart.pointPatches();
+    const labelListList2D& pPatches = mPart.pointPatches();
 
     const pointFieldPMG& points = mesh_.points();
 
@@ -110,14 +110,15 @@ Foam::point Foam::Module::boundaryLayers::createNewVertex
     const point& p = points[bPoints[bpI]];
     if (patchVertex[bpI] & EDGENODE)
     {
-        DynList<label> otherPatches;
+        DynamicList<label> otherPatches;
         forAllRow(pPatches, bpI, patchI)
         {
-            if (!treatPatches[pPatches(bpI, patchI)])
+            if (!treatPatches[pPatches[bpI][patchI]])
             {
-                otherPatches.appendUniq
+                appendUniq
                 (
-                    pPatches(bpI, patchI)
+                    otherPatches,
+                    pPatches[bpI][patchI]
                 );
             }
         }
@@ -129,9 +130,9 @@ Foam::point Foam::Module::boundaryLayers::createNewVertex
 
             forAllRow(pFaces, bpI, pfI)
             {
-                const face& f = bFaces[pFaces(bpI, pfI)];
+                const face& f = bFaces[pFaces[bpI][pfI]];
                 const label patchLabel =
-                    boundaryFacePatches[pFaces(bpI, pfI)];
+                    boundaryFacePatches[pFaces[bpI][pfI]];
 
                 if (treatPatches[patchLabel])
                 {
@@ -151,12 +152,12 @@ Foam::point Foam::Module::boundaryLayers::createNewVertex
 
             forAllRow(pointPoints, bpI, ppI)
             {
-                if (patchVertex[pointPoints(bpI, ppI)])
+                if (patchVertex[pointPoints[bpI][ppI]])
                 {
                     continue;
                 }
 
-                const vector vec = points[bPoints[pointPoints(bpI, ppI)]] - p;
+                const vector vec = points[bPoints[pointPoints[bpI][ppI]]] - p;
                 const scalar prod = 0.5*mag(vec & normal);
 
                 if (prod < dist)
@@ -170,12 +171,12 @@ Foam::point Foam::Module::boundaryLayers::createNewVertex
             label otherVertex(-1);
             forAllRow(pointPoints, bpI, ppI)
             {
-                const label bpJ = pointPoints(bpI, ppI);
+                const label bpJ = pointPoints[bpI][ppI];
 
                 bool found(true);
                 forAll(otherPatches, opI)
                 {
-                    if (!pPatches.found(bpJ, otherPatches[opI]))
+                    if (!Foam::Module::found(pPatches, bpJ, otherPatches[opI]))
                     {
                         found = false;
                         break;
@@ -211,7 +212,7 @@ Foam::point Foam::Module::boundaryLayers::createNewVertex
         // limit distances
         forAllRow(pFaces, bpI, pfI)
         {
-            const label faceLabel = pFaces(bpI, pfI);
+            const label faceLabel = pFaces[bpI][pfI];
             if (findIndex(otherPatches, boundaryFacePatches[faceLabel]) != -1)
             {
                 const face& f = bFaces[faceLabel];
@@ -248,7 +249,7 @@ Foam::point Foam::Module::boundaryLayers::createNewVertex
             const scalar d =
                 0.5*mag
                 (
-                    points[bPoints[pointPoints(bpI, ppI)]] -
+                    points[bPoints[pointPoints[bpI][ppI]]] -
                     p
                 );
 
@@ -347,7 +348,7 @@ void Foam::Module::boundaryLayers::createNewVertices
     const labelList& bPoints = mse.boundaryPoints();
 
     const meshSurfacePartitioner& mPart = surfacePartitioner();
-    const VRWGraph& pPatches = mPart.pointPatches();
+    const labelListList2D& pPatches = mPart.pointPatches();
 
     // the following is needed for parallel runs
     // it is ugly, but must stay for now :(
@@ -396,7 +397,7 @@ void Foam::Module::boundaryLayers::createNewVertices
         findPatchVertices(treatPatches, patchVertex);
 
         // create indices and allocate maps for new points
-        labelLongList patchPoints;
+        DynamicList<label> patchPoints;
         forAll(bPoints, bpI)
         {
             if (!patchVertex[bpI])
@@ -476,12 +477,12 @@ void Foam::Module::boundaryLayers::createNewVertices
         const point& p = points[pointI];
 
         std::map<std::pair<label, label>, label>& m = otherVrts_[pointI];
-        DynList<label> usedPatches;
-        DynList<label> newNodeLabel;
-        DynList<vector> newPatchPenetrationVector;
+        DynamicList<label> usedPatches;
+        DynamicList<label> newNodeLabel;
+        DynamicList<vector> newPatchPenetrationVector;
         forAllRow(pPatches, bpI, patchI)
         {
-            const label pKey = patchKey_[pPatches(bpI, patchI)];
+            const label pKey = patchKey_[pPatches[bpI][patchI]];
             const std::pair<label, label> pr(pKey, pKey);
             const std::map<std::pair<label, label>, label>::const_iterator it =
                 m.find(pr);

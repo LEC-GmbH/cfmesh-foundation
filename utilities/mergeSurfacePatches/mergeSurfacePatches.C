@@ -88,7 +88,7 @@ void copyFaceSubsets
     triSurf& newSurf
 )
 {
-    DynList<label> subsetIds;
+    DynamicList<label> subsetIds;
     origSurf.facetSubsetIndices(subsetIds);
 
     forAll(subsetIds, subsetI)
@@ -120,7 +120,7 @@ void copyEdgeSubsets
     triSurf& newSurf
 )
 {
-    DynList<label> subsetIds;
+    DynamicList<label> subsetIds;
     origSurf.edgeSubsetIndices(subsetIds);
 
     forAll(subsetIds, subsetI)
@@ -152,7 +152,7 @@ void copyPointSubsets
     triSurf& newSurf
 )
 {
-    DynList<label> subsetIds;
+    DynamicList<label> subsetIds;
     origSurf.pointSubsetIndices(subsetIds);
 
     forAll(subsetIds, subsetI)
@@ -187,7 +187,7 @@ autoPtr<triSurf> mergeSurfacePatches
 )
 {
     const geometricSurfacePatchList& origPatches = origSurf.patches();
-    const LongList<labelledTri>& origFacets = origSurf.facets();
+    const DynamicList<labelledTri>& origFacets = origSurf.facets();
 
     label newPatchId = origPatches.size();
 
@@ -210,7 +210,8 @@ autoPtr<triSurf> mergeSurfacePatches
     }
 
     // Create new facets list
-    LongList<labelledTri> newFacets(origFacets.size());
+    DynamicList<labelledTri> newFacets;
+    newFacets.setSize(origFacets.size());
     labelList newFaceAddr(origFacets.size(), -1);
 
     label patchCount = 0;

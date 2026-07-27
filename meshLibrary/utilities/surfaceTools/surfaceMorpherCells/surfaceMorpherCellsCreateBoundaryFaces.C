@@ -70,8 +70,8 @@ removeCellsWithAllVerticesAtTheBoundary()
             }
 
             // remove cells which are not topologically closed
-            DynList<edge> edges;
-            DynList<direction> nAppearances;
+            DynamicList<edge> edges;
+            DynamicList<direction> nAppearances;
 
             forAll(c, fI)
             {
@@ -131,7 +131,7 @@ bool Foam::Module::surfaceMorpherCells::morphBoundaryFaces()
         {
             const cell& c = cells[cellI];
 
-            DynList<label> bFaces;
+            DynamicList<label> bFaces;
 
             forAll(c, fI)
                 if (mesh_.faceIsInPatch(c[fI]) != -1)
@@ -182,14 +182,14 @@ bool Foam::Module::surfaceMorpherCells::morphBoundaryFaces()
                 }
             }  while (!finished);
 
-            newBoundaryFaces_.appendList(mf);
+            appendList(newBoundaryFaces_, mf);
             newBoundaryOwners_.append(cellI);
             newBoundaryPatches_.append(0);
 
             for (label i = 1; i < bFaces.size(); ++i)
                 if (!mergedFaces[i])
                 {
-                    newBoundaryFaces_.appendList(faces[bFaces[i]]);
+                    appendList(newBoundaryFaces_, faces[bFaces[i]]);
                     newBoundaryOwners_.append(cellI);
                     newBoundaryPatches_.append(0);
                 }

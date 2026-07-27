@@ -33,6 +33,7 @@ License
 #include "demandDrivenData.H"
 #include "helperFunctions.H"
 #include "HashSet.H"
+#include "labelListListOps.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -63,7 +64,7 @@ void Foam::Module::meshOctree::findNearestSurfacePoint
     // find nearest surface vertex to the point p
     bool found(false);
     label iterationI(0);
-    DynList<const meshOctreeCube*, 256> neighbours;
+    DynamicList<const meshOctreeCube*> neighbours;
 
     distSq = VGREAT;
 
@@ -80,9 +81,10 @@ void Foam::Module::meshOctree::findNearestSurfacePoint
             if (!neighbours[neiI]->hasContainedElements())
                 continue;
 
-            const VRWGraph& ct =
+            const labelListList2D& ct =
                 neighbours[neiI]->slotPtr()->containedTriangles_;
-            const constRow el = ct[neighbours[neiI]->containedElements()];
+            const DynamicList<label>& el =
+                ct[neighbours[neiI]->containedElements()];
             forAll(el, tI)
             {
                 const point p0 =
@@ -144,7 +146,7 @@ void Foam::Module::meshOctree::findNearestSurfacePointInRegion
     // find nearest surface vertex to the point p
     bool found(false);
     label iterationI(0);
-    DynList<const meshOctreeCube*, 256> neighbours;
+    DynamicList<const meshOctreeCube*> neighbours;
     nearestTriangle = -1;
 
     distSq = VGREAT;
@@ -162,9 +164,9 @@ void Foam::Module::meshOctree::findNearestSurfacePointInRegion
             if (!neighbours[neiI]->hasContainedElements())
                 continue;
 
-            const VRWGraph& ct =
+            const labelListList2D& ct =
                 neighbours[neiI]->slotPtr()->containedTriangles_;
-            const constRow el =
+            const DynamicList<label>& el =
                 ct[neighbours[neiI]->containedElements()];
             forAll(el, tI)
             {
@@ -201,7 +203,7 @@ bool Foam::Module::meshOctree::findNearestEdgePoint
     scalar& distSq,
     label& nearestEdge,
     const point& p,
-    const DynList<label>& regions
+    const DynamicList<label>& regions
 ) const
 {
     // find the estimate for the searching range
@@ -217,11 +219,11 @@ bool Foam::Module::meshOctree::findNearestEdgePoint
         sizeVec.x() = sizeVec.y() = sizeVec.z() = s;
     }
 
-    DynList<const meshOctreeCube*, 256> neighbours;
+    DynamicList<const meshOctreeCube*> neighbours;
 
     const pointField& sPoints = surface_.points();
-    const edgeLongList& edges = surface_.edges();
-    const VRWGraph& edgeFaces = surface_.edgeFacets();
+    const DynamicList<edge>& edges = surface_.edges();
+    const labelListList2D& edgeFaces = surface_.edgeFacets();
 
     edgePoint = p;
     bool foundAnEdge(false);
@@ -247,9 +249,9 @@ bool Foam::Module::meshOctree::findNearestEdgePoint
             if (!neighbours[neiI]->hasContainedEdges())
                 continue;
 
-            const VRWGraph& containedEdges =
+            const labelListList2D& containedEdges =
                 neighbours[neiI]->slotPtr()->containedEdges_;
-            const constRow ce =
+            const DynamicList<label>& ce =
                 containedEdges[neighbours[neiI]->containedEdges()];
 
 //            Info<< "Number of contained edges in box "
@@ -265,7 +267,7 @@ bool Foam::Module::meshOctree::findNearestEdgePoint
 
                 forAllRow(edgeFaces, edgeI, efI)
                 {
-                    const label facetI = edgeFaces(edgeI, efI);
+                    const label facetI = edgeFaces[edgeI][efI];
 
                     if (findIndex(regions, surface_[facetI].region()) == -1)
                     {
@@ -317,12 +319,12 @@ bool Foam::Module::meshOctree::findNearestPointToEdge
 
     boundBox bb(c - 0.75*sizeVec, c + 0.75*sizeVec);
 
-    DynList<const meshOctreeCube*, 256> leavesInBox;
+    DynamicList<const meshOctreeCube*> leavesInBox;
     findLeavesContainedInBox(bb, leavesInBox);
 
-    const VRWGraph& edgeFaces = surface_.edgeFacets();
+    const labelListList2D& edgeFaces = surface_.edgeFacets();
     const pointField& points = surface_.points();
-    const edgeLongList& surfaceEdges = surface_.edges();
+    const DynamicList<edge>& surfaceEdges = surface_.edges();
 
     distSq = VGREAT;
     nearestEdge = -1;
@@ -334,14 +336,14 @@ bool Foam::Module::meshOctree::findNearestPointToEdge
         if (!leavesInBox[leafI]->hasContainedEdges())
             continue;
 
-        const VRWGraph& containedEdges =
+        const labelListList2D& containedEdges =
             leavesInBox[leafI]->slotPtr()->containedEdges_;
-        const constRow edges =
+        const DynamicList<label>& edges =
             containedEdges[leavesInBox[leafI]->containedEdges()];
 
         forAll(edges, eI)
         {
-            const constRow ef = edgeFaces[edges[eI]];
+            const DynamicList<label>& ef = edgeFaces[edges[eI]];
             if (ef.size() != 2)
                 continue;
 
@@ -394,7 +396,7 @@ bool Foam::Module::meshOctree::findNearestCorner
     scalar& distSq,
     label& nearestPoint,
     const point& p,
-    const DynList<label>& patches
+    const DynamicList<label>& patches
 ) const
 {
     const label cLabel = findLeafContainingVertex(p);
@@ -412,11 +414,11 @@ bool Foam::Module::meshOctree::findNearestCorner
     // find nearest surface vertex to the point p
     bool found(false);
     label iterationI(0);
-    DynList<const meshOctreeCube*, 256> neighbours;
+    DynamicList<const meshOctreeCube*> neighbours;
 
     const pointField& points = surface_.points();
-    const VRWGraph& pEdges = surface_.pointEdges();
-    const VRWGraph& eFacets = surface_.edgeFacets();
+    const labelListList2D& pEdges = surface_.pointEdges();
+    const labelListList2D& eFacets = surface_.edgeFacets();
 
     distSq = VGREAT;
     nearestPoint = -1;
@@ -435,9 +437,10 @@ bool Foam::Module::meshOctree::findNearestCorner
             if (!neighbours[neiI]->hasContainedElements())
                 continue;
 
-            const VRWGraph& ct =
+            const labelListList2D& ct =
                 neighbours[neiI]->slotPtr()->containedTriangles_;
-            const constRow el = ct[neighbours[neiI]->containedElements()];
+            const DynamicList<label>& el =
+                ct[neighbours[neiI]->containedElements()];
             forAll(el, tI)
             {
                 const labelledTri& tri = surface_[el[tI]];
@@ -451,31 +454,33 @@ bool Foam::Module::meshOctree::findNearestCorner
 
                     checkedPoint.insert(spI);
 
-                    DynList<label> nodePatches;
+                    DynamicList<label> nodePatches;
                     label nEdges(0);
 
                     forAllRow(pEdges, spI, i)
                     {
-                        const label eI = pEdges(spI, i);
+                        const label eI = pEdges[spI][i];
 
-                        if (eFacets.sizeOfRow(eI) != 2)
+                        if (eFacets[eI].size() != 2)
                             break;
 
                         if
                         (
-                            surface_[eFacets(eI, 0)].region()
-                         != surface_[eFacets(eI, 1)].region()
+                            surface_[eFacets[eI][0]].region()
+                         != surface_[eFacets[eI][1]].region()
                         )
                         {
                             // found an edge attached to this vertex
                             ++nEdges;
-                            nodePatches.appendUniq
+                            appendUniq
                             (
-                                surface_[eFacets(eI, 0)].region()
+                                nodePatches,
+                                surface_[eFacets[eI][0]].region()
                             );
-                            nodePatches.appendUniq
+                            appendUniq
                             (
-                                surface_[eFacets(eI, 1)].region()
+                                nodePatches,
+                                surface_[eFacets[eI][1]].region()
                             );
                         }
                     }
@@ -525,7 +530,7 @@ bool Foam::Module::meshOctree::findNearestPointToPatches
     point& nearest,
     scalar& distSq,
     const point& p,
-    const DynList<label>& patches,
+    const DynamicList<label>& patches,
     const scalar tol
 ) const
 {

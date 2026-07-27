@@ -36,14 +36,14 @@ License
 
 void Foam::Module::triSurfacePatchManipulator::allocateFeatureEdges()
 {
-    const edgeLongList& edges = surf_.edges();
-    const VRWGraph& pEdges = surf_.pointEdges();
+    const DynamicList<edge>& edges = surf_.edges();
+    const labelListList2D& pEdges = surf_.pointEdges();
 
     // allocate featureEdges list
     featureEdges_.setSize(edges.size());
     featureEdges_ = direction(0);
 
-    const edgeLongList& featureEdges = surf_.featureEdges();
+    const DynamicList<edge>& featureEdges = surf_.featureEdges();
 
     forAll(featureEdges, feI)
     {
@@ -51,7 +51,7 @@ void Foam::Module::triSurfacePatchManipulator::allocateFeatureEdges()
 
         forAllRow(pEdges, e.start(), peI)
         {
-            const label eI = pEdges(e.start(), peI);
+            const label eI = pEdges[e.start()][peI];
 
             if (edges[eI] == e)
                 featureEdges_[eI] |= 1;
@@ -66,15 +66,15 @@ void Foam::Module::triSurfacePatchManipulator::createPatches()
     facetInPatch_.setSize(surf_.size());
     facetInPatch_ = -1;
 
-    const VRWGraph& faceEdges = surf_.facetEdges();
-    const VRWGraph& edgeFaces = surf_.edgeFacets();
+    const labelListList2D& faceEdges = surf_.facetEdges();
+    const labelListList2D& edgeFaces = surf_.edgeFacets();
 
     forAll(facetInPatch_, triI)
     {
         if (facetInPatch_[triI] != -1)
             continue;
 
-        labelLongList front;
+        DynamicList<label> front;
         front.append(triI);
         facetInPatch_[triI] = nPatches_;
 
@@ -82,7 +82,7 @@ void Foam::Module::triSurfacePatchManipulator::createPatches()
         {
             const label fLabel = front.remove();
 
-            const constRow fEdges = faceEdges[fLabel];
+            const DynamicList<label>& fEdges = faceEdges[fLabel];
 
             forAll(fEdges, feI)
             {
@@ -92,7 +92,7 @@ void Foam::Module::triSurfacePatchManipulator::createPatches()
                 if (featureEdges_[edgeI])
                     continue;
 
-                const constRow eFaces = edgeFaces[edgeI];
+                const DynamicList<label>& eFaces = edgeFaces[edgeI];
 
                 // stop at non-manifold edges
                 if (eFaces.size() != 2)

@@ -49,16 +49,16 @@ void Foam::Module::meshOctreeAddressing::checkGluedRegions()
 
     Info<< "Removing glued regions" << endl;
     const List<direction>& boxType = this->boxType();
-    const VRWGraph& nodeLabels = this->nodeLabels();
+    const labelListList2D& nodeLabels = this->nodeLabels();
     const List<direction>& nodeType = this->nodeType();
 
-    const VRWGraph& edgeLeaves = this->edgeLeaves();
-    const VRWGraph& leafEdges = this->leafEdges();
-    const FRWGraph<label, 8>& nodeLeaves = this->nodeLeaves();
-    const LongList<edge>& edges = this->octreeEdges();
+    const labelListList2D& edgeLeaves = this->edgeLeaves();
+    const labelListList2D& leafEdges = this->leafEdges();
+    const List<FixedList<label, 8>>& nodeLeaves = this->nodeLeaves();
+    const DynamicList<edge>& edges = this->octreeEdges();
 
-    DynList<label> neighbours;
-    labelLongList removeBox;
+    DynamicList<label> neighbours;
+    DynamicList<label> removeBox;
     forAll(boxType, leafI)
     {
         if
@@ -71,9 +71,9 @@ void Foam::Module::meshOctreeAddressing::checkGluedRegions()
             labelHashSet innerNodes;
             forAllRow(nodeLabels, leafI, nodeI)
             {
-                if (nodeType[nodeLabels(leafI, nodeI)] & INNERNODE)
+                if (nodeType[nodeLabels[leafI][nodeI]] & INNERNODE)
                 {
-                    innerNodes.insert(nodeLabels(leafI, nodeI));
+                    innerNodes.insert(nodeLabels[leafI][nodeI]);
                     break;
                 }
             }
@@ -87,7 +87,7 @@ void Foam::Module::meshOctreeAddressing::checkGluedRegions()
 
                 forAllRow(leafEdges, leafI, leI)
                 {
-                    const label edgeI = leafEdges(leafI, leI);
+                    const label edgeI = leafEdges[leafI][leI];
                     const edge& edg = edges[edgeI];
                     const label s = edg[0];
                     const label e = edg[1];
@@ -101,7 +101,7 @@ void Foam::Module::meshOctreeAddressing::checkGluedRegions()
                         bool foundInside(false);
                         forAllRow(edgeLeaves, edgeI, elI)
                         {
-                            const label ecLabel = edgeLeaves(edgeI, elI);
+                            const label ecLabel = edgeLeaves[edgeI][elI];
                             if (ecLabel < 0)
                             {
                                 continue;
@@ -139,9 +139,9 @@ void Foam::Module::meshOctreeAddressing::checkGluedRegions()
             labelHashSet permissibleNeighbours;
             for (const label nodeI : innerNodes.toc())
             {
-                forAllRow(nodeLeaves, nodeI, nlI)
+                for (label nlI = 0; nlI < 8; ++nlI)
                 {
-                    permissibleNeighbours.insert(nodeLeaves(nodeI, nlI));
+                    permissibleNeighbours.insert(nodeLeaves[nodeI][nlI]);
                 }
             }
 

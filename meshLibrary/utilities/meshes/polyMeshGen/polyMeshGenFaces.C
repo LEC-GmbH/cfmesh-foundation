@@ -35,6 +35,7 @@ License
 #include "faceSet.H"
 #include "demandDrivenData.H"
 #include "stringListOps.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * * //
 
@@ -486,7 +487,7 @@ void Foam::Module::polyMeshGenFaces::write() const
             )
         );
 
-        labelLongList containedElements;
+        DynamicList<label> containedElements;
         setIt->second.containedElements(containedElements);
 
         forAll(containedElements, i)

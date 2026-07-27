@@ -40,10 +40,10 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
 
     const labelList& cubeLabel = *cubeLabelPtr_;
     const meshOctree& octree = octreeCheck_.octree();
-    const VRWGraph& nodeLabels = octreeCheck_.nodeLabels();
-    const FRWGraph<label, 8>& pLeaves = octreeCheck_.nodeLeaves();
-    const VRWGraph& subNodeLabels = *subNodeLabelsPtr_;
-    const VRWGraph& faceCentreLabel = *faceCentreLabelPtr_;
+    const labelListList2D& nodeLabels = octreeCheck_.nodeLabels();
+    const List<FixedList<label, 8>>& pLeaves = octreeCheck_.nodeLeaves();
+    const labelListList2D& subNodeLabels = *subNodeLabelsPtr_;
+    const labelListList2D& faceCentreLabel = *faceCentreLabelPtr_;
 
     // find maximum refinement level of octree leaves attached to each vertex
     List<direction> nodeLevel(octreeCheck_.numberOfNodes());
@@ -54,7 +54,7 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
 
         for (label plI = 0; plI < 8; ++plI)
         {
-            const label leafI = pLeaves(nodeI, plI);
+            const label leafI = pLeaves[nodeI][plI];
 
             if (leafI < 0)
                 continue;
@@ -71,7 +71,7 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
 
     forAllReverse(sortedLeaves_, levelI)
     {
-        const labelLongList& curLevelLeaves = sortedLeaves_[levelI];
+        const DynamicList<label>& curLevelLeaves = sortedLeaves_[levelI];
 
         const direction level = direction(levelI);
 
@@ -86,17 +86,15 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
             for (label eI = 0; eI < 12; ++eI)
             {
                 const label start =
-                    nodeLabels
-                    (
-                        curLabel,
+                    nodeLabels[curLabel]
+                    [
                         meshOctreeCubeCoordinates::edgeNodes_[eI][0]
-                    );
+                    ];
                 const label end =
-                    nodeLabels
-                    (
-                        curLabel,
+                    nodeLabels[curLabel]
+                    [
                         meshOctreeCubeCoordinates::edgeNodes_[eI][1]
-                    );
+                    ];
 
                 if ((nodeLevel[start] == level) && (nodeLevel[end] == level))
                     continue;
@@ -113,7 +111,7 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
                 // store octree leaves at this edge
                 // they are all adjacent to the start point
                 for (label i = 0; i < 4; ++i)
-                    edgeCubes[i] = pLeaves(start, fNodes[i]);
+                    edgeCubes[i] = pLeaves[start][fNodes[i]];
 
                 forAll(edgeCubes, i)
                 {
@@ -132,11 +130,11 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
 
                     for (label j = 0; j < 8; ++j)
                     {
-                        if (nodeLabels(cLabel, j) == start)
+                        if (nodeLabels[cLabel][j] == start)
                         {
-                            if (subNodeLabels.sizeOfRow(cLabel) != 0)
+                            if (subNodeLabels[cLabel].size() != 0)
                             {
-                                helpNodes[0][i] = subNodeLabels(cLabel, j);
+                                helpNodes[0][i] = subNodeLabels[cLabel][j];
                             }
                             else
                             {
@@ -146,11 +144,11 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
                             helpNodes[0][i + 4] = cubeLabel[cLabel];
                         }
 
-                        if (nodeLabels(cLabel, j) == end)
+                        if (nodeLabels[cLabel][j] == end)
                         {
-                            if (subNodeLabels.sizeOfRow(cLabel) != 0)
+                            if (subNodeLabels[cLabel].size() != 0)
                             {
-                                helpNodes[1][i + 4] = subNodeLabels(cLabel, j);
+                                helpNodes[1][i + 4] = subNodeLabels[cLabel][j];
                             }
                             else
                             {
@@ -161,16 +159,14 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
                         }
                     }
 
-                    if (faceCentreLabel.sizeOfRow(cLabel) != 0)
+                    if (faceCentreLabel[cLabel].size() != 0)
                     {
                         const label helpFace = eI/4;
 
                         faceCentres[i] =
                             faceCentreLabel
-                            (
-                                cLabel,
-                                faceCentreHelper_[helpFace][i]
-                            );
+                            [cLabel]
+                            [faceCentreHelper_[helpFace][i]];
                     }
                     else
                     {

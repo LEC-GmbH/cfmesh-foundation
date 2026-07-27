@@ -118,8 +118,8 @@ inline bool Foam::Module::help::isSharedEdgeConvex
     const Face2& f2
 )
 {
-    DynList<label, 3> triOwn(3);
-    DynList<label, 3> triNei(3);
+    FixedList<label, 3> triOwn;
+    FixedList<label, 3> triNei;
 
     forAll(f1, pI)
     {
@@ -183,8 +183,8 @@ inline Foam::scalar Foam::Module::help::angleBetweenFaces
     const Face2& f2
 )
 {
-    DynList<label, 3> triOwn(3);
-    DynList<label, 3> triNei(3);
+    FixedList<label, 3> triOwn;
+    FixedList<label, 3> triNei;
 
     scalar angle(0.0);
     label counter(0);
@@ -280,7 +280,7 @@ inline Foam::scalar Foam::Module::help::angleBetweenFaces
 
 inline Foam::faceList Foam::Module::help::mergePatchFaces
 (
-    const List<DynList<label>>& pfcs,
+    const List<DynamicList<label>>& pfcs,
     const pointField& polyPoints
 )
 {
@@ -291,7 +291,7 @@ inline Foam::faceList Foam::Module::help::mergePatchFaces
     {
         if (pfcs[faceI].size() > 2)
         {
-            const DynList<label>& f = pfcs[faceI];
+            const DynamicList<label>& f = pfcs[faceI];
             face f_(f.size());
             forAll(f_, fJ)
                 f_[fJ] = f[fJ];
@@ -712,8 +712,8 @@ inline Foam::point Foam::Module::help::nearestPointOnTheTriangle
 
 inline bool Foam::Module::help::findMinimizerPoint
 (
-    const DynList<point>& origins,
-    const DynList<vector>& normals,
+    const DynamicList<point>& origins,
+    const DynamicList<vector>& normals,
     point& pMin
 )
 {
@@ -1080,7 +1080,7 @@ inline bool Foam::Module::help::doTrianglesOverlap
 (
     const triangle<point, point>& tri0,
     const triangle<point, point>& tri1,
-    DynList<point>& overlappingPolygon,
+    DynamicList<point>& overlappingPolygon,
     const scalar distTol,
     const scalar cosTol
 )
@@ -1183,7 +1183,8 @@ inline bool Foam::Module::help::doTrianglesOverlap
         x /= Foam::max(mag(x), VSMALL);
         vector y = vec ^ x;
 
-        DynList<point2D, 6> poly2D(3);
+        DynamicList<point2D> poly2D;
+        poly2D.setSize(3);
         poly2D[0] = point2D((tri0.a() - origin) & x, (tri0.a() - origin) & y);
         poly2D[1] = point2D((tri0.b() - origin) & x, (tri0.b() - origin) & y);
         poly2D[2] = point2D((tri0.c() - origin) & x, (tri0.c() - origin) & y);
@@ -1197,14 +1198,15 @@ inline bool Foam::Module::help::doTrianglesOverlap
         {
             const vector2D vec = t1Proj[(eI + 1)%3] - t1Proj[eI];
 
-            DynList<scalar, 6> distance(poly2D.size());
+            DynamicList<scalar> distance;
+            distance.setSize(poly2D.size());
             forAll(poly2D, pI)
             {
                 const vector2D pVec = poly2D[pI] - t1Proj[eI];
                 distance[pI] = vec.y()*pVec.x() - vec.x()*pVec.y();
             }
 
-            DynList<point2D, 6> newPoly2D;
+            DynamicList<point2D> newPoly2D;
 
             forAll(distance, pI)
             {
@@ -1358,7 +1360,7 @@ inline bool Foam::Module::help::doTrianglesIntersect
 (
     const triangle<point, point>& tri0,
     const triangle<point, point>& tri1,
-    DynList<point> &intersectionPoints,
+    DynamicList<point> &intersectionPoints,
     const scalar distTol
 )
 {
@@ -1390,7 +1392,7 @@ inline bool Foam::Module::help::doTrianglesIntersect
 
 
     bool hasPositive(false), hasNegative(false), hasZero(false);
-    DynList<point, 2> intersectionLine0;
+    DynamicList<point> intersectionLine0;
     forAll(distancesTri0, pI)
     {
         if (distancesTri0[pI] >= distTol)
@@ -1490,7 +1492,7 @@ inline bool Foam::Module::help::doTrianglesIntersect
     hasNegative = false;
     hasZero = false;
 
-    DynList<point, 2> intersectionLine1;
+    DynamicList<point> intersectionLine1;
     forAll(distancesTri1, pI)
     {
         if (distancesTri1[pI] >= distTol)
@@ -1709,7 +1711,7 @@ inline bool Foam::Module::help::isFaceConvexAndOk
 (
     const face& f,
     const pointField& fp,
-    DynList<bool>& OkPoints
+    DynamicList<bool>& OkPoints
 )
 {
     bool valid(true);
@@ -1732,14 +1734,16 @@ inline bool Foam::Module::help::isFaceConvexAndOk
     //- and the face normal
     plane pl(f.centre(fp), normal);
 
-    DynList<point> projFace(f.size());
+    DynamicList<point> projFace;
+    projFace.setSize(f.size());
     forAll(f, pI)
     {
         projFace[pI] = pl.nearestPoint(fp[f[pI]]);
     }
 
     //- calculate normalised edge vectors
-    DynList<vector> edgeVecs(f.size());
+    DynamicList<vector> edgeVecs;
+    edgeVecs.setSize(f.size());
     forAll(f, eI)
     {
         vector& v = edgeVecs[eI];
@@ -1856,9 +1860,9 @@ inline Foam::label Foam::Module::help::numberOfFaceGroups
 )
 {
     const pointField& points = surface.points();
-    const edgeLongList& edges = surface.edges();
-    const VRWGraph& faceEdges = surface.facetEdges();
-    const VRWGraph& edgeFaces = surface.edgeFacets();
+    const DynamicList<edge>& edges = surface.edges();
+    const labelListList2D& faceEdges = surface.facetEdges();
+    const labelListList2D& edgeFaces = surface.edgeFacets();
 
     labelHashSet triaInRange(containedElements.size());
     const scalar rangeSq = range*range;
@@ -1876,7 +1880,7 @@ inline Foam::label Foam::Module::help::numberOfFaceGroups
 
     label nGroups(0);
 
-    DynList<label> front;
+    DynamicList<label> front;
 
     for (const label triIdx : triaInRange.toc())
     {
@@ -1892,7 +1896,7 @@ inline Foam::label Foam::Module::help::numberOfFaceGroups
 
                 forAllRow(faceEdges, fLabel, feI)
                 {
-                    const label edgeI = faceEdges(fLabel, feI);
+                    const label edgeI = faceEdges[fLabel][feI];
 
                     //- check if the edge intersects the bounding box
                     if (testEdge.found(edgeI))
@@ -1918,7 +1922,7 @@ inline Foam::label Foam::Module::help::numberOfFaceGroups
 
                     forAllRow(edgeFaces, edgeI, efI)
                     {
-                        const label nei = edgeFaces(edgeI, efI);
+                        const label nei = edgeFaces[edgeI][efI];
                         if
                         (
                             triaInRange.found(nei) &&
@@ -1949,8 +1953,8 @@ inline Foam::label Foam::Module::help::numberOfEdgeGroups
 )
 {
     const pointField& points = surface.points();
-    const edgeLongList& edges = surface.edges();
-    const VRWGraph& pointEdges = surface.pointEdges();
+    const DynamicList<edge>& edges = surface.edges();
+    const labelListList2D& pointEdges = surface.pointEdges();
 
     const scalar rangeSq = range*range;
     labelHashSet edgesInRange(containedEdges.size());
@@ -1972,7 +1976,7 @@ inline Foam::label Foam::Module::help::numberOfEdgeGroups
 
     label nGroups(0);
 
-    DynList<label> front;
+    DynamicList<label> front;
 
     for (const label edgei : edgesInRange.toc())
     {
@@ -2011,7 +2015,7 @@ inline Foam::label Foam::Module::help::numberOfEdgeGroups
 
                     forAllRow(pointEdges, e[i], peI)
                     {
-                        const label nei = pointEdges(e[i], peI);
+                        const label nei = pointEdges[e[i]][peI];
 
                         if (edgesInRange.found(nei) && !elGroup.found(nei))
                         {

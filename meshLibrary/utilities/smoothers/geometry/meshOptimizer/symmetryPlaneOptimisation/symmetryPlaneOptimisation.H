@@ -41,12 +41,11 @@ SourceFiles
 #ifndef symmetryPlaneOptimisation_H
 #define symmetryPlaneOptimisation_H
 
-#include "DynList.H"
 #include "polyMeshGenModifier.H"
 #include "boundBox.H"
-#include "labelLongList.H"
 #include "boolList.H"
 #include "plane.H"
+#include "labelListListOps.H"
 
 #include <map>
 
@@ -78,7 +77,7 @@ class symmetryPlaneOptimisation
         void detectSymmetryPlanes();
 
         //- point-planes addressing
-        bool pointInPlanes(VRWGraph&) const;
+        bool pointInPlanes(labelListList2D&) const;
 
 
 public:

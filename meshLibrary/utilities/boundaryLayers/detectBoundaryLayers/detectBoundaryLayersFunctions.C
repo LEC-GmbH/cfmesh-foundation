@@ -33,7 +33,6 @@ License
 #include "helperFunctions.H"
 #include "polyMeshGenAddressing.H"
 #include "polyMeshGen2DEngine.H"
-#include "VRWGraphList.H"
 
 #include "labelledScalar.H"
 
@@ -68,7 +67,7 @@ public:
         return size_;
     }
 
-    void operator()(const label bfI, DynList<label>& neighbourFaces) const
+    void operator()(const label bfI, DynamicList<label>& neighbourFaces) const
     {
         neighbourFaces.clear();
 
@@ -78,20 +77,20 @@ public:
         const label cellI = faceOwner[bfI];
         const cell& c = cells[cellI];
 
-        const VRWGraph& faceEdges = mse_.faceEdges();
-        const VRWGraph& edgeFaces = mse_.edgeFaces();
+        const labelListList2D& faceEdges = mse_.faceEdges();
+        const labelListList2D& edgeFaces = mse_.edgeFaces();
 
         forAllRow(faceEdges, bfI, feI)
         {
-            const label edgeI = faceEdges(bfI, feI);
+            const label edgeI = faceEdges[bfI][feI];
 
-            if (edgeFaces.sizeOfRow(edgeI) == 2)
+            if (edgeFaces[edgeI].size() == 2)
             {
-                label nei = edgeFaces(edgeI, 0);
+                label nei = edgeFaces[edgeI][0];
 
                 if (nei == bfI)
                 {
-                    nei = edgeFaces(edgeI, 1);
+                    nei = edgeFaces[edgeI][1];
                 }
 
                 // faces must not be part of the same cell
@@ -292,14 +291,14 @@ void Foam::Module::detectBoundaryLayers::analyseLayers()
     }
 
     // check the number of layer found at a patch
-    typedef std::map<label, DynList<label>> patchToLayerType;
+    typedef std::map<label, DynamicList<label>> patchToLayerType;
     patchToLayerType patchToLayer;
 
     const labelList& facePatch = meshSurface_.boundaryFacePatches();
 
     forAll(facePatch, bfI)
     {
-        patchToLayer[facePatch[bfI]].appendUniq(layerAtBndFace_[bfI]);
+        appendUniq(patchToLayer[facePatch[bfI]], layerAtBndFace_[bfI]);
     }
 
     // all faces of a patch must be in the same layer
@@ -311,7 +310,7 @@ void Foam::Module::detectBoundaryLayers::analyseLayers()
 
     forAllConstIter(patchToLayerType, patchToLayer, it)
     {
-        const DynList<label>& layersAtPatch = it->second;
+        const DynamicList<label>& layersAtPatch = it->second;
 
         forAll(layersAtPatch, i)
         {
@@ -342,7 +341,7 @@ void Foam::Module::detectBoundaryLayers::analyseLayers()
 bool Foam::Module::detectBoundaryLayers::findHairsForFace
 (
     const label bfI,
-    DynList<edge>& hairEdges
+    DynamicList<edge>& hairEdges
 ) const
 {
     const meshSurfaceEngine& mse = meshSurface_.surfaceEngine();
@@ -356,9 +355,10 @@ bool Foam::Module::detectBoundaryLayers::findHairsForFace
     const cell& c = mesh.cells()[faceOwner[bfI]];
 
     // check cell topology
-    DynList<edge, 48> edges;
-    DynList<DynList<label, 2>, 48> edgeFaces;
-    DynList<DynList<label, 10>, 24> faceEdges;
+    DynamicList<edge> edges;
+    edges.reserve(48);
+    DynamicList<DynamicList<label>> edgeFaces;
+    labelListList2D faceEdges;
     faceEdges.setSize(c.size());
     label baseFace(-1);
     forAll(c, fI)
@@ -470,7 +470,7 @@ void Foam::Module::detectBoundaryLayers::generateHairEdges()
     const meshSurfaceEngine& mse = meshSurface_.surfaceEngine();
     const faceList::subList& bFaces = mse.boundaryFaces();
     mse.faceOwners();
-    const VRWGraph& pFaces = mse.pointFaces();
+    const labelListList2D& pFaces = mse.pointFaces();
     const labelList& bp = mse.bp();
 
     # pragma omp parallel
@@ -481,7 +481,7 @@ void Foam::Module::detectBoundaryLayers::generateHairEdges()
         // writes only to its own out-parameter) so this loop is safe to
         // parallelize as long as the shared hairEdges_ append below is
         // properly guarded
-        edgeLongList localHairEdges;
+        DynamicList<edge> localHairEdges;
 
         # pragma omp for schedule(dynamic, 40)
         forAll(bFaces, bfI)
@@ -492,7 +492,7 @@ void Foam::Module::detectBoundaryLayers::generateHairEdges()
             }
 
             // find hair edges for this face
-            DynList<edge> hairEdges;
+            DynamicList<edge> hairEdges;
             if (!findHairsForFace(bfI, hairEdges))
             {
                 continue;
@@ -536,8 +536,8 @@ void Foam::Module::detectBoundaryLayers::generateHairEdges()
     }
 
     // filter out duplicate edges
-    VRWGraph pHairEdges;
-    pHairEdges.reverseAddressing(hairEdges_);
+    labelListList2D pHairEdges;
+    reverseAddressing(pHairEdges, hairEdges_);
 
     boolList duplicateEdge(hairEdges_.size(), false);
     # pragma omp parallel for schedule(dynamic, 50)
@@ -545,17 +545,17 @@ void Foam::Module::detectBoundaryLayers::generateHairEdges()
     {
         forAllRow(pHairEdges, pointI, pheI)
         {
-            const label heI = pHairEdges(pointI, pheI);
+            const label heI = pHairEdges[pointI][pheI];
             const edge& he = hairEdges_[heI];
 
             for
             (
                 label pheJ = pheI + 1;
-                pheJ < pHairEdges.sizeOfRow(pointI);
+                pheJ < pHairEdges[pointI].size();
                 ++pheJ
             )
             {
-                const label heJ = pHairEdges(pointI, pheJ);
+                const label heJ = pHairEdges[pointI][pheJ];
                 const edge& nhe = hairEdges_[heJ];
 
                 if (he == nhe)
@@ -590,7 +590,7 @@ void Foam::Module::detectBoundaryLayers::generateHairEdges()
     forAll(hairEdges_, heI)
     {
         const edge& he = hairEdges_[heI];
-        hairEdgesAtBoundaryPoint_.append(bp[he.start()], heI);
+        hairEdgesAtBoundaryPoint_[bp[he.start()]].append(heI);
     }
 }
 

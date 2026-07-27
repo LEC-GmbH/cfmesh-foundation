@@ -32,7 +32,7 @@ License
 #include "checkMeshDict.H"
 #include "patchRefinementList.H"
 #include "PtrList.H"
-#include "LongList.H"
+#include "DynamicList.H"
 #include "objectRefinement.H"
 #include "coordinateModification.H"
 
@@ -584,7 +584,7 @@ void Foam::Module::checkMeshDict::updatePatchCellSize
 {
     if (meshDict_.found("patchCellSize"))
     {
-        LongList<patchRefinement> updatedPatchRefinement;
+        DynamicList<patchRefinement> updatedPatchRefinement;
 
         if (meshDict_.isDict("patchCellSize"))
         {
@@ -714,7 +714,7 @@ void Foam::Module::checkMeshDict::updateKeepCellsIntersectingPatches
 {
     if (meshDict_.found("keepCellsIntersectingPatches"))
     {
-        LongList<word> updatedPatchNames;
+        DynamicList<word> updatedPatchNames;
         if (meshDict_.isDict("keepCellsIntersectingPatches"))
         {
             const dictionary& dict =
@@ -779,7 +779,7 @@ void Foam::Module::checkMeshDict::updateRemoveCellsIntersectingPatches
 {
     if (meshDict_.found("removeCellsIntersectingPatches"))
     {
-        LongList<word> updatedPatchNames;
+        DynamicList<word> updatedPatchNames;
         if (meshDict_.isDict("removeCellsIntersectingPatches"))
         {
             const dictionary& dict =

@@ -90,7 +90,7 @@ void Foam::Module::checkNonMappableCellConnections::findCellTypes()
 
         // check if the internal faces are connected into a single group
         // over their edges
-        DynList<label> internalFaces;
+        DynamicList<label> internalFaces;
         forAll(c, fI)
         {
             if (c[fI] < mesh_.nInternalFaces())
@@ -106,7 +106,7 @@ void Foam::Module::checkNonMappableCellConnections::findCellTypes()
             if (faceGroup.found(internalFaces[i]))
                 continue;
 
-            DynList<label> front;
+            DynamicList<label> front;
             front.append(internalFaces[i]);
             faceGroup.insert(internalFaces[i], nGroup);
 

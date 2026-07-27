@@ -106,7 +106,7 @@ bool Foam::Module::surfaceMorpherCells::morphInternalFaces()
 
         for (label faceI = start; faceI < end; ++faceI)
         {
-            newBoundaryFaces_.appendList(faces[faceI]);
+            appendList(newBoundaryFaces_, faces[faceI]);
             newBoundaryOwners_.append(owner[faceI]);
             newBoundaryPatches_.append(0);
         }
@@ -117,7 +117,7 @@ bool Foam::Module::surfaceMorpherCells::morphInternalFaces()
     {
         const face& f = faces[faceI];
 
-        DynList<bool> removeFaceVertex(f.size(), false);
+        DynamicList<bool> removeFaceVertex(f.size(), false);
 
         face newF(f.size());
         label i(0);
@@ -145,29 +145,32 @@ bool Foam::Module::surfaceMorpherCells::morphInternalFaces()
 
             // create new boundary faces from the removed part
             label mat(1);
-            DynList<direction> nodeMaterial(f.size(), direction(0));
-            DynList<DynList<edge>, 2> edgeMats;
+            DynamicList<direction> nodeMaterial(f.size(), direction(0));
+            DynamicList<DynamicList<edge>> edgeMats;
             forAll(nodeMaterial, nI)
                 if (!nodeMaterial[nI] && removeFaceVertex[nI])
                 {
-                    edgeMats.append(DynList<edge>());
-                    DynList<label> front;
+                    edgeMats.append(DynamicList<edge>());
+                    DynamicList<label> front;
                     front.append(nI);
 
                     do
                     {
-                        DynList<label> newFront;
+                        DynamicList<label> newFront;
                         forAll(front, pI)
                         {
                             const label fLabel = front[pI];
                             if (nodeMaterial[fLabel])
                                 continue;
                             nodeMaterial[fLabel] = mat;
-                            edgeMats[mat - 1].appendUniq(f.faceEdge(fLabel));
-                            edgeMats[mat - 1].appendUniq
-                            (
-                                f.faceEdge(f.rcIndex(fLabel))
-                            );
+
+                            const edge& e0 = f.faceEdge(fLabel);
+                            if (findIndex(edgeMats[mat - 1], e0) == -1)
+                                edgeMats[mat - 1].append(e0);
+
+                            const edge& e1 = f.faceEdge(f.rcIndex(fLabel));
+                            if (findIndex(edgeMats[mat - 1], e1) == -1)
+                                edgeMats[mat - 1].append(e1);
 
                             if (removeFaceVertex[f.rcIndex(fLabel)])
                                 newFront.append(f.rcIndex(fLabel));
@@ -187,11 +190,11 @@ bool Foam::Module::surfaceMorpherCells::morphInternalFaces()
                 const face rf = help::removeEdgesFromFace(f, edgeMats[matI]);
                 const face newBf = help::createFaceFromRemovedPart(f, rf);
 
-                newBoundaryFaces_.appendList(newBf);
+                appendList(newBoundaryFaces_, newBf);
                 newBoundaryOwners_.append(owner[faceI]);
                 newBoundaryPatches_.append(0);
 
-                newBoundaryFaces_.appendList(newBf.reverseFace());
+                appendList(newBoundaryFaces_, newBf.reverseFace());
                 newBoundaryOwners_.append(neighbour[faceI]);
                 newBoundaryPatches_.append(0);
             }

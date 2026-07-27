@@ -36,7 +36,7 @@ License
 
 void Foam::Module::meshUntangler::cutRegion::tieBreak
 (
-    const DynList<label, 8>& f
+    const DynamicList<label>& f
 )
 {
     // There must be only one, singly connected region which is cut off
@@ -51,13 +51,13 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
     deleteDemandDrivenData(cEdgesPtr_);
     deleteDemandDrivenData(cFacesPtr_);
 
-    const DynList<edge, 128>& edges = *edgesPtr_;
+    const DynamicList<edge>& edges = *edgesPtr_;
 
-    DynList<edge> faceEdges;
+    DynamicList<edge> faceEdges;
     forAll(f, eI)
         faceEdges.append(edges[f[eI]]);
 
-    const DynList<DynList<label>> fvertices =
+    const DynamicList<DynamicList<label>> fvertices =
         sortEdgesIntoChains(faceEdges).sortedChains();
 
     if (fvertices.size() != 1)
@@ -66,9 +66,9 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
         return;
     }
 
-    const DynList<label>& fv = fvertices[0];
+    const DynamicList<label>& fv = fvertices[0];
 
-    DynList<label, 64> vertexRegion;
+    DynamicList<label> vertexRegion;
     vertexRegion.setSize(fv.size());
     vertexRegion = 0;
 
@@ -138,8 +138,8 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
     }
 
     // create new points
-    const DynList<point, 64>& points = *pointsPtr_;
-    cPtsPtr_ = new DynList<point, 64>();
+    const DynamicList<point>& points = *pointsPtr_;
+    cPtsPtr_ = new DynamicList<point>();
     newVertexLabel_ = -1;
     origNumVertices_ = 0;
     forAll(points, pI)

@@ -41,6 +41,7 @@ SourceFiles
 #define meshSurfaceEngineModifier_H
 
 #include "meshSurfaceEngine.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -92,7 +93,7 @@ public:
 
         //- updates faceCentres, face normal, and point normals
         //- of the boundary faces attached to the selected boundary points
-        void updateGeometry(const labelLongList&);
+        void updateGeometry(const DynamicList<label>&);
         void updateGeometry();
 };
 

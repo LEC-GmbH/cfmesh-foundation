@@ -42,8 +42,7 @@ SourceFiles
 
 #include "polyMeshGen.H"
 #include "boolList.H"
-#include "VRWGraph.H"
-#include "DynList.H"
+#include "DynamicList.H"
 #include "partTet.H"
 #include "HashSet.H"
 #include "boundBox.H"
@@ -77,7 +76,7 @@ class meshOptimizer
         List<direction> vertexLocation_;
 
         //- locked faces which shall not be changed
-        labelLongList lockedFaces_;
+        DynamicList<label> lockedFaces_;
 
         //- mesh surface
         mutable meshSurfaceEngine* msePtr_;
@@ -120,21 +119,21 @@ class meshOptimizer
 
                 //- smooth the node using the laplacian smoother
                 //- new position is the average of the neighbouring vertices
-                void laplacian(const labelLongList&, const label);
-                void laplacianSurface(const labelLongList&, const label);
+                void laplacian(const DynamicList<label>&, const label);
+                void laplacianSurface(const DynamicList<label>&, const label);
 
                 //- smooth the node using the laplacian smoother
                 //- new position is the average of the centres of faces attached
                 //- to the vertex
-                void laplacianPC(const labelLongList&, const label);
+                void laplacianPC(const DynamicList<label>&, const label);
 
                 //- smooth the node using the laplacian smoother
                 //- new position is the average of the centres of faces attached
                 //- to the vertex
-                void laplacianWPC(const labelLongList&, const label);
+                void laplacianWPC(const DynamicList<label>&, const label);
 
                 //- update geometry after smoothing
-                void updateMeshGeometry(const labelLongList& smoothPoints);
+                void updateMeshGeometry(const DynamicList<label>& smoothPoints);
 
                 //- Disallow default bitwise copy construct
                 laplaceSmoother(const laplaceSmoother&);

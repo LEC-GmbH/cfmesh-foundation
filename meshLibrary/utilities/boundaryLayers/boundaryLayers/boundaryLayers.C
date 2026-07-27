@@ -83,11 +83,11 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
     const pointFieldPMG& points = mesh_.points();
     const faceList::subList& bFaces = mse.boundaryFaces();
     const edgeList& edges = mse.edges();
-    const VRWGraph& eFaces = mse.edgeFaces();
+    const labelListList2D& eFaces = mse.edgeFaces();
     const labelList& boundaryFacePatches = mse.boundaryFacePatches();
 
     const meshSurfacePartitioner& mPart = surfacePartitioner();
-    const VRWGraph& pPatches = mPart.pointPatches();
+    const labelListList2D& pPatches = mPart.pointPatches();
 
     // patches must be treated together if there exist a corner where
     // more than three patches meet
@@ -97,12 +97,12 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
         if (mPart.numberOfFeatureEdgesAtPoint(bpI) > 3)
         {
             labelHashSet commonPatches;
-            DynList<label> allPatches;
+            DynamicList<label> allPatches;
 
             forAllRow(pPatches, bpI, patchI)
             {
-                const DynList<label>& tpwp =
-                    treatPatchesWithPatch_[pPatches(bpI, patchI)];
+                const DynamicList<label>& tpwp =
+                    treatPatchesWithPatch_[pPatches[bpI][patchI]];
 
                 forAll(tpwp, pJ)
                 {
@@ -118,7 +118,7 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
 
             forAllRow(pPatches, bpI, patchI)
             {
-                treatPatchesWithPatch_[pPatches(bpI, patchI)] = allPatches;
+                treatPatchesWithPatch_[pPatches[bpI][patchI]] = allPatches;
             }
 
         }
@@ -135,7 +135,7 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
     std::map<std::pair<label, label>, Pair<label>> edgeClassification;
     forAll(eFaces, eI)
     {
-        if (eFaces.sizeOfRow(eI) != 2)
+        if (eFaces[eI].size() != 2)
         {
             continue;
         }
@@ -151,8 +151,8 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
             continue;
         }
 
-        const label patch0 = boundaryFacePatches[eFaces(eI, 0)];
-        const label patch1 = boundaryFacePatches[eFaces(eI, 1)];
+        const label patch0 = boundaryFacePatches[eFaces[eI][0]];
+        const label patch1 = boundaryFacePatches[eFaces[eI][1]];
         if (patch0 != patch1)
         {
             std::pair<label, label> pp
@@ -168,8 +168,8 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
                 );
             }
 
-            const face& f1 = bFaces[eFaces(eI, 0)];
-            const face& f2 = bFaces[eFaces(eI, 1)];
+            const face& f1 = bFaces[eFaces[eI][0]];
+            const face& f2 = bFaces[eFaces[eI][1]];
 
             if
             (
@@ -227,7 +227,7 @@ void Foam::Module::boundaryLayers::findPatchesToBeTreatedTogether()
         std::set<label> commonPatches;
         commonPatches.insert(patchI);
 
-        DynList<label> front;
+        DynamicList<label> front;
         front.append(patchI);
         confirmed[patchI] = true;
 
@@ -430,13 +430,13 @@ void Foam::Module::boundaryLayers::activate2DMode()
 
     forAll(treatPatchesWithPatch_, patchI)
     {
-        DynList<label>& patches = treatPatchesWithPatch_[patchI];
+        DynamicList<label>& patches = treatPatchesWithPatch_[patchI];
 
         for (label i = patches.size()-1; i>=0; --i)
         {
             if (treatedPatch_[patches[i]])
             {
-                patches.removeElement(i);
+                patches.erase(patches.begin() + i);
             }
         }
     }

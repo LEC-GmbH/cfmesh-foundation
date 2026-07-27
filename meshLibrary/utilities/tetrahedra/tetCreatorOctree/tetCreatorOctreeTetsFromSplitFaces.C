@@ -38,8 +38,8 @@ void Foam::Module::tetCreatorOctree::createTetsFromSplitFaces()
     Info<< "Creating tets from split faces" << endl;
 
     const labelList& cubeLabel = *cubeLabelPtr_;
-    const VRWGraph& subNodeLabels = *subNodeLabelsPtr_;
-    const FRWGraph<label, 8>& pLeaves = octreeCheck_.nodeLeaves();
+    const labelListList2D& subNodeLabels = *subNodeLabelsPtr_;
+    const List<FixedList<label, 8>>& pLeaves = octreeCheck_.nodeLeaves();
 
     forAll(pLeaves, pointI)
     {
@@ -48,7 +48,7 @@ void Foam::Module::tetCreatorOctree::createTetsFromSplitFaces()
             const label* fNodes =
                 meshOctreeCubeCoordinates::faceNodes_[i];
 
-            const label cLabel = pLeaves(pointI, fNodes[0]);
+            const label cLabel = pLeaves[pointI][fNodes[0]];
 
             if (cLabel < 0)
                 continue;
@@ -57,9 +57,9 @@ void Foam::Module::tetCreatorOctree::createTetsFromSplitFaces()
 
             if
             (
-                (cLabel == pLeaves(pointI, fNodes[1]))
-             && (cLabel == pLeaves(pointI, fNodes[2]))
-             && (cLabel == pLeaves(pointI, fNodes[3]))
+                (cLabel == pLeaves[pointI][fNodes[1]])
+             && (cLabel == pLeaves[pointI][fNodes[2]])
+             && (cLabel == pLeaves[pointI][fNodes[3]])
             )
             {
                 // create 4 tets
@@ -70,8 +70,8 @@ void Foam::Module::tetCreatorOctree::createTetsFromSplitFaces()
                         partTet
                         (
                             pointI,
-                            subNodeLabels(cLabel, 7 - fNodes[j]),
-                            subNodeLabels(cLabel, 7 - fNodes[(j + 1)%4]),
+                            subNodeLabels[cLabel][7 - fNodes[j]],
+                            subNodeLabels[cLabel][7 - fNodes[(j + 1)%4]],
                             cubeLabel[cLabel]
                         )
                     );

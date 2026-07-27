@@ -43,6 +43,7 @@ SourceFiles
 
 #include "triSurf.H"
 #include "boolList.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -62,7 +63,7 @@ class triSurfaceRemoveFacets
         triSurf& surf_;
 
         //- patches/subsets for removal
-        DynList<word> selectedEntities_;
+        DynamicList<word> selectedEntities_;
 
 
     // Private member functions

@@ -29,7 +29,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "polyMeshGenAddressing.H"
-#include "VRWGraphSMPModifier.H"
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
@@ -44,11 +43,11 @@ void Foam::Module::polyMeshGenAddressing::calcEdgeFaces() const
     else
     {
         const faceListPMG& faces = mesh_.faces();
-        const VRWGraph& pointFaces = this->pointFaces();
+        const labelListList2D& pointFaces = this->pointFaces();
         const edgeList& edges = this->edges();
 
-        efPtr_ = new VRWGraph();
-        VRWGraph& edgeFaceAddr = *efPtr_;
+        efPtr_ = new labelListList2D();
+        labelListList2D& edgeFaceAddr = *efPtr_;
 
         labelList nef(edges.size());
 
@@ -70,7 +69,7 @@ void Foam::Module::polyMeshGenAddressing::calcEdgeFaces() const
 
                 forAllRow(pointFaces, s, pfI)
                 {
-                    const label faceI = pointFaces(s, pfI);
+                    const label faceI = pointFaces[s][pfI];
 
                     const face& f = faces[faceI];
 
@@ -88,7 +87,7 @@ void Foam::Module::polyMeshGenAddressing::calcEdgeFaces() const
             # pragma omp barrier
 
             # pragma omp master
-            VRWGraphSMPModifier(edgeFaceAddr).setSizeAndRowSize(nef);
+            setSizeAndRowSize(edgeFaceAddr, nef);
 
             # pragma omp barrier
 
@@ -98,10 +97,10 @@ void Foam::Module::polyMeshGenAddressing::calcEdgeFaces() const
                 const edge& ee = edges[edgeI];
                 const label s = ee.start();
 
-                DynList<label> eFaces;
+                DynamicList<label> eFaces;
                 forAllRow(pointFaces, s, pfI)
                 {
-                    const label faceI = pointFaces(s, pfI);
+                    const label faceI = pointFaces[s][pfI];
 
                     const face& f = faces[faceI];
 
@@ -115,7 +114,7 @@ void Foam::Module::polyMeshGenAddressing::calcEdgeFaces() const
                     }
                 }
 
-                edgeFaceAddr.setRow(edgeI, eFaces);
+                setRow(edgeFaceAddr, edgeI, eFaces);
             }
         }
     }
@@ -124,7 +123,7 @@ void Foam::Module::polyMeshGenAddressing::calcEdgeFaces() const
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-const Foam::Module::VRWGraph&
+const Foam::Module::labelListList2D&
 Foam::Module::polyMeshGenAddressing::edgeFaces() const
 {
     if (!efPtr_)

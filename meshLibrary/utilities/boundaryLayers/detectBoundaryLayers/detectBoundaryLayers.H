@@ -47,10 +47,9 @@ SourceFiles
 
 #include "polyMeshGenModifier.H"
 #include "meshSurfaceEngine.H"
-#include "DynList.H"
-#include "labelLongList.H"
+#include "DynamicList.H"
 #include "labelPair.H"
-#include "edgeLongList.H"
+#include "labelListListOps.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -81,13 +80,13 @@ class detectBoundaryLayers
         labelList layerAtBndFace_;
 
         //- layer at a boundary patch
-        List<DynList<label>> layerAtPatch_;
+        labelListList2D layerAtPatch_;
 
         //- hair edges found in the mesh
-        edgeLongList hairEdges_;
+        DynamicList<edge> hairEdges_;
 
         //- hair edges at a boundary point
-        VRWGraph hairEdgesAtBoundaryPoint_;
+        labelListList2D hairEdgesAtBoundaryPoint_;
 
         //- is it a 2D  mesh
         const bool is2DMesh_;
@@ -99,7 +98,7 @@ class detectBoundaryLayers
         void analyseLayers();
 
         //- provide hair edges in a cell above a boundary face
-        bool findHairsForFace(const label, DynList<edge>& hairEdges) const;
+        bool findHairsForFace(const label, DynamicList<edge>& hairEdges) const;
 
         //- generate hair edges for all boundary points
         void generateHairEdges();
@@ -128,13 +127,13 @@ public:
     // Public member functions
 
         //- return hair edges found in the detection process
-        inline const edgeLongList& hairEdges() const
+        inline const DynamicList<edge>& hairEdges() const
         {
             return hairEdges_;
         }
 
         //- hair edges attached to a boundary point
-        inline const VRWGraph& hairEdgesAtBndPoint() const
+        inline const labelListList2D& hairEdgesAtBndPoint() const
         {
             return hairEdgesAtBoundaryPoint_;
         }

@@ -37,11 +37,11 @@ License
 
 void Foam::Module::meshOptimizer::laplaceSmoother::laplacian
 (
-    const labelLongList& smoothPoints,
+    const DynamicList<label>& smoothPoints,
     const label nIterations
 )
 {
-    const VRWGraph& pPoints = mesh_.addressingData().pointPoints();
+    const labelListList2D& pPoints = mesh_.addressingData().pointPoints();
     pointFieldPMG& points = mesh_.points();
 
     for (label iterationI = 0; iterationI < nIterations; ++iterationI)
@@ -55,15 +55,15 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacian
 
             vector newP(vector::zero);
 
-            const label nPointPoints = pPoints.sizeOfRow(pointI);
+            const label nPointPoints = pPoints[pointI].size();
 
             if (nPointPoints == 0)
                 return;
 
             for (label pI = 0; pI < nPointPoints; ++pI)
-                newP += points[pPoints(pointI, pI)];
+                newP += points[pPoints[pointI][pI]];
 
-            newP /= pPoints.sizeOfRow(pointI);
+            newP /= pPoints[pointI].size();
             points[pointI] = newP;
         }
     }
@@ -74,11 +74,11 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacian
 
 void Foam::Module::meshOptimizer::laplaceSmoother::laplacianSurface
 (
-    const labelLongList& smoothPoints,
+    const DynamicList<label>& smoothPoints,
     const label nIterations
 )
 {
-    const VRWGraph& pPoints = mesh_.addressingData().pointPoints();
+    const labelListList2D& pPoints = mesh_.addressingData().pointPoints();
     pointFieldPMG& points = mesh_.points();
 
     for (label iterationI = 0; iterationI < nIterations; ++iterationI)
@@ -95,7 +95,7 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianSurface
             label counter(0);
             forAllRow(pPoints, pointI, pI)
             {
-                const label pLabel = pPoints(pointI, pI);
+                const label pLabel = pPoints[pointI][pI];
                 if (vertexLocation_[pLabel] & INSIDE)
                     continue;
 
@@ -117,11 +117,11 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianSurface
 
 void Foam::Module::meshOptimizer::laplaceSmoother::laplacianPC
 (
-    const labelLongList& smoothPoints,
+    const DynamicList<label>& smoothPoints,
     const label nIterations
 )
 {
-    const VRWGraph& pointCells = mesh_.addressingData().pointCells();
+    const labelListList2D& pointCells = mesh_.addressingData().pointCells();
     const vectorField& centres = mesh_.addressingData().cellCentres();
     pointFieldPMG& points = mesh_.points();
 
@@ -135,14 +135,14 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianPC
             if (vertexLocation_[pointI] & LOCKED)
                 continue;
 
-            if (pointCells.sizeOfRow(pointI) == 0)
+            if (pointCells[pointI].size() == 0)
                 continue;
 
             point newP(vector::zero);
             forAllRow(pointCells, pointI, pcI)
-                newP += centres[pointCells(pointI, pcI)];
+                newP += centres[pointCells[pointI][pcI]];
 
-            newP /= pointCells.sizeOfRow(pointI);
+            newP /= pointCells[pointI].size();
 
             points[pointI] = newP;
         }
@@ -154,11 +154,11 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianPC
 
 void Foam::Module::meshOptimizer::laplaceSmoother::laplacianWPC
 (
-    const labelLongList& smoothPoints,
+    const DynamicList<label>& smoothPoints,
     const label nIterations
 )
 {
-    const VRWGraph& pointCells = mesh_.addressingData().pointCells();
+    const labelListList2D& pointCells = mesh_.addressingData().pointCells();
     const vectorField& centres = mesh_.addressingData().cellCentres();
     const scalarField& volumes = mesh_.addressingData().cellVolumes();
 
@@ -174,14 +174,14 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianWPC
             if (vertexLocation_[pointI] & LOCKED)
                 continue;
 
-            if (pointCells.sizeOfRow(pointI) == 0)
+            if (pointCells[pointI].size() == 0)
                 continue;
 
             point newP(vector::zero);
             scalar sumWeights(0.0);
             forAllRow(pointCells, pointI, pcI)
             {
-                const label cellI = pointCells(pointI, pcI);
+                const label cellI = pointCells[pointI][pcI];
                 const scalar w = Foam::max(volumes[cellI], VSMALL);
                 newP += w*centres[cellI];
                 sumWeights += w;
@@ -198,11 +198,11 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianWPC
 
 void Foam::Module::meshOptimizer::laplaceSmoother::updateMeshGeometry
 (
-    const labelLongList& smoothPoints
+    const DynamicList<label>& smoothPoints
 )
 {
     const cellListPMG& cells = mesh_.cells();
-    const VRWGraph& pointCells = mesh_.addressingData().pointCells();
+    const labelListList2D& pointCells = mesh_.addressingData().pointCells();
 
     boolList chF(mesh_.faces().size(), false);
 
@@ -217,7 +217,7 @@ void Foam::Module::meshOptimizer::laplaceSmoother::updateMeshGeometry
 
         forAllRow(pointCells, pointI, pcI)
         {
-            const cell& c = cells[pointCells(pointI, pcI)];
+            const cell& c = cells[pointCells[pointI][pcI]];
 
             forAll(c, fI)
                 chF[c[fI]] = true;
@@ -252,7 +252,7 @@ void Foam::Module::meshOptimizer::laplaceSmoother::optimizeLaplacian
     const label nIterations
 )
 {
-    labelLongList smoothPoints;
+    DynamicList<label> smoothPoints;
 
     forAll(vertexLocation_, pointI)
     {
@@ -289,7 +289,7 @@ void Foam::Module::meshOptimizer::laplaceSmoother::optimizeLaplacianPC
     const label nIterations
 )
 {
-    labelLongList smoothPoints;
+    DynamicList<label> smoothPoints;
 
     forAll(vertexLocation_, pointI)
     {
@@ -316,7 +316,7 @@ void Foam::Module::meshOptimizer::laplaceSmoother::optimizeLaplacianWPC
     const label nIterations
 )
 {
-    labelLongList smoothPoints;
+    DynamicList<label> smoothPoints;
 
     forAll(vertexLocation_, pointI)
     {

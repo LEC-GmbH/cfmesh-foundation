@@ -197,7 +197,7 @@ void Foam::Module::meshOctree::createInitialOctreeBox()
     {
         slotPtr->cubes_.append
         (
-            meshOctreeCube
+            new meshOctreeCube
             (
                 meshOctreeCubeCoordinates(0, 0, 0, 0),
                 surface_.size(),
@@ -209,7 +209,7 @@ void Foam::Module::meshOctree::createInitialOctreeBox()
     {
         slotPtr->cubes_.append
         (
-            meshOctreeCube
+            new meshOctreeCube
             (
                 meshOctreeCubeCoordinates(0, 0, -10, 0),
                 surface_.size(),

@@ -30,8 +30,9 @@ License
 
 #include "triSurfacePartitioner.H"
 #include "demandDrivenData.H"
-#include "labelLongList.H"
+#include "DynamicList.H"
 #include "boolList.H"
+#include "labelListListOps.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -51,19 +52,19 @@ void Foam::Module::triSurfacePartitioner::calculatePatchAddressing()
 
 void Foam::Module::triSurfacePartitioner::calculateCornersAndAddressing()
 {
-    const VRWGraph& pointFaces = surface_.pointFacets();
-    const edgeLongList& edges = surface_.edges();
-    const VRWGraph& edgeFaces = surface_.edgeFacets();
+    const labelListList2D& pointFaces = surface_.pointFacets();
+    const DynamicList<edge>& edges = surface_.edges();
+    const labelListList2D& edgeFaces = surface_.edgeFacets();
 
     // find the number of feature edges connected to each surface node
     labelList nEdgesAtNode(surface_.points().size(), 0);
     forAll(edgeFaces, eI)
     {
-        if (edgeFaces.sizeOfRow(eI) != 2)
+        if (edgeFaces[eI].size() != 2)
             continue;
 
-        const label sPatch = surface_[edgeFaces(eI, 0)].region();
-        const label ePatch = surface_[edgeFaces(eI, 1)].region();
+        const label sPatch = surface_[edgeFaces[eI][0]].region();
+        const label ePatch = surface_[edgeFaces[eI][1]].region();
 
         if (sPatch != ePatch)
         {
@@ -89,7 +90,7 @@ void Foam::Module::triSurfacePartitioner::calculateCornersAndAddressing()
     nCorners = 0;
 
     // store corner data
-    DynList<label> patches;
+    DynamicList<label> patches;
     forAll(pointFaces, pointI)
     {
         if (nEdgesAtNode[pointI] < 3)
@@ -97,7 +98,7 @@ void Foam::Module::triSurfacePartitioner::calculateCornersAndAddressing()
 
         patches.clear();
         forAllRow(pointFaces, pointI, pfI)
-            patches.appendUniq(surface_[pointFaces(pointI, pfI)].region());
+            appendUniq(patches, surface_[pointFaces[pointI][pfI]].region());
 
         corners_[nCorners] = pointI;
         cornerPatches_[nCorners] = patches;
@@ -108,15 +109,15 @@ void Foam::Module::triSurfacePartitioner::calculateCornersAndAddressing()
 
 void Foam::Module::triSurfacePartitioner::calculatePatchPatches()
 {
-    const VRWGraph& edgeFaces = surface_.edgeFacets();
+    const labelListList2D& edgeFaces = surface_.edgeFacets();
 
     forAll(edgeFaces, eI)
     {
-        if (edgeFaces.sizeOfRow(eI) != 2)
+        if (edgeFaces[eI].size() != 2)
             continue;
 
-        const label sPatch = surface_[edgeFaces(eI, 0)].region();
-        const label ePatch = surface_[edgeFaces(eI, 1)].region();
+        const label sPatch = surface_[edgeFaces[eI][0]].region();
+        const label ePatch = surface_[edgeFaces[eI][1]].region();
 
         if (sPatch != ePatch)
         {
@@ -129,9 +130,9 @@ void Foam::Module::triSurfacePartitioner::calculatePatchPatches()
 
 void Foam::Module::triSurfacePartitioner::calculateEdgeGroups()
 {
-    const edgeLongList& edges = surface_.edges();
-    const VRWGraph& edgeFaces = surface_.edgeFacets();
-    const VRWGraph& pointEdges = surface_.pointEdges();
+    const DynamicList<edge>& edges = surface_.edges();
+    const labelListList2D& edgeFaces = surface_.edgeFacets();
+    const labelListList2D& pointEdges = surface_.pointEdges();
 
 
     // make all feature edges
@@ -140,9 +141,9 @@ void Foam::Module::triSurfacePartitioner::calculateEdgeGroups()
     # pragma omp parallel for schedule(dynamic, 40)
     forAll(edgeFaces, eI)
     {
-        DynList<label> patches;
+        DynamicList<label> patches;
         forAllRow(edgeFaces, eI, efI)
-            patches.appendUniq(surface_[edgeFaces(eI, efI)].region());
+            appendUniq(patches, surface_[edgeFaces[eI][efI]].region());
 
         if (patches.size() > 1)
             featureEdge[eI] = true;
@@ -164,7 +165,7 @@ void Foam::Module::triSurfacePartitioner::calculateEdgeGroups()
         if (edgeGroups_[eI] != -1)
             continue;
 
-        labelLongList front;
+        DynamicList<label> front;
         front.append(eI);
         edgeGroups_[eI] = nGroups;
         featureEdge[eI] = false;
@@ -183,7 +184,7 @@ void Foam::Module::triSurfacePartitioner::calculateEdgeGroups()
 
                 forAllRow(pointEdges, pointI, peI)
                 {
-                    const label eJ = pointEdges(pointI, peI);
+                    const label eJ = pointEdges[pointI][peI];
 
                     if (featureEdge[eJ] && (edgeGroups_[eJ] == -1))
                     {
@@ -207,16 +208,16 @@ void Foam::Module::triSurfacePartitioner::calculateEdgeGroups()
 
 void Foam::Module::triSurfacePartitioner::calculatePatchToEdgeGroups()
 {
-    const VRWGraph& edgeFaces = surface_.edgeFacets();
+    const labelListList2D& edgeFaces = surface_.edgeFacets();
 
     forAll(edgeFaces, eI)
     {
         if (edgeGroups_[eI] < 0)
             continue;
 
-        DynList<label> patches;
+        DynamicList<label> patches;
         forAllRow(edgeFaces, eI, efI)
-            patches.appendUniq(surface_[edgeFaces(eI, efI)].region());
+            appendUniq(patches, surface_[edgeFaces[eI][efI]].region());
 
         forAll(patches, i)
         {
@@ -241,17 +242,18 @@ void Foam::Module::triSurfacePartitioner::calculatePatchToEdgeGroups()
 
 void Foam::Module::triSurfacePartitioner::calculateEdgeGroupsToCorners()
 {
-    const VRWGraph& pointEdges = surface_.pointEdges();
+    const labelListList2D& pointEdges = surface_.pointEdges();
 
     forAll(corners_, cornerI)
     {
-        DynList<label> edgeGroupsAtCorner;
+        DynamicList<label> edgeGroupsAtCorner;
         const label pointI = corners_[cornerI];
 
         forAllRow(pointEdges, pointI, peI)
-            edgeGroupsAtCorner.appendUniq
+            appendUniq
             (
-                edgeGroups_[pointEdges(pointI, peI)]
+                edgeGroupsAtCorner,
+                edgeGroups_[pointEdges[pointI][peI]]
             );
 
         forAll(edgeGroupsAtCorner, i)

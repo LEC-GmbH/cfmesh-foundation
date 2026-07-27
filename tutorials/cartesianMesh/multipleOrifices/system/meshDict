@@ -20,9 +20,9 @@ surfaceFile "multipleOrifices.stl";
 
 //minCellSize 1.0;
 
-maxCellSize 5.0;
+maxCellSize 4.0;
 
-boundaryCellSize 2.0;
+boundaryCellSize 1.0;
 
 localRefinement
 {

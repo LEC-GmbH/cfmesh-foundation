@@ -29,7 +29,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "polyMeshGenAddressing.H"
-#include "VRWGraphSMPModifier.H"
 
 #include <omp.h>
 
@@ -45,11 +44,11 @@ void Foam::Module::polyMeshGenAddressing::calcPointPoints() const
     }
     else
     {
-        ppPtr_ = new VRWGraph();
-        VRWGraph& pp = *ppPtr_;
+        ppPtr_ = new labelListList2D();
+        labelListList2D& pp = *ppPtr_;
 
         const faceListPMG& faces = mesh_.faces();
-        const VRWGraph& pointFaces = this->pointFaces();
+        const labelListList2D& pointFaces = this->pointFaces();
 
         labelList nPoints(pointFaces.size());
 
@@ -63,15 +62,15 @@ void Foam::Module::polyMeshGenAddressing::calcPointPoints() const
             # pragma omp for schedule(static)
             forAll(pointFaces, pointI)
             {
-                DynList<label, 32> helper;
+                DynamicList<label> helper; helper.reserve(32);
 
                 forAllRow(pointFaces, pointI, pfI)
                 {
-                    const face& f = faces[pointFaces(pointI, pfI)];
+                    const face& f = faces[pointFaces[pointI][pfI]];
 
                     const label pos = f.which(pointI);
-                    helper.appendUniq(f.prevLabel(pos));
-                    helper.appendUniq(f.nextLabel(pos));
+                    appendUniq(helper, f.prevLabel(pos));
+                    appendUniq(helper, f.nextLabel(pos));
                 }
 
                 nPoints[pointI] = helper.size();
@@ -80,28 +79,28 @@ void Foam::Module::polyMeshGenAddressing::calcPointPoints() const
             # pragma omp barrier
 
             # pragma omp master
-            VRWGraphSMPModifier(pp).setSizeAndRowSize(nPoints);
+            setSizeAndRowSize(pp, nPoints);
 
             # pragma omp barrier
 
             # pragma omp for schedule(static)
             forAll(pointFaces, pointI)
             {
-                DynList<label, 32> helper;
+                DynamicList<label> helper; helper.reserve(32);
 
                 forAllRow(pointFaces, pointI, pfI)
                 {
-                    const face& f = faces[pointFaces(pointI, pfI)];
+                    const face& f = faces[pointFaces[pointI][pfI]];
 
                     const label pos = f.which(pointI);
                     const label pLabel = f.prevLabel(pos);
                     const label nLabel = f.nextLabel(pos);
 
-                    helper.appendUniq(nLabel);
-                    helper.appendUniq(pLabel);
+                    appendUniq(helper, nLabel);
+                    appendUniq(helper, pLabel);
                 }
 
-                pp.setRow(pointI, helper);
+                setRow(pp, pointI, helper);
             }
         }
     }
@@ -110,7 +109,7 @@ void Foam::Module::polyMeshGenAddressing::calcPointPoints() const
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-const Foam::Module::VRWGraph&
+const Foam::Module::labelListList2D&
 Foam::Module::polyMeshGenAddressing::pointPoints() const
 {
     if (!ppPtr_)

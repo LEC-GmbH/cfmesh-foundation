@@ -42,7 +42,7 @@ SourceFiles
 
 #include "label.H"
 #include "HashSet.H"
-#include "VRWGraph.H"
+#include "labelListListOps.H"
 
 #include <set>
 
@@ -54,7 +54,6 @@ class Ostream;
 
 namespace Module
 {
-class VRWGraph;
 class meshSubset;
 inline Ostream& operator<<(Ostream&, const meshSubset&);
 inline Istream& operator>>(Istream&, meshSubset&);
@@ -151,7 +150,7 @@ public:
 
             //- update subset after modification
             //- this modifier is used in case when elements are decomposed
-            inline void updateSubset(const VRWGraph&);
+            inline void updateSubset(const labelListList2D&);
 
 
         // Searches

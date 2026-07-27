@@ -41,7 +41,7 @@ SourceFiles
 #define meshSurfacePartitioner_H
 
 #include "meshSurfaceEngine.H"
-#include "VRWGraph.H"
+#include "labelListListOps.H"
 #include "HashSet.H"
 
 #include <map>
@@ -68,7 +68,7 @@ class meshSurfacePartitioner
         const labelList& facePatch_;
 
         //- patches at a surface point
-        VRWGraph pointPatches_;
+        labelListList2D pointPatches_;
 
         //- labels of corner points
         labelHashSet corners_;
@@ -134,7 +134,7 @@ public:
 
         //- return const reference to a graph of patches attached to a surface
         //- point
-        inline const VRWGraph& pointPatches() const
+        inline const labelListList2D& pointPatches() const
         {
             return pointPatches_;
         }

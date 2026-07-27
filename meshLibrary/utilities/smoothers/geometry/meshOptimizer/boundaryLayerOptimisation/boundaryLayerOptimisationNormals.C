@@ -50,7 +50,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectors
     const meshSurfaceEngine& mse = meshSurface();
     const labelList& facePatch = mse.boundaryFacePatches();
     const labelList& bp = mse.bp();
-    const VRWGraph& pointFaces = mse.pointFaces();
+    const labelListList2D& pointFaces = mse.pointFaces();
     const vectorField& fNormals = mse.faceNormals();
 
     // calculate point normals with respect to all patches at a point
@@ -75,7 +75,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectors
         // sum normals of faces attached to a point
         forAllRow(pointFaces, bpI, pfI)
         {
-            const label bfI = pointFaces(bpI, pfI);
+            const label bfI = pointFaces[bpI][pfI];
             const label patchI = facePatch[bfI];
 
             if (patchNormal.find(patchI) == patchNormal.end())
@@ -130,10 +130,10 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectorsSmother
     triMesh.pointTriangles();
 
     const pointField& triMeshPoints = triMesh.points();
-    const VRWGraph& pTriangles = triMesh.pointTriangles();
-    const LongList<labelledTri>& triangles = triMesh.triangles();
+    const labelListList2D& pTriangles = triMesh.pointTriangles();
+    const DynamicList<labelledTri>& triangles = triMesh.triangles();
     const labelList& triPointLabel = triMesh.meshSurfacePointLabelInTriMesh();
-    const labelLongList& surfPointLabel = triMesh.pointLabelInMeshSurface();
+    const DynamicList<label>& surfPointLabel = triMesh.pointLabelInMeshSurface();
 
     Info<< "Calculating normals using smoother" << endl;
 
@@ -150,12 +150,13 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectorsSmother
         patchNormalType patchNormal;
 
         // find patches at this point
-        DynList<label> patchesAtPoint;
+        DynamicList<label> patchesAtPoint;
         forAllRow(pTriangles, triPointI, ptI)
         {
-            patchesAtPoint.appendUniq
+            appendUniq
             (
-                triangles[pTriangles(triPointI, ptI)].region()
+                patchesAtPoint,
+                triangles[pTriangles[triPointI][ptI]].region()
             );
         }
 
@@ -163,8 +164,9 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectorsSmother
         {
             const label patchI = patchesAtPoint[ptchI];
 
-            DynList<point, 128> pts(2);
-            DynList<partTet, 128> tets;
+            DynamicList<point> pts;
+            pts.setSize(2);
+            DynamicList<partTet> tets;
 
             // create points
             pts[0] = points[he.start()];
@@ -175,7 +177,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectorsSmother
 
             forAllRow(pTriangles, triPointI, ptI)
             {
-                const labelledTri& tri = triangles[pTriangles(triPointI, ptI)];
+                const labelledTri& tri = triangles[pTriangles[triPointI][ptI]];
 
                 if (tri.region() == patchI)
                 {
@@ -250,9 +252,9 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairVectorsAtTheBoundary
     const meshSurfaceEngine& mse = meshSurface();
     const faceList::subList& bFaces = mse.boundaryFaces();
     const labelList& bp = mse.bp();
-    const VRWGraph& bpEdges = mse.boundaryPointEdges();
+    const labelListList2D& bpEdges = mse.boundaryPointEdges();
     const edgeList& edges = mse.edges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
 
     # pragma omp parallel for schedule(dynamic, 50)
     forAll(hairEdges_, hairEdgeI)
@@ -280,7 +282,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairVectorsAtTheBoundary
                 const label bps = bp[he.start()];
                 forAllRow(bpEdges, bps, bpeI)
                 {
-                    const label beJ = bpEdges(bps, bpeI);
+                    const label beJ = bpEdges[bps][bpeI];
 
                     if (edges[beJ] == he)
                     {
@@ -297,7 +299,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairVectorsAtTheBoundary
                 // find the vector at the same angle from both feature edges
                 forAllRow(edgeFaces, beI, befI)
                 {
-                    const face& bf = bFaces[edgeFaces(beI, befI)];
+                    const face& bf = bFaces[edgeFaces[beI][befI]];
                     const vector fNormal = help::stableFaceArea(bf, points);
 
                     const label pos = bf.which(he.start());
@@ -356,7 +358,7 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsAtTheBoundary()
     // calculate direction of hair vector based on the surface normal
     const meshSurfaceEngine& mse = meshSurface();
     const labelList& bp = mse.bp();
-    const VRWGraph& pFaces = mse.pointFaces();
+    const labelListList2D& pFaces = mse.pointFaces();
     const faceList::subList& bFaces = mse.boundaryFaces();
 
     // calculate hair vectors
@@ -407,11 +409,11 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsAtTheBoundary()
                 {
                     const edge& he = hairEdges_[hairEdgeI];
 
-                    DynList<label, 2> edgeFaces;
+                    DynamicList<label> edgeFaces;
                     const label bps = bp[he.start()];
                     forAllRow(pFaces, bps, pfI)
                     {
-                        const label bfI = pFaces(bps, pfI);
+                        const label bfI = pFaces[bps][pfI];
                         const face& bf = bFaces[bfI];
 
                         forAll(bf, eI)
@@ -428,7 +430,7 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsAtTheBoundary()
                     forAllRow(hairEdgesNearHairEdge_, hairEdgeI, nheI)
                     {
                         const label hairEdgeJ =
-                            hairEdgesNearHairEdge_(hairEdgeI, nheI);
+                            hairEdgesNearHairEdge_[hairEdgeI][nheI];
 
                         // check if the neighbour hair edge shares a boundary
                         // face with the current hair edge
@@ -602,7 +604,7 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsInside()
                     forAllRow(hairEdgesNearHairEdge_, hairEdgeI, nheI)
                     {
                         const label hairEdgeJ =
-                            hairEdgesNearHairEdge_(hairEdgeI, nheI);
+                            hairEdgesNearHairEdge_[hairEdgeI][nheI];
 
                         const edge& nhe = hairEdges_[hairEdgeJ];
                         const vector& nhVec = hairVecs[hairEdgeJ];
@@ -625,7 +627,7 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsInside()
                     forAllRow(hairEdgesNearHairEdge_, hairEdgeI, nheI)
                     {
                         const label hairEdgeJ =
-                            hairEdgesNearHairEdge_(hairEdgeI, nheI);
+                            hairEdgesNearHairEdge_[hairEdgeI][nheI];
 
                         scalar weight = 1.0;
 

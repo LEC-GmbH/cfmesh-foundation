@@ -45,7 +45,7 @@ SourceFiles
 #include "Time.H"
 #include "meshSubset.H"
 #include "pointFieldPMG.H"
-#include "DynList.H"
+#include "DynamicList.H"
 
 #include <map>
 
@@ -122,8 +122,8 @@ public:
         label pointSubsetIndex(const word&) const;
         inline void addPointToSubset(const label, const label);
         inline void removePointFromSubset(const label, const label);
-        inline void pointInSubsets(const label, DynList<label>&) const;
-        inline void pointSubsetIndices(DynList<label>&) const;
+        inline void pointInSubsets(const label, DynamicList<label>&) const;
+        inline void pointSubsetIndices(DynamicList<label>&) const;
         template<class ListType>
         inline void pointsInSubset(const label, ListType&) const;
         template<class ListType>

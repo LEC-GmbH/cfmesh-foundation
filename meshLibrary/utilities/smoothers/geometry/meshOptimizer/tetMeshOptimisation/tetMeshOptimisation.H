@@ -40,9 +40,7 @@ SourceFiles
 #ifndef tetMeshOptimisation_H
 #define tetMeshOptimisation_H
 
-#include "DynList.H"
 #include "boundBox.H"
-#include "labelLongList.H"
 #include "boolList.H"
 
 #include <map>

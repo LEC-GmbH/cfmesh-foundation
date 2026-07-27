@@ -69,19 +69,19 @@ class meshUntangler
         {
             // Private data
 
-                DynList<point, 64>* pointsPtr_;
-                DynList<edge, 128>* edgesPtr_;
-                DynList<DynList<label, 8>, 64>* facesPtr_;
+                DynamicList<point>* pointsPtr_;
+                DynamicList<edge>* edgesPtr_;
+                DynamicList<DynamicList<label>>* facesPtr_;
 
                 //- helper data
-                DynList<point, 64>* cPtsPtr_;
-                DynList<edge, 128>* cEdgesPtr_;
-                DynList<DynList<label, 8>, 64>* cFacesPtr_;
+                DynamicList<point>* cPtsPtr_;
+                DynamicList<edge>* cEdgesPtr_;
+                DynamicList<DynamicList<label>>* cFacesPtr_;
 
-                DynList<label, 64> newVertexLabel_;
-                DynList<scalar, 64> vertexDistance_;
-                DynList<direction, 64> vertexTypes_;
-                DynList<label, 128> newEdgeLabel_;
+                DynamicList<label> newVertexLabel_;
+                DynamicList<scalar> vertexDistance_;
+                DynamicList<direction> vertexTypes_;
+                DynamicList<label> newEdgeLabel_;
                 label origNumVertices_;
 
                 scalar tol_;
@@ -96,7 +96,7 @@ class meshUntangler
 
                 //- tie break to resolve problems due to truncation
                 //- errors
-                void tieBreak(const DynList<label, 8>& f);
+                void tieBreak(const DynamicList<label>& f);
 
                 //- remove coincident vertices to improve tie breaking
                 void removeCoincidentVertices();
@@ -125,7 +125,7 @@ class meshUntangler
                 // Member functions
 
                     //- return the vertices of the feasible region
-                    inline const DynList<point, 64>& points() const
+                    inline const DynamicList<point>& points() const
                     {
                         return *pointsPtr_;
                     }

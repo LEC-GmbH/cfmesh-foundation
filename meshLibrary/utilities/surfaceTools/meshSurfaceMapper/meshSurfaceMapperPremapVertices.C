@@ -36,6 +36,7 @@ License
 #include "labelledPointScalar.H"
 #include "helperFunctions.H"
 #include "meshSurfaceOptimizer.H"
+#include "labelListListOps.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -46,15 +47,15 @@ void Foam::Module::meshSurfaceMapper::preMapVertices(const label nIterations)
     const labelList& boundaryPoints = surfaceEngine_.boundaryPoints();
     const pointFieldPMG& points = surfaceEngine_.points();
     const vectorField& faceCentres = surfaceEngine_.faceCentres();
-    const VRWGraph& pointFaces = surfaceEngine_.pointFaces();
-    const VRWGraph& pointInFace = surfaceEngine_.pointInFaces();
+    const labelListList2D& pointFaces = surfaceEngine_.pointFaces();
+    const labelListList2D& pointInFace = surfaceEngine_.pointInFaces();
     const labelList& bp = surfaceEngine_.bp();
     const faceList::subList& bFaces = surfaceEngine_.boundaryFaces();
 
     const triSurf& surf = meshOctree_.surface();
 
     List<labelledPointScalar> preMapPositions(boundaryPoints.size());
-    List<DynList<scalar, 6>> faceCentreDistances(bFaces.size());
+    List<DynamicList<scalar>> faceCentreDistances(bFaces.size());
 
     # pragma omp parallel for schedule(dynamic, 20)
     forAll(bFaces, bfI)
@@ -73,7 +74,7 @@ void Foam::Module::meshSurfaceMapper::preMapVertices(const label nIterations)
     for (label iterI = 0; iterI < nIterations; ++iterI)
     {
         // find patches in the vicinity of a boundary face
-        List<DynList<label>> boundaryPointPatches(boundaryPoints.size());
+        labelListList2D boundaryPointPatches(boundaryPoints.size());
         # pragma omp parallel for schedule(dynamic, 50)
         forAll(bFaces, bfI)
         {
@@ -95,17 +96,17 @@ void Foam::Module::meshSurfaceMapper::preMapVertices(const label nIterations)
                 faceCentres[bfI] + vector(boxSize, boxSize, boxSize)
             );
 
-            DynList<label> containedLeaves;
+            DynamicList<label> containedLeaves;
             meshOctree_.findLeavesContainedInBox(bb, containedLeaves);
 
-            DynList<label> patches;
+            DynamicList<label> patches;
             forAll(containedLeaves, clI)
             {
-                DynList<label> ct;
+                DynamicList<label> ct;
                 meshOctree_.containedTriangles(containedLeaves[clI], ct);
 
                 forAll(ct, i)
-                    patches.appendUniq(surf[ct[i]].region());
+                    appendUniq(patches, surf[ct[i]].region());
             }
 
             scalar metric(VGREAT);
@@ -124,7 +125,7 @@ void Foam::Module::meshSurfaceMapper::preMapVertices(const label nIterations)
             forAll(bf, pI)
             {
                 # pragma omp critical
-                boundaryPointPatches[bp[bf[pI]]].appendUniq(bestPatch);
+                appendUniq(boundaryPointPatches[bp[bf[pI]]], bestPatch);
             }
         }
 
@@ -138,9 +139,9 @@ void Foam::Module::meshSurfaceMapper::preMapVertices(const label nIterations)
 
             forAllRow(pointFaces, bpI, pfI)
             {
-                const label bfI = pointFaces(bpI, pfI);
-                const point& fc = faceCentres[pointFaces(bpI, pfI)];
-                const label pos = pointInFace(bpI, pfI);
+                const label bfI = pointFaces[bpI][pfI];
+                const point& fc = faceCentres[pointFaces[bpI][pfI]];
+                const label pos = pointInFace[bpI][pfI];
                 const scalar w
                 (
                     max(magSqr(p - fc) / faceCentreDistances[bfI][pos], SMALL)

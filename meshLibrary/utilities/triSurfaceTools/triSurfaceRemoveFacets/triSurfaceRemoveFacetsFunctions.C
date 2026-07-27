@@ -64,7 +64,7 @@ void Foam::Module::triSurfaceRemoveFacets::markFacetsForRemoval
     }
 
     // mark facets contained in selected subsets
-    DynList<label> facetSubsetsIDs;
+    DynamicList<label> facetSubsetsIDs;
     surf_.facetSubsetIndices(facetSubsetsIDs);
 
     forAll(facetSubsetsIDs, i)
@@ -73,7 +73,7 @@ void Foam::Module::triSurfaceRemoveFacets::markFacetsForRemoval
 
         if (findIndex(selectedEntities_, fsName) != -1)
         {
-            labelLongList containedFacets;
+            DynamicList<label> containedFacets;
             surf_.facetsInSubset(facetSubsetsIDs[i], containedFacets);
 
             forAll(containedFacets, cfI)
@@ -90,8 +90,8 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
 
     // calculate new indices of vertices and facets
     const pointField& points = surf_.points();
-    labelLongList newPointLabel(surf_.points().size(), -1);
-    labelLongList newFacetLabel(surf_.size(), -1);
+    DynamicList<label> newPointLabel(surf_.points().size(), -1);
+    DynamicList<label> newFacetLabel(surf_.size(), -1);
 
     label pointCounter(0), facetCounter(0);
 
@@ -125,7 +125,8 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
     surf_.updatePointSubsets(newPointLabel);
 
     // remove facets
-    LongList<labelledTri> newFacets(facetCounter);
+    DynamicList<labelledTri> newFacets;
+    newFacets.setSize(facetCounter);
 
     forAll(newFacetLabel, triI)
     {
@@ -148,13 +149,13 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
     surf_.updateFacetsSubsets(newFacetLabel);
 
     // update feature edges
-    const edgeLongList& featureEdges = surf_.featureEdges();
-    const VRWGraph& pointEdges = surf_.pointEdges();
-    const edgeLongList& edges = surf_.edges();
-    const VRWGraph& edgeFacets = surf_.edgeFacets();
+    const DynamicList<edge>& featureEdges = surf_.featureEdges();
+    const labelListList2D& pointEdges = surf_.pointEdges();
+    const DynamicList<edge>& edges = surf_.edges();
+    const labelListList2D& edgeFacets = surf_.edgeFacets();
 
     label edgeCounter(0);
-    labelLongList newFeatureEdgeLabel(featureEdges.size(), -1);
+    DynamicList<label> newFeatureEdgeLabel(featureEdges.size(), -1);
 
     forAll(featureEdges, feI)
     {
@@ -167,7 +168,7 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
         label eI(-1);
         forAllRow(pointEdges, e.start(), peI)
         {
-            const label eJ = pointEdges(e.start(), peI);
+            const label eJ = pointEdges[e.start()][peI];
             if (edges[eJ] == e)
             {
                 eI = eJ;
@@ -182,7 +183,7 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
         bool foundTriangle(false);
         forAllRow(edgeFacets, eI, efI)
         {
-            if (newFacetLabel[edgeFacets(eI, efI)] >= 0)
+            if (newFacetLabel[edgeFacets[eI][efI]] >= 0)
             {
                 foundTriangle = true;
                 break;
@@ -194,7 +195,8 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
         newFeatureEdgeLabel[feI] = edgeCounter++;
     }
 
-    edgeLongList newFeatureEdges(edgeCounter);
+    DynamicList<edge> newFeatureEdges;
+    newFeatureEdges.setSize(edgeCounter);
     forAll(newFeatureEdgeLabel, eI)
     {
         if (newFeatureEdgeLabel[eI] < 0)

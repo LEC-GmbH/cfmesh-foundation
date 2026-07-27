@@ -42,8 +42,9 @@ SourceFiles
 #define extrudeLayer_H
 
 #include "polyMeshGenModifier.H"
-#include "VRWGraphList.H"
+#include "labelListListOps.H"
 #include "labelPair.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -76,20 +77,20 @@ class extrudeLayer
         const label nOrigCells_;
 
         //- pairs of faces making the extruded front
-        LongList<labelPair> extrudedFaces_;
+        DynamicList<labelPair> extrudedFaces_;
 
         //- store the orientation of the extruded front
         //- true if the pair has the same orientation and false otherwise
-        LongList<bool> pairOrientation_;
+        DynamicList<bool> pairOrientation_;
 
         //- original point label
-        labelLongList origPointLabel_;
+        DynamicList<label> origPointLabel_;
 
 
     // Private member functions
 
         //- duplicate faces which will be extruded
-        void createDuplicateFrontFaces(const LongList<labelPair>&);
+        void createDuplicateFrontFaces(const DynamicList<labelPair>&);
 
         //- create new vertices and open the mesh
         void createNewVertices();
@@ -116,13 +117,13 @@ class extrudeLayer
                 const faceListPMG& faces_;
 
                 //- const reference to extruded face pairs
-                const LongList<labelPair>& extrudedFaces_;
+                const DynamicList<labelPair>& extrudedFaces_;
 
                 //- const reference telling the orientation of each face pair
-                LongList<bool> pairOrientation_;
+                DynamicList<bool> pairOrientation_;
 
                 //- const reference to the extruded faces at points
-                const VRWGraph& pointExtruded_;
+                const labelListList2D& pointExtruded_;
 
         public:
 
@@ -131,9 +132,9 @@ class extrudeLayer
             addressingCalculator
             (
                 const faceListPMG& faces,
-                const LongList<labelPair>& extrudedFaces,
-                const LongList<bool>& pairOrientation,
-                const VRWGraph& pointFaces
+                const DynamicList<labelPair>& extrudedFaces,
+                const DynamicList<bool>& pairOrientation,
+                const labelListList2D& pointFaces
             );
 
             //- Destructor
@@ -177,7 +178,7 @@ class extrudeLayer
                 (
                     const label start,
                     const label end,
-                    DynList<label>&
+                    DynamicList<label>&
                 ) const;
         };
 
@@ -203,7 +204,7 @@ public:
     extrudeLayer
     (
         polyMeshGen& mesh,
-        const LongList<labelPair>& extrusionFront,
+        const DynamicList<labelPair>& extrusionFront,
         const scalar thickness = -1.0
     );
 

@@ -119,11 +119,11 @@ public:
         inline void findLeavesContainedInBox
         (
             const boundBox&,
-            DynList<const meshOctreeCube*, 256>&
+            DynamicList<const meshOctreeCube*>&
         ) const;
 
         //- return leaves
-        inline LongList<meshOctreeCube*>& leavesAccess();
+        inline DynamicList<meshOctreeCube*>& leavesAccess();
 
         //- create leaves
         inline void createListOfLeaves();
@@ -151,6 +151,22 @@ public:
             labelList& nLayers,
             List<direction>& targetRefLevel
         ) const;
+
+        //- reserve enough row capacity in every slot's containedTriangles_/
+        //- containedEdges_ so that up to nRefinedCubes*(4 or 8, depending
+        //- on octree_.isQuadtree()) new rows can be appended during a
+        //- parallel refinement round without the outer array ever
+        //- reallocating - see meshOctreeSlot.H for why that matters.
+        //- Must be called serially, before the parallel refinement region
+        //- starts.
+        void reserveSlotCapacity(const label nRefinedCubes);
+
+        //- shrink every slot's containedTriangles_/containedEdges_ back
+        //- down to the rows actually used, after a parallel refinement
+        //- round has fully completed. Must only be called after all
+        //- threads have finished (i.e. after the closing barrier of the
+        //- #pragma omp parallel region that did the refining).
+        void trimSlotCapacity();
 
         //- refine leaves marked for refinement
         //- hexRefinement is activated when it is required to refine all

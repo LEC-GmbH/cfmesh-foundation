@@ -41,7 +41,7 @@ inline Foam::label Foam::Module::triSurfFeatureEdges::nFeatureEdges() const
 }
 
 
-inline const Foam::Module::edgeLongList&
+inline const Foam::DynamicList<Foam::edge>&
 Foam::Module::triSurfFeatureEdges::featureEdges() const
 {
     return featureEdges_;
@@ -89,7 +89,7 @@ inline void Foam::Module::triSurfFeatureEdges::removeEdgeFromSubset
 inline void Foam::Module::triSurfFeatureEdges::edgeInSubsets
 (
     const label eI,
-    DynList<label>& edgeSubsets
+    DynamicList<label>& edgeSubsets
 ) const
 {
     edgeSubsets.clear();
@@ -106,7 +106,7 @@ inline void Foam::Module::triSurfFeatureEdges::edgeInSubsets
 
 inline void Foam::Module::triSurfFeatureEdges::edgeSubsetIndices
 (
-    DynList<label>& indices
+    DynamicList<label>& indices
 ) const
 {
     indices.clear();

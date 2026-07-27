@@ -45,9 +45,8 @@ SourceFiles
 #include "triSurfAddressing.H"
 #include "meshSubset.H"
 #include "geometricSurfacePatchList.H"
-#include "LongList.H"
 #include "labelledTri.H"
-#include "DynList.H"
+#include "DynamicList.H"
 #include "Map.H"
 
 namespace Foam
@@ -64,7 +63,7 @@ protected:
     // Protected data
 
         //- list of triangles
-        LongList<labelledTri> triangles_;
+        DynamicList<labelledTri> triangles_;
 
         //- list of boundary patches and their properties
         geometricSurfacePatchList patches_;
@@ -88,12 +87,12 @@ public:
         triSurfFacets();
 
         //- Construct from components without the boundary
-        triSurfFacets(const LongList<labelledTri>& triangles);
+        triSurfFacets(const DynamicList<labelledTri>& triangles);
 
         //- Construct from components
         triSurfFacets
         (
-            const LongList<labelledTri>& triangles,
+            const DynamicList<labelledTri>& triangles,
             const geometricSurfacePatchList& patches
         );
 
@@ -108,7 +107,7 @@ public:
         inline label size() const;
 
         //- access to facets
-        inline const LongList<labelledTri>& facets() const;
+        inline const DynamicList<labelledTri>& facets() const;
 
         //- access to patches
         inline const geometricSurfacePatchList& patches() const;
@@ -130,8 +129,8 @@ public:
         label facetSubsetIndex(const word&) const;
         inline void addFacetToSubset(const label, const label);
         inline void removeFacetFromSubset(const label, const label);
-        inline void facetInSubsets(const label, DynList<label>&) const;
-        inline void facetSubsetIndices(DynList<label>&) const;
+        inline void facetInSubsets(const label, DynamicList<label>&) const;
+        inline void facetSubsetIndices(DynamicList<label>&) const;
         template<class ListType>
         inline void facetsInSubset(const label, ListType&) const;
         template<class ListType>

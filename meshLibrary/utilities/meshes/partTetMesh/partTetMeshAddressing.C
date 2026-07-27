@@ -74,9 +74,9 @@ void Foam::Module::partTetMesh::createPointsAndTets
     const vectorField& faceCentres = origMesh_.addressingData().faceCentres();
     const vectorField& cellCentres = origMesh_.addressingData().cellCentres();
 
-    labelLongList nodeLabelForPoint(points.size(), -1);
-    labelLongList nodeLabelForFace(faces.size(), -1);
-    labelLongList nodeLabelForCell(cells.size(), -1);
+    DynamicList<label> nodeLabelForPoint(points.size(), -1);
+    DynamicList<label> nodeLabelForFace(faces.size(), -1);
+    DynamicList<label> nodeLabelForCell(cells.size(), -1);
 
     points_.clear();
     smoothVertex_.clear();
@@ -273,17 +273,17 @@ void Foam::Module::partTetMesh::createPointsAndTets
     }
 
     // create pointTets_
-    pointTets_.reverseAddressing(points_.size(), tets_);
+    reverseAddressing(pointTets_, points_.size(), tets_);
 }
 
 
 void Foam::Module::partTetMesh::createSMOOTHPointsOrdering() const
 {
-    internalPointsOrderPtr_ = new VRWGraph();
-    VRWGraph& internalPointsOrder = *internalPointsOrderPtr_;
+    internalPointsOrderPtr_ = new labelListList2D();
+    labelListList2D& internalPointsOrder = *internalPointsOrderPtr_;
 
     internalPointsOrder.setSize(0);
-    labelLongList order(points_.size(), -1);
+    DynamicList<label> order(points_.size(), -1);
     boolList helper(points_.size());
 
     bool found;
@@ -291,7 +291,7 @@ void Foam::Module::partTetMesh::createSMOOTHPointsOrdering() const
     {
         found = false;
         helper = false;
-        labelLongList selectedPoints;
+        DynamicList<label> selectedPoints;
 
         forAll(points_, nodeI)
         {
@@ -307,20 +307,21 @@ void Foam::Module::partTetMesh::createSMOOTHPointsOrdering() const
                 }
 
                 // find neighbouring FACECENTRE and CELLCENTRE points
-                DynList<label, 64> neiCentrePoints, neiSmoothPoints;
+                DynamicList<label> neiCentrePoints, neiSmoothPoints;
+                neiCentrePoints.reserve(64); neiSmoothPoints.reserve(64);
                 forAllRow(pointTets_, nodeI, ptI)
                 {
-                    const partTet& tet = tets_[pointTets_(nodeI, ptI)];
+                    const partTet& tet = tets_[pointTets_[nodeI][ptI]];
 
                     for (label i = 0; i < 4; ++i)
                     {
                         if (smoothVertex_[tet[i]] & (FACECENTRE + CELLCENTRE))
                         {
-                            neiCentrePoints.appendUniq(tet[i]);
+                            appendUniq(neiCentrePoints, tet[i]);
                         }
                         else if (smoothVertex_[tet[i]] & SMOOTH)
                         {
-                            neiSmoothPoints.appendUniq(tet[i]);
+                            appendUniq(neiSmoothPoints, tet[i]);
                         }
                     }
                 }
@@ -332,13 +333,13 @@ void Foam::Module::partTetMesh::createSMOOTHPointsOrdering() const
 
                     forAllRow(pointTets_, centreI, ptI)
                     {
-                        const partTet& tet = tets_[pointTets_(centreI, ptI)];
+                        const partTet& tet = tets_[pointTets_[centreI][ptI]];
 
                         for (label i = 0; i < 4; ++i)
                         {
                             if (smoothVertex_[tet[i]] & SMOOTH)
                             {
-                                neiSmoothPoints.appendUniq(tet[i]);
+                                appendUniq(neiSmoothPoints, tet[i]);
                             }
                         }
                     }
@@ -357,7 +358,8 @@ void Foam::Module::partTetMesh::createSMOOTHPointsOrdering() const
 
         if (selectedPoints.size() != 0)
         {
-            internalPointsOrder.appendList(selectedPoints);
+            internalPointsOrder.setSize(internalPointsOrder.size() + 1);
+            setRow(internalPointsOrder, internalPointsOrder.size() - 1, selectedPoints);
             found = true;
         }
 
@@ -367,11 +369,11 @@ void Foam::Module::partTetMesh::createSMOOTHPointsOrdering() const
 
 void Foam::Module::partTetMesh::createBOUNDARYPointsOrdering() const
 {
-    boundaryPointsOrderPtr_ = new VRWGraph();
-    VRWGraph& boundaryPointsOrder = *boundaryPointsOrderPtr_;
+    boundaryPointsOrderPtr_ = new labelListList2D();
+    labelListList2D& boundaryPointsOrder = *boundaryPointsOrderPtr_;
 
     boundaryPointsOrder.setSize(0);
-    labelLongList order(points_.size(), -1);
+    DynamicList<label> order(points_.size(), -1);
     boolList helper(points_.size());
 
     bool found;
@@ -380,7 +382,7 @@ void Foam::Module::partTetMesh::createBOUNDARYPointsOrdering() const
         found = false;
         helper = false;
 
-        labelLongList selectedPoints;
+        DynamicList<label> selectedPoints;
         forAll(points_, nodeI)
         {
             if (smoothVertex_[nodeI] & BOUNDARY)
@@ -395,20 +397,21 @@ void Foam::Module::partTetMesh::createBOUNDARYPointsOrdering() const
                 }
 
                 // find neighbouring FACECENTRE and CELLCENTRE points
-                DynList<label, 64> neiCentrePoints, neiSmoothPoints;
+                DynamicList<label> neiCentrePoints, neiSmoothPoints;
+                neiCentrePoints.reserve(64); neiSmoothPoints.reserve(64);
                 forAllRow(pointTets_, nodeI, ptI)
                 {
-                    const partTet& tet = tets_[pointTets_(nodeI, ptI)];
+                    const partTet& tet = tets_[pointTets_[nodeI][ptI]];
 
                     for (label i = 0; i < 4; ++i)
                     {
                         if (smoothVertex_[tet[i]] & (FACECENTRE + CELLCENTRE))
                         {
-                            neiCentrePoints.appendUniq(tet[i]);
+                            appendUniq(neiCentrePoints, tet[i]);
                         }
                         else if (smoothVertex_[tet[i]] & BOUNDARY)
                         {
-                            neiSmoothPoints.appendUniq(tet[i]);
+                            appendUniq(neiSmoothPoints, tet[i]);
                         }
                     }
                 }
@@ -420,13 +423,13 @@ void Foam::Module::partTetMesh::createBOUNDARYPointsOrdering() const
 
                     forAllRow(pointTets_, centreI, ptI)
                     {
-                        const partTet& tet = tets_[pointTets_(centreI, ptI)];
+                        const partTet& tet = tets_[pointTets_[centreI][ptI]];
 
                         for (label i = 0; i < 4; ++i)
                         {
                             if (smoothVertex_[tet[i]] & BOUNDARY)
                             {
-                                neiSmoothPoints.appendUniq(tet[i]);
+                                appendUniq(neiSmoothPoints, tet[i]);
                             }
                         }
                     }
@@ -445,7 +448,8 @@ void Foam::Module::partTetMesh::createBOUNDARYPointsOrdering() const
 
         if (selectedPoints.size() != 0)
         {
-            boundaryPointsOrder.appendList(selectedPoints);
+            boundaryPointsOrder.setSize(boundaryPointsOrder.size() + 1);
+            setRow(boundaryPointsOrder, boundaryPointsOrder.size() - 1, selectedPoints);
             found = true;
         }
 

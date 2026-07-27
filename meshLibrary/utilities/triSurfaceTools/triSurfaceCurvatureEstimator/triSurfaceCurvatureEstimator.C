@@ -88,7 +88,7 @@ Foam::Module::triSurfaceCurvatureEstimator::gaussianCurvatureAtTriangle
 
     scalar curv(0.0);
     for (label i = 0; i < 3; ++i)
-        curv += gaussianCurvature_[tri[i]][patchPositions_(triI, i)];
+        curv += gaussianCurvature_[tri[i]][patchPositions_[triI][i]];
     curv /= 3.0;
 
     return curv;
@@ -104,7 +104,7 @@ Foam::scalar Foam::Module::triSurfaceCurvatureEstimator::meanCurvatureAtTriangle
 
     scalar curv(0.0);
     for (label i = 0; i < 3; ++i)
-        curv += meanCurvature_[tri[i]][patchPositions_(triI, i)];
+        curv += meanCurvature_[tri[i]][patchPositions_[triI][i]];
     curv /= 3.0;
 
     return curv;
@@ -120,7 +120,7 @@ Foam::scalar Foam::Module::triSurfaceCurvatureEstimator::maxCurvatureAtTriangle
 
     scalar curv(0.0);
     for (label i = 0; i < 3; ++i)
-        curv += maxCurvature_[tri[i]][patchPositions_(triI, i)];
+        curv += maxCurvature_[tri[i]][patchPositions_[triI][i]];
     curv /= 3.0;
 
     return curv;
@@ -136,7 +136,7 @@ Foam::scalar Foam::Module::triSurfaceCurvatureEstimator::minCurvatureAtTriangle
 
     scalar curv(0.0);
     for (label i = 0; i < 3; ++i)
-        curv += minCurvature_[tri[i]][patchPositions_(triI, i)];
+        curv += minCurvature_[tri[i]][patchPositions_[triI][i]];
     curv /= 3.0;
 
     return curv;
@@ -153,7 +153,7 @@ Foam::Module::triSurfaceCurvatureEstimator::maxCurvatureVectorAtTriangle
 
     vector curv(vector::zero);
     for (label i = 0; i < 3; ++i)
-        curv += maxCurvatureVector_[tri[i]][patchPositions_(triI, i)];
+        curv += maxCurvatureVector_[tri[i]][patchPositions_[triI][i]];
     curv /= 3.0;
 
     return curv;
@@ -170,7 +170,7 @@ Foam::Module::triSurfaceCurvatureEstimator::minCurvatureVectorAtTriangle
 
     vector curv(vector::zero);
     for (label i = 0; i < 3; ++i)
-        curv += minCurvatureVector_[tri[i]][patchPositions_(triI, i)];
+        curv += minCurvatureVector_[tri[i]][patchPositions_[triI][i]];
     curv /= 3.0;
 
     return curv;

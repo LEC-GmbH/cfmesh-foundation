@@ -136,7 +136,7 @@ inline void Foam::Module::polyMeshGenFaces::removeFaceFromSubset
 inline void Foam::Module::polyMeshGenFaces::faceInSubsets
 (
     const label faceI,
-    DynList<label>& faceSubsets
+    DynamicList<label>& faceSubsets
 ) const
 {
     faceSubsets.clear();
@@ -153,7 +153,7 @@ inline void Foam::Module::polyMeshGenFaces::faceInSubsets
 
 inline void Foam::Module::polyMeshGenFaces::faceSubsetIndices
 (
-    DynList<label>& indices
+    DynamicList<label>& indices
 ) const
 {
     indices.clear();
@@ -199,7 +199,7 @@ inline void Foam::Module::polyMeshGenFaces::updateFaceSubsets
 
 inline void Foam::Module::polyMeshGenFaces::updateFaceSubsets
 (
-    const VRWGraph& newFacesForFace
+    const labelListList2D& newFacesForFace
 )
 {
     for (std::map<label, meshSubset>::iterator it = faceSubsets_.begin(); it != faceSubsets_.end(); ++it)

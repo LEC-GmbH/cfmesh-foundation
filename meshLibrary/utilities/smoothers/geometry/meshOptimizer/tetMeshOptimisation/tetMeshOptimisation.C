@@ -58,9 +58,9 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingKnuppMetric
     const label nIterations
 )
 {
-    const LongList<point>& points = tetMesh_.points();
-    const LongList<partTet>& tets = tetMesh_.tets();
-    const LongList<direction>& smoothVertex = tetMesh_.smoothVertex();
+    const DynamicList<point>& points = tetMesh_.points();
+    const DynamicList<partTet>& tets = tetMesh_.tets();
+    const DynamicList<direction>& smoothVertex = tetMesh_.smoothVertex();
 
     boolList negativeNode(smoothVertex.size()), invertedTets(tets.size());
 
@@ -101,7 +101,7 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingKnuppMetric
             return;
 
         // smooth the mesh
-        List<LongList<labelledPoint>> newPositions;
+        List<DynamicList<labelledPoint>> newPositions;
         # pragma omp parallel if (smoothVertex.size() > 100)
         {
             # pragma omp master
@@ -111,7 +111,7 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingKnuppMetric
 
             # pragma omp barrier
 
-            LongList<labelledPoint>& np = newPositions[omp_get_thread_num()];
+            DynamicList<labelledPoint>& np = newPositions[omp_get_thread_num()];
 
             # pragma omp for schedule(dynamic, 10)
             forAll(smoothVertex, nodeI)
@@ -171,9 +171,9 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingMeshUntangler
     const label nIterations
 )
 {
-    const LongList<point>& points = tetMesh_.points();
-    const LongList<partTet>& tets = tetMesh_.tets();
-    const LongList<direction>& smoothVertex = tetMesh_.smoothVertex();
+    const DynamicList<point>& points = tetMesh_.points();
+    const DynamicList<partTet>& tets = tetMesh_.tets();
+    const DynamicList<direction>& smoothVertex = tetMesh_.smoothVertex();
 
     boolList negativeNode(smoothVertex.size()), invertedTets(tets.size());
 
@@ -213,7 +213,7 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingMeshUntangler
             return;
 
         // smooth the mesh
-        List<LongList<labelledPoint>> newPositions;
+        List<DynamicList<labelledPoint>> newPositions;
         # pragma omp parallel if (smoothVertex.size() > 100)
         {
             # pragma omp master
@@ -223,7 +223,7 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingMeshUntangler
 
             # pragma omp barrier
 
-            LongList<labelledPoint>& np = newPositions[omp_get_thread_num()];
+            DynamicList<labelledPoint>& np = newPositions[omp_get_thread_num()];
 
             # pragma omp for schedule(dynamic, 10)
             forAll(smoothVertex, nodeI)
@@ -280,12 +280,12 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingVolumeOptimizer
     const label nIterations
 )
 {
-    const LongList<direction>& smoothVertex = tetMesh_.smoothVertex();
+    const DynamicList<direction>& smoothVertex = tetMesh_.smoothVertex();
 
     // use mesh optimizer to improve the result
     for (label i = 0; i < nIterations; ++i)
     {
-        List<LongList<labelledPoint>> newPositions;
+        List<DynamicList<labelledPoint>> newPositions;
 
         # pragma omp parallel if (smoothVertex.size() > 100)
         {
@@ -296,7 +296,7 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingVolumeOptimizer
 
             # pragma omp barrier
 
-            LongList<labelledPoint>& np = newPositions[omp_get_thread_num()];
+            DynamicList<labelledPoint>& np = newPositions[omp_get_thread_num()];
 
             # pragma omp for schedule(dynamic, 10)
             forAll(smoothVertex, nodeI)
@@ -329,8 +329,8 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundaryVolumeOptimizer
     const bool nonShrinking
 )
 {
-    const LongList<point>& points = tetMesh_.points();
-    const LongList<direction>& smoothVertex = tetMesh_.smoothVertex();
+    const DynamicList<point>& points = tetMesh_.points();
+    const DynamicList<direction>& smoothVertex = tetMesh_.smoothVertex();
 
     label nThreads = omp_get_num_procs();
     if (smoothVertex.size() < 100)
@@ -338,11 +338,11 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundaryVolumeOptimizer
 
     for (label i = 0; i < nIterations; ++i)
     {
-        List<LongList<labelledPoint>> newPositions(nThreads);
+        List<DynamicList<labelledPoint>> newPositions(nThreads);
 
         # pragma omp parallel num_threads(nThreads)
         {
-            LongList<labelledPoint>& np = newPositions[omp_get_thread_num()];
+            DynamicList<labelledPoint>& np = newPositions[omp_get_thread_num()];
 
             # pragma omp for schedule(dynamic, 5)
             forAll(smoothVertex, nodeI)
@@ -360,10 +360,10 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundaryVolumeOptimizer
                     if (nonShrinking)
                     {
                         // find boundary faces of the simplex
-                        const DynList<point, 128>& pts = simplex.pts();
-                        const DynList<partTet, 128>& tets = simplex.tets();
-                        DynList<edge, 64> bEdges;
-                        DynList<label, 64> numAppearances;
+                        const DynamicList<point>& pts = simplex.pts();
+                        const DynamicList<partTet>& tets = simplex.tets();
+                        DynamicList<edge> bEdges;
+                        DynamicList<label> numAppearances;
 
                         forAll(tets, tetI)
                         {
@@ -463,7 +463,7 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundarySurfaceLaplace
     const label nIterations
 )
 {
-    const LongList<direction>& smoothVertex = tetMesh_.smoothVertex();
+    const DynamicList<direction>& smoothVertex = tetMesh_.smoothVertex();
 
     label nThreads = omp_get_num_procs();
     if (smoothVertex.size() < 1000)
@@ -471,11 +471,11 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundarySurfaceLaplace
 
     for (label i = 0; i < nIterations; ++i)
     {
-        List<LongList<labelledPoint>> newPositions(nThreads);
+        List<DynamicList<labelledPoint>> newPositions(nThreads);
 
         # pragma omp parallel num_threads(nThreads)
         {
-            LongList<labelledPoint>& np =
+            DynamicList<labelledPoint>& np =
                 newPositions[omp_get_thread_num()];
 
             # pragma omp for schedule(dynamic, 5)
@@ -489,10 +489,10 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundarySurfaceLaplace
                     partTetMeshSimplex simplex(tetMesh_, nodeI);
 
                     // find boundary faces of the simplex
-                    const DynList<point, 128>& pts = simplex.pts();
-                    const DynList<partTet, 128>& tets = simplex.tets();
-                    DynList<edge, 64> bndEdges;
-                    DynList<label, 64> numAppearances;
+                    const DynamicList<point>& pts = simplex.pts();
+                    const DynamicList<partTet>& tets = simplex.tets();
+                    DynamicList<edge> bndEdges;
+                    DynamicList<label> numAppearances;
 
                     // find boundary edges of the simplex
                     forAll(tets, tetI)

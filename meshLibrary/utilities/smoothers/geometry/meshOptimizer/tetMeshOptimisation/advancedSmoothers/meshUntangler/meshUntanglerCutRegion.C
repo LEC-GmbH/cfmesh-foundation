@@ -42,12 +42,12 @@ void Foam::Module::meshUntangler::cutRegion::createInitialConfiguration
     const boundBox& bb
 )
 {
-    pointsPtr_ = new DynList<point, 64>();
-    DynList<point, 64>& bVertices = *pointsPtr_;
-    edgesPtr_ = new DynList<edge, 128>();
-    DynList<edge, 128>& bEdges = *edgesPtr_;
-    facesPtr_ = new DynList<DynList<label, 8>, 64>();
-    DynList<DynList<label, 8>, 64>& bFaces = *facesPtr_;
+    pointsPtr_ = new DynamicList<point>();
+    DynamicList<point>& bVertices = *pointsPtr_;
+    edgesPtr_ = new DynamicList<edge>();
+    DynamicList<edge>& bEdges = *edgesPtr_;
+    facesPtr_ = new DynamicList<DynamicList<label>>();
+    DynamicList<DynamicList<label>>& bFaces = *facesPtr_;
 
     // set vertices
     const point c = (bb.max() + bb.min()) / 2.0;
@@ -106,7 +106,7 @@ void Foam::Module::meshUntangler::cutRegion::createInitialConfiguration
     bEdges.append(edge(3, 7));
 
     // set faces
-    DynList<label, 8> f;
+    DynamicList<label> f;
     f.setSize(4);
 
     // faces in x direction
@@ -225,17 +225,17 @@ void Foam::Module::meshUntangler::cutRegion::createPolyMeshFromRegion
     cells[0].setSize(facesPtr_->size());
     faces.setSize(facesPtr_->size());
 
-    const DynList<edge, 128>& edges = *edgesPtr_;
-    const DynList<DynList<label, 8>, 64>& fcs = *facesPtr_;
+    const DynamicList<edge>& edges = *edgesPtr_;
+    const DynamicList<DynamicList<label>>& fcs = *facesPtr_;
     forAll(faces, fI)
     {
-        DynList<edge> fEdges;
-        const DynList<label, 8>& f = fcs[fI];
+        DynamicList<edge> fEdges;
+        const DynamicList<label>& f = fcs[fI];
         forAll(f, eI)
             fEdges.append(edges[f[eI]]);
 
         Info<< "Edges forming face " << fI << " are " << fEdges << endl;
-        const DynList<DynList<label>> sf =
+        const DynamicList<DynamicList<label>> sf =
             sortEdgesIntoChains(fEdges).sortedChains();
         if (sf.size() != 1)
             FatalErrorInFunction

@@ -38,14 +38,14 @@ License
 void Foam::Module::meshOctree::findEdgesInBox
 (
     const boundBox& bb,
-    DynList<label>& edges
+    DynamicList<label>& edges
 ) const
 {
-    DynList<const meshOctreeCube*, 256> neighbours;
+    DynamicList<const meshOctreeCube*> neighbours;
     findLeavesContainedInBox(bb, neighbours);
 
     const pointField& points = surface_.points();
-    const edgeLongList& sEdges = surface_.edges();
+    const DynamicList<edge>& sEdges = surface_.edges();
     const point c = (bb.min() + bb.max()) / 2.0;
     const scalar dSq = Foam::sqr(0.5*(bb.max().x() - bb.min().x()));
 
@@ -58,10 +58,10 @@ void Foam::Module::meshOctree::findEdgesInBox
             continue;
 
         const label ceI = oc.containedEdges();
-        const VRWGraph& ce = oc.slotPtr()->containedEdges_;
+        const labelListList2D& ce = oc.slotPtr()->containedEdges_;
         forAllRow(ce, ceI, i)
         {
-            const edge& e = sEdges[ce(ceI, i)];
+            const edge& e = sEdges[ce[ceI][i]];
             const point p =
                 help::nearestPointOnTheEdgeExact
                 (
@@ -71,7 +71,7 @@ void Foam::Module::meshOctree::findEdgesInBox
                 );
 
             if (magSqr(p - c) < dSq)
-                edges.append(ce(ceI, i));
+                edges.append(ce[ceI][i]);
         }
     }
 }
@@ -80,10 +80,10 @@ void Foam::Module::meshOctree::findEdgesInBox
 void Foam::Module::meshOctree::findTrianglesInBox
 (
     const boundBox& bb,
-    DynList<label>& triaLabels
+    DynamicList<label>& triaLabels
 ) const
 {
-    DynList<const meshOctreeCube*, 256> neighbours;
+    DynamicList<const meshOctreeCube*> neighbours;
     findLeavesContainedInBox(bb, neighbours);
 
     const point c = (bb.min() + bb.max()) / 2.0;
@@ -98,10 +98,10 @@ void Foam::Module::meshOctree::findTrianglesInBox
             continue;
 
         const label elI = oc.containedElements();
-        const VRWGraph& ct = oc.slotPtr()->containedTriangles_;
+        const labelListList2D& ct = oc.slotPtr()->containedTriangles_;
         forAllRow(ct, elI, i)
         {
-            const label tI = ct(elI, i);
+            const label tI = ct[elI][i];
 
             const point p = help::nearestPointOnTheTriangle(tI, surface_, c);
             if (Foam::magSqr(p - c) < dSq)
@@ -114,7 +114,7 @@ void Foam::Module::meshOctree::findTrianglesInBox
 void Foam::Module::meshOctree::findLeavesContainedInBox
 (
     const boundBox& bb,
-    DynList<const meshOctreeCube*, 256>& containedCubes
+    DynamicList<const meshOctreeCube*>& containedCubes
 ) const
 {
     containedCubes.clear();
@@ -129,7 +129,7 @@ void Foam::Module::meshOctree::findLeavesContainedInBox
     labelList& containedCubes
 ) const
 {
-    DynList<const meshOctreeCube*, 256> cb;
+    DynamicList<const meshOctreeCube*> cb;
     findLeavesContainedInBox(bb, cb);
 
     containedCubes.setSize(cb.size());
@@ -150,10 +150,10 @@ void Foam::Module::meshOctree::findLeavesContainedInBox
 void Foam::Module::meshOctree::findLeavesContainedInBox
 (
     const boundBox& bb,
-    DynList<label>& containedCubes
+    DynamicList<label>& containedCubes
 ) const
 {
-    DynList<const meshOctreeCube*, 256> cb;
+    DynamicList<const meshOctreeCube*> cb;
     findLeavesContainedInBox(bb, cb);
 
     containedCubes.clear();

@@ -322,7 +322,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
                 }
             } while (!finished);
 
-            labelLongList subsetFaces;
+            DynamicList<label> subsetFaces;
             surface.facetsInSubset(subsetID, subsetFaces);
             const direction level = globalRefLevel_ + addLevel;
 
@@ -350,7 +350,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
 
             // map a facet subset name to its index
             std::map<word, label> setToIndex;
-            DynList<label> setIDs;
+            DynamicList<label> setIDs;
             surface.facetSubsetIndices(setIDs);
             forAll(setIDs, i)
             {
@@ -435,7 +435,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
                     // this is a facet subset
                     const label subsetId = setToIndex[pName];
 
-                    labelLongList facetsInSubset;
+                    DynamicList<label> facetsInSubset;
                     surface.facetsInSubset(subsetId, facetsInSubset);
 
                     forAll(facetsInSubset, i)
@@ -490,7 +490,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
                             // this is a facet subset
                             const label subsetId = setToIndex[pName];
 
-                            labelLongList facetsInSubset;
+                            DynamicList<label> facetsInSubset;
                             surface.facetsInSubset(subsetId, facetsInSubset);
 
                             forAll(facetsInSubset, i)
@@ -568,7 +568,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
                             // this is a facet subset
                             const label subsetId = setToIndex[pName];
 
-                            labelLongList facetsInSubset;
+                            DynamicList<label> facetsInSubset;
                             surface.facetsInSubset(subsetId, facetsInSubset);
 
                             forAll(facetsInSubset, i)
@@ -652,28 +652,29 @@ void Foam::Module::meshOctreeCreator::createOctreeWithRefinedBoundary
 
     while (true)
     {
-        const LongList<meshOctreeCube*>& leaves =
+        const DynamicList<meshOctreeCube*>& leaves =
             octreeModifier.leavesAccess();
 
         label nMarked(0);
 
-        # pragma omp parallel reduction(+ : nMarked)
+        // decide which leaves need refining first - this is read-only
+        // (containedTriangles()/level() query already-finalised data
+        // from a prior round), so it is safe to run in its own parallel
+        // region ahead of the actual refinement below
+        boolList toRefine(leaves.size(), false);
+
+        # pragma omp parallel for schedule(dynamic, 20) reduction(+ : nMarked)
+        forAll(leaves, leafI)
         {
-            meshOctreeSlot* slotPtr = &slots[omp_get_thread_num()];
+            meshOctreeCube& oc = *leaves[leafI];
 
-            # pragma omp for schedule(dynamic, 20)
-            forAll(leaves, leafI)
+            DynamicList<label> ct;
+            octree_.containedTriangles(leafI, ct);
+
+            if ((oc.level() < maxLevel) && (ct.size() > nTrianglesInLeaf))
             {
-                meshOctreeCube& oc = *leaves[leafI];
-
-                DynList<label> ct;
-                octree_.containedTriangles(leafI, ct);
-
-                if ((oc.level() < maxLevel) && (ct.size() > nTrianglesInLeaf))
-                {
-                    oc.refineCube(surface, rootBox, slotPtr);
-                    ++nMarked;
-                }
+                toRefine[leafI] = true;
+                ++nMarked;
             }
         }
 
@@ -681,6 +682,24 @@ void Foam::Module::meshOctreeCreator::createOctreeWithRefinedBoundary
         {
             break;
         }
+
+        octreeModifier.reserveSlotCapacity(nMarked);
+
+        # pragma omp parallel
+        {
+            meshOctreeSlot* slotPtr = &slots[omp_get_thread_num()];
+
+            # pragma omp for schedule(dynamic, 20)
+            forAll(leaves, leafI)
+            {
+                if (toRefine[leafI])
+                    leaves[leafI]->refineCube(surface, rootBox, slotPtr);
+            }
+        }
+
+        // implicit barrier above - all refinement work for this round
+        // is done, safe to trim now
+        octreeModifier.trimSlotCapacity();
 
         octreeModifier.createListOfLeaves();
 

@@ -35,7 +35,7 @@ License
 #include "HashSet.H"
 #include "boolList.H"
 #include "Map.H"
-#include "DynList.H"
+#include "labelListListOps.H"
 
 #include "OFstream.H"
 
@@ -46,9 +46,9 @@ License
 void Foam::Module::triSurfaceCurvatureEstimator::calculateEdgeCurvature()
 {
     const pointField& points = surface_.points();
-    const edgeLongList& edges = surface_.edges();
-    const VRWGraph& pointEdges = surface_.pointEdges();
-    const VRWGraph& edgeFaces = surface_.edgeFacets();
+    const DynamicList<edge>& edges = surface_.edges();
+    const labelListList2D& pointEdges = surface_.pointEdges();
+    const labelListList2D& edgeFaces = surface_.edgeFacets();
 
     edgePointCurvature_.setSize(points.size());
     boolList featureEdge(edges.size());
@@ -63,15 +63,15 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateEdgeCurvature()
         # pragma omp for schedule(static, 1)
         forAll(edgeFaces, eI)
         {
-            if (edgeFaces.sizeOfRow(eI) != 2)
+            if (edgeFaces[eI].size() != 2)
             {
                 featureEdge[eI] = false;
                 continue;
             }
 
             if (
-                 surface_[edgeFaces(eI, 0)].region() ==
-                 surface_[edgeFaces(eI, 1)].region()
+                 surface_[edgeFaces[eI][0]].region() ==
+                 surface_[edgeFaces[eI][1]].region()
             )
             {
                 featureEdge[eI] = false;
@@ -89,10 +89,10 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateEdgeCurvature()
         # pragma omp for schedule(dynamic, 20)
         forAll(pointEdges, pI)
         {
-            DynList<label> features;
+            DynamicList<label> features;
             forAllRow(pointEdges, pI, peI)
             {
-                const label edgeI = pointEdges(pI, peI);
+                const label edgeI = pointEdges[pI][peI];
                 if (featureEdge[edgeI])
                     features.append(edgeI);
             }
@@ -122,7 +122,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateEdgeCurvature()
 
 void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
 {
-    const VRWGraph& pointTriangles = surface_.pointFacets();
+    const labelListList2D& pointTriangles = surface_.pointFacets();
 
     const pointField& points = surface_.points();
 
@@ -134,18 +134,18 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
     maxCurvatureVector_.setSize(points.size());
     minCurvatureVector_.setSize(points.size());
 
-    List<DynList<label, 4>> pointPatches(points.size());
+    List<DynamicList<label>> pointPatches(points.size());
 
     # pragma omp parallel for schedule(dynamic, 40)
     forAll(pointTriangles, pointI)
     {
-        std::map<label, DynList<label>> regionTriangles;
+        std::map<label, DynamicList<label>> regionTriangles;
         Map<labelHashSet> otherLabels;
         Map<vector> normals;
 
         forAllRow(pointTriangles, pointI, ptI)
         {
-            const label triI = pointTriangles(pointI, ptI);
+            const label triI = pointTriangles[pointI][ptI];
             const label regionI = surface_[triI].region();
 
             if (!normals.found(regionI))
@@ -156,7 +156,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                     std::make_pair
                     (
                         regionI,
-                        DynList<label>()
+                        DynamicList<label>()
                     )
                 );
             if (!otherLabels.found(regionI))
@@ -186,7 +186,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
             labelHashSet additionalPoints;
             for (const label neiPointI : currLabels.toc())
             {
-                const constRow pTriangles = pointTriangles[neiPointI];
+                const DynamicList<label>& pTriangles = pointTriangles[neiPointI];
 
                 forAll(pTriangles, ptI)
                 {
@@ -221,7 +221,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
             pointPatches[pointI].append(regionI);
 
             // find the position of point in the patch triangles
-            const DynList<label>& rTriangles = regionTriangles[regionI];
+            const DynamicList<label>& rTriangles = regionTriangles[regionI];
             forAll(rTriangles, i)
             {
                 const label tI = rTriangles[i];
@@ -234,11 +234,11 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                         break;
                     }
 
-                patchPositions_(tI, pos) = gaussianCurvature_[pointI].size();
+                patchPositions_[tI][pos] = gaussianCurvature_[pointI].size();
             }
 
             // store point coordinates
-            DynList<point> op;
+            DynamicList<point> op;
 
             for (const label lit : labels.toc())
             {
@@ -259,8 +259,8 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
     }
 
     // smooth curvatures using weighted Laplace
-    List<DynList<scalar, 1>> smoothMinCurv(points.size());
-    List<DynList<scalar, 1>> smoothMaxCurv(points.size());
+    List<DynamicList<scalar>> smoothMinCurv(points.size());
+    List<DynamicList<scalar>> smoothMaxCurv(points.size());
 
     # pragma omp parallel
     {
@@ -269,15 +269,15 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
             # pragma omp for schedule(static, 1)
             forAll(pointTriangles, pointI)
             {
-                const constRow pTriangles = pointTriangles[pointI];
+                const DynamicList<label>& pTriangles = pointTriangles[pointI];
 
                 // find neighbouring points for each patch
-                Map<DynList<label>> patchNeiPoints;
+                Map<DynamicList<label>> patchNeiPoints;
                 forAll(pointPatches[pointI], ppI)
                     patchNeiPoints.insert
                     (
                         pointPatches[pointI][ppI],
-                        DynList<label>()
+                        DynamicList<label>()
                     );
 
                 forAll(pTriangles, ptI)
@@ -285,7 +285,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                     const labelledTri& tri = surface_[pTriangles[ptI]];
 
                     if (!patchNeiPoints.found(tri.region()))
-                        patchNeiPoints.insert(tri.region(), DynList<label>());
+                        patchNeiPoints.insert(tri.region(), DynamicList<label>());
 
                     forAll(tri, pI)
                     {
@@ -294,7 +294,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                         if (neiPointI == pointI)
                             continue;
 
-                        patchNeiPoints[tri.region()].appendUniq(neiPointI);
+                        appendUniq(patchNeiPoints[tri.region()], neiPointI);
                     }
                 }
 
@@ -309,7 +309,7 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                     scalar minCurv(0.0);
                     scalar maxCurv(0.0);
 
-                    const DynList<label>& neiPoints = patchNeiPoints[cPatch];
+                    const DynamicList<label>& neiPoints = patchNeiPoints[cPatch];
 
                     if (neiPoints.size() == 0)
                     {
@@ -362,8 +362,8 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
         # pragma omp for schedule(static, 1)
         forAll(minCurvature_, pointI)
         {
-            const DynList<scalar, 1>& minCurv = minCurvature_[pointI];
-            const DynList<scalar, 1>& maxCurv = maxCurvature_[pointI];
+            const DynamicList<scalar>& minCurv = minCurvature_[pointI];
+            const DynamicList<scalar>& maxCurv = maxCurvature_[pointI];
 
             forAll(minCurv, i)
             {

@@ -30,6 +30,7 @@ License
 
 #include "polyMeshGenModifier.H"
 #include "demandDrivenData.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -42,7 +43,7 @@ void Foam::Module::polyMeshGenModifier::removeFaces(const boolList& removeFace)
     cellListPMG& cells = mesh_.cells_;
 
     label nFaces(0);
-    labelLongList newFaceLabel(faces.size(), -1);
+    DynamicList<label> newFaceLabel(faces.size(), -1);
 
     // copy internal faces
     const label nInternalFaces = mesh_.nInternalFaces();
@@ -104,7 +105,7 @@ void Foam::Module::polyMeshGenModifier::removeFaces(const boolList& removeFace)
     {
         cell& c = cells[cellI];
 
-        DynList<label> newC;
+        DynamicList<label> newC;
 
         forAll(c, fI)
         {

@@ -34,7 +34,7 @@ Description
 #include "argList.H"
 #include "triSurf.H"
 #include "triFaceList.H"
-#include "labelLongList.H"
+#include "DynamicList.H"
 #include "IFstream.H"
 #include "OFstream.H"
 
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 
     forAll(patchNames, patchI)
     {
-        labelLongList subsetFacets;
+        DynamicList<label> subsetFacets;
         forAll(origSurf, triI)
         {
             if (origSurf[triI].region() == patchI)

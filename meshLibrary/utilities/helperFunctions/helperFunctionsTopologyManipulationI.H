@@ -141,7 +141,7 @@ inline Foam::face Foam::Module::help::mergeTwoFaces
     const faceType2& f2
 )
 {
-    DynList<bool> ce1, ce2;
+    DynamicList<bool> ce1, ce2;
     ce1.setSize(f1.size());
     ce1 = false;
     ce2.setSize(f2.size());
@@ -164,7 +164,7 @@ inline Foam::face Foam::Module::help::mergeTwoFaces
         }
     }
 
-    DynList<edge> fEdges;
+    DynamicList<edge> fEdges;
     forAll(ce1, eI)
     {
         if (!ce1[eI])
@@ -296,7 +296,7 @@ inline Foam::face Foam::Module::help::createFaceFromRemovedPart
 inline Foam::face Foam::Module::help::removeEdgesFromFace
 (
     const face& fOrig,
-    const DynList<edge>& removeEdges
+    const DynamicList<edge>& removeEdges
 )
 {
     boolList foundEdge(fOrig.size(), false);
@@ -333,11 +333,11 @@ inline Foam::face Foam::Module::help::removeEdgesFromFace
 inline void Foam::Module::help::findOpenEdges
 (
     const faceList& cellFaces,
-    DynList<edge>& openEdges
+    DynamicList<edge>& openEdges
 )
 {
-    DynList<edge> cellEdges;
-    DynList<label> nAppearances;
+    DynamicList<edge> cellEdges;
+    DynamicList<label> nAppearances;
 
     forAll(cellFaces, fI)
     {
@@ -533,7 +533,7 @@ inline Foam::label Foam::Module::help::sharedVertex(const faceListType& fcs)
 template<class boolListType>
 inline bool Foam::Module::help::areElementsInChain(const boolListType& sel)
 {
-    DynList<bool> selInChain(sel.size(), false);
+    DynamicList<bool> selInChain(sel.size(), false);
 
     forAll(sel, eI)
     {
@@ -577,10 +577,10 @@ inline bool Foam::Module::help::areElementsInChain(const boolListType& sel)
 }
 
 
-inline void Foam::Module::help::zipOpenChain(DynList<edge>& bEdges)
+inline void Foam::Module::help::zipOpenChain(DynamicList<edge>& bEdges)
 {
     //- close the chain if open
-    DynList<label> chainVertices;
+    DynamicList<label> chainVertices;
     List<label> nAppearances;
     forAll(bEdges, eI)
     {
@@ -602,7 +602,8 @@ inline void Foam::Module::help::zipOpenChain(DynList<edge>& bEdges)
     }
 
     bool closed(true);
-    DynList<label> openVertices(2);
+    DynamicList<label> openVertices;
+    openVertices.setSize(2);
     forAll(chainVertices, pI)
     {
         if (nAppearances[pI] == 1)
@@ -639,12 +640,12 @@ inline void Foam::Module::help::zipOpenChain(DynList<edge>& bEdges)
 
 inline Foam::labelList Foam::Module::help::sortEdgeChain
 (
-    const DynList<edge>& bEdges
+    const DynamicList<edge>& bEdges
 )
 {
     boolList sorted(bEdges.size(), false);
 
-    DynList<edge> sortedEdges;
+    DynamicList<edge> sortedEdges;
     sortedEdges.append(bEdges[0]);
     sorted[0] = true;
     direction i(0);

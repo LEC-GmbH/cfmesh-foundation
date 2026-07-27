@@ -112,7 +112,7 @@ Foam::Module::surfaceMeshGeometryModification::modifyGeometry() const
         );
 
     // copy subsets
-    DynList<label> sIds;
+    DynamicList<label> sIds;
 
     // copy facet subsets
     surf_.facetSubsetIndices(sIds);
@@ -121,7 +121,7 @@ Foam::Module::surfaceMeshGeometryModification::modifyGeometry() const
         const label newId =
             newSurf->addFacetSubset(surf_.facetSubsetName(sIds[i]));
 
-        labelLongList facetsInSubset;
+        DynamicList<label> facetsInSubset;
         surf_.facetsInSubset(sIds[i], facetsInSubset);
 
         forAll(facetsInSubset, fI)
@@ -137,7 +137,7 @@ Foam::Module::surfaceMeshGeometryModification::modifyGeometry() const
         const label newId =
             newSurf->addPointSubset(surf_.pointSubsetName(sIds[i]));
 
-        labelLongList pointsInSubset;
+        DynamicList<label> pointsInSubset;
         surf_.pointsInSubset(sIds[i], pointsInSubset);
 
         forAll(pointsInSubset, pI)
@@ -153,7 +153,7 @@ Foam::Module::surfaceMeshGeometryModification::modifyGeometry() const
         const label newId =
             newSurf->addEdgeSubset(surf_.edgeSubsetName(sIds[i]));
 
-        labelLongList edgesInSubset;
+        DynamicList<label> edgesInSubset;
         surf_.edgesInSubset(sIds[i], edgesInSubset);
 
         forAll(edgesInSubset, eI)
@@ -199,7 +199,7 @@ const
         );
 
     // copy subsets
-    DynList<label> sIds;
+    DynamicList<label> sIds;
 
     // copy facet subsets
     surf_.facetSubsetIndices(sIds);
@@ -208,7 +208,7 @@ const
         const label newId =
             newSurf->addFacetSubset(surf_.facetSubsetName(sIds[i]));
 
-        labelLongList facetsInSubset;
+        DynamicList<label> facetsInSubset;
         surf_.facetsInSubset(sIds[i], facetsInSubset);
 
         forAll(facetsInSubset, fI)
@@ -224,7 +224,7 @@ const
         const label newId =
             newSurf->addPointSubset(surf_.pointSubsetName(sIds[i]));
 
-        labelLongList pointsInSubset;
+        DynamicList<label> pointsInSubset;
         surf_.pointsInSubset(sIds[i], pointsInSubset);
 
         forAll(pointsInSubset, pI)
@@ -240,7 +240,7 @@ const
         const label newId =
             newSurf->addEdgeSubset(surf_.edgeSubsetName(sIds[i]));
 
-        labelLongList edgesInSubset;
+        DynamicList<label> edgesInSubset;
         surf_.edgesInSubset(sIds[i], edgesInSubset);
 
         forAll(edgesInSubset, eI)

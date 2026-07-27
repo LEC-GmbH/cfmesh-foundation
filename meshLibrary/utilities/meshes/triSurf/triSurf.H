@@ -47,8 +47,7 @@ SourceFiles
 #include "triSurfFeatureEdges.H"
 #include "triSurfAddressing.H"
 #include <map>
-#include "DynList.H"
-#include "labelLongList.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -79,7 +78,7 @@ class triSurf
         void readFromFMS(const fileName&);
         void writeToFMS(const fileName&) const;
 
-        inline LongList<labelledTri>& accessToFacets();
+        inline DynamicList<labelledTri>& accessToFacets();
         inline geometricSurfacePatchList& accessToPatches();
 
         void topologyCheck();
@@ -103,9 +102,9 @@ public:
         //- Construct from parts
         triSurf
         (
-            const LongList<labelledTri>& triangles,
+            const DynamicList<labelledTri>& triangles,
             const geometricSurfacePatchList& patches,
-            const edgeLongList& featureEdges_,
+            const DynamicList<edge>& featureEdges_,
             const pointField& points
         );
 

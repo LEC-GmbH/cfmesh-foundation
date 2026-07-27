@@ -43,8 +43,8 @@ SourceFiles
 #include "polyMeshGenModifier.H"
 #include "meshSurfaceEngine.H"
 #include "meshSurfacePartitioner.H"
-#include "DynList.H"
-#include "labelLongList.H"
+#include "DynamicList.H"
+#include "labelListListOps.H"
 #include "Map.H"
 #include "labelPair.H"
 #include "demandDrivenData.H"
@@ -96,10 +96,10 @@ class boundaryLayers
         boolList treatedPatch_;
 
         //- extrude patches with patch
-        List<DynList<label>> treatPatchesWithPatch_;
+        labelListList2D treatPatchesWithPatch_;
 
         //- label of a new node (helper)
-        labelLongList newLabelForVertex_;
+        DynamicList<label> newLabelForVertex_;
 
         //- map storing labels of new vertices created at node
         //- and corner vertices
@@ -182,15 +182,15 @@ class boundaryLayers
             const edge& e,
             const label pKeyI,
             const label pKeyJ,
-            FixedList<FixedList<label, 4>, 6>& cellFaces
+            faceList& cellFaces
         ) const;
 
         //- creating hex cells near corners
         inline void createNewCellFromNode
         (
             const label pointI,
-            const DynList<label, 3>& pKeys,
-            FixedList<FixedList<label, 4>, 6>& cellFaces
+            const DynamicList<label>& pKeys,
+            faceList& cellFaces
         ) const;
 
         //- create a bnd layer for a given patch

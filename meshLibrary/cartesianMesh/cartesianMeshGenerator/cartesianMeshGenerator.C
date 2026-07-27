@@ -163,7 +163,7 @@ void Foam::Module::cartesianMeshGenerator::refBoundaryLayers()
 
         refLayers.refineLayers();
 
-        labelLongList pointsInLayer;
+        DynamicList<label> pointsInLayer;
         refLayers.pointsInBndLayer(pointsInLayer);
 
         meshOptimizer mOpt(mesh_);

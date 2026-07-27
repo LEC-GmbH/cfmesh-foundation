@@ -46,11 +46,10 @@ SourceFiles
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #include "labelList.H"
-#include "labelLongList.H"
-#include "VRWGraph.H"
+#include "DynamicList.H"
+#include "labelListListOps.H"
 #include "boolList.H"
 #include "labelledPoint.H"
-#include "DynList.H"
 #include "Map.H"
 
 namespace Foam
@@ -87,26 +86,26 @@ class edgeExtractor
         mutable const triSurfacePartitioner* surfPartitionerPtr_;
 
         //- valence of surface points
-        labelLongList pointValence_;
+        DynamicList<label> pointValence_;
 
         //- patch to which a boundary point is mapped to
-        labelLongList pointPatch_;
+        DynamicList<label> pointPatch_;
 
         //- boundary face patch
         labelList facePatch_;
 
         //- number of cells attached to a boundary edge
-        labelLongList nCellsAtEdge_;
+        DynamicList<label> nCellsAtEdge_;
 
         //- edge classification
-        LongList<direction> edgeType_;
+        DynamicList<direction> edgeType_;
 
         //- patches in the vicinity of a face on the surface of the volume mesh
-        VRWGraph patchesNearFace_;
+        labelListList2D patchesNearFace_;
 
         //- feature edges in the surface mesh
         //  which are candindates for an edge at the surface of the volume mesh
-        VRWGraph featureEdgesNearEdge_;
+        labelListList2D featureEdgesNearEdge_;
 
 
     // Private member functions
@@ -135,17 +134,15 @@ class edgeExtractor
         //  as their neighbours
         void findFaceCandidates
         (
-            labelLongList& faceCandidates,
-            const labelList* facePatchPtr = nullptr,
-            const Map<label>* otherFacePatchPtr = nullptr
+            DynamicList<label>& faceCandidates,
+            const labelList* facePatchPtr = nullptr
         ) const;
 
         //- find neighbour patches over edges for a boundary face
         void findNeiPatches
         (
             const label,
-            const Map<label>&,
-            DynList<label>&
+            DynamicList<label>&
         ) const;
 
         //- calculate alignment between the boundary edge and a feature edge
@@ -171,7 +168,7 @@ class edgeExtractor
         scalar calculateDeformationMetricForFace
         (
             const label bfI,
-            const DynList<label>& neiPatches,
+            const DynamicList<label>& neiPatches,
             const label facePatch = -1
         ) const;
 
@@ -205,21 +202,21 @@ class edgeExtractor
             // Private member functions
 
                 //- find neighbour faces over edges
-                void neiFacesOverEdges(const label, DynList<label>&) const;
+                void neiFacesOverEdges(const label, DynamicList<label>&) const;
 
                 //- calculate neighbour patches over edges of a boundary face
                 void neiPatchesOverEdges
                 (
                     const label bfI,
                     const labelList& fPatches,
-                    DynList<label> &neiPatches
+                    DynamicList<label> &neiPatches
                 ) const;
 
                 //- evaluate new patch for a face based on the number of
                 //  common edges shared between faces in other patches
                 static label bestPatchTopological
                 (
-                    const DynList<label>& neiPatches,
+                    const DynamicList<label>& neiPatches,
                     const label currentPatch
                 );
 
@@ -242,7 +239,7 @@ class edgeExtractor
                 void neiPatchesOverEdges
                 (
                     const label bfI,
-                    DynList<label>& neiPatches
+                    DynamicList<label>& neiPatches
                 ) const;
 
                 //- return the patch that the face shall be moved to such that
@@ -272,7 +269,7 @@ class edgeExtractor
             // Private member functions
 
                 //- sort faces attached to a boundary point
-                void sortedFacesAtPoint(const label, DynList<label>&) const;
+                void sortedFacesAtPoint(const label, DynamicList<label>&) const;
 
 
         public:

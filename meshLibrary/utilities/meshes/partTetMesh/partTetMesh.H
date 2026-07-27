@@ -41,9 +41,8 @@ SourceFiles
 #define partTetMesh_H
 
 #include "boolList.H"
-#include "labelLongList.H"
-#include "VRWGraph.H"
-#include "DynList.H"
+#include "DynamicList.H"
+#include "labelListListOps.H"
 #include "partTet.H"
 #include "HashSet.H"
 #include "labelledPoint.H"
@@ -57,7 +56,6 @@ namespace Module
 {
 // Forward declarations
 class polyMeshGen;
-class VRWGraph;
 
 /*---------------------------------------------------------------------------*\
                          Class partTetMesh Declaration
@@ -71,25 +69,25 @@ class partTetMesh
         polyMeshGen& origMesh_;
 
         //- points in the tet mesh
-        LongList<point> points_;
+        DynamicList<point> points_;
 
         //- tetrahedra making the mesh
-        LongList<partTet> tets_;
+        DynamicList<partTet> tets_;
 
         //- label of node in the polyMeshGen
-        labelLongList nodeLabelInOrigMesh_;
+        DynamicList<label> nodeLabelInOrigMesh_;
 
         //- shall a node be used for smoothing or not
-        LongList<direction> smoothVertex_;
+        DynamicList<direction> smoothVertex_;
 
         //- addressing data
-        VRWGraph pointTets_;
+        labelListList2D pointTets_;
 
         //- internal point ordering for parallel runs
-        mutable VRWGraph* internalPointsOrderPtr_;
+        mutable labelListList2D* internalPointsOrderPtr_;
 
         //- boundary point ordering for parallel runs
-        mutable VRWGraph* boundaryPointsOrderPtr_;
+        mutable labelListList2D* boundaryPointsOrderPtr_;
 
 
     // Private member functions
@@ -113,14 +111,14 @@ public:
     // Constructors
 
         //- construct from polyMeshGen and locked points
-        partTetMesh(polyMeshGen& mesh, const labelLongList& lockedPoints);
+        partTetMesh(polyMeshGen& mesh, const DynamicList<label>& lockedPoints);
 
         //- construct from polyMeshGen, locked points and the number of layers
         //- from the boundary
         partTetMesh
         (
             polyMeshGen& mesh,
-            const labelLongList& lockedPoints,
+            const DynamicList<label>& lockedPoints,
             const direction nLayers = 2
         );
 
@@ -129,7 +127,7 @@ public:
         partTetMesh
         (
             polyMeshGen& mesh,
-            const labelLongList& lockedPoints,
+            const DynamicList<label>& lockedPoints,
             labelHashSet& badFaces,
             const direction additionalLayers = 0
         );
@@ -155,27 +153,27 @@ public:
     // Member functions
 
         //- access to points, tets and other data
-        inline const LongList<point>& points() const
+        inline const DynamicList<point>& points() const
         {
             return points_;
         }
 
-        inline const LongList<partTet>& tets() const
+        inline const DynamicList<partTet>& tets() const
         {
             return tets_;
         }
 
-        inline const VRWGraph& pointTets() const
+        inline const labelListList2D& pointTets() const
         {
             return pointTets_;
         }
 
-        inline const LongList<direction>& smoothVertex() const
+        inline const DynamicList<direction>& smoothVertex() const
         {
             return smoothVertex_;
         }
 
-        inline const labelLongList& nodeLabelInOrigMesh() const
+        inline const DynamicList<label>& nodeLabelInOrigMesh() const
         {
             return nodeLabelInOrigMesh_;
         }
@@ -187,10 +185,10 @@ public:
         //- the points in each row can be treated in parallel
         //- make sure that points added to different rows of this graph are
         //- not treated concurrently
-        const VRWGraph& internalPointOrdering() const;
+        const labelListList2D& internalPointOrdering() const;
 
         //- return vertex ordering for boundary points
-        const VRWGraph& boundaryPointOrdering() const;
+        const labelListList2D& boundaryPointOrdering() const;
 
 
     // Modifiers
@@ -200,7 +198,7 @@ public:
 
         //- move vertices to their new positions
         //- intended for SMP parallelisation
-        void updateVerticesSMP(const List<LongList<labelledPoint>>&);
+        void updateVerticesSMP(const List<DynamicList<labelledPoint>>&);
 
         //- updates the vertices of the original polyMeshGen
         void updateOrigMesh(boolList* changedFacePtr = nullptr);

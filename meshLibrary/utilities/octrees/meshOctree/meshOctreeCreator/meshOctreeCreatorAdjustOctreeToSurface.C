@@ -34,7 +34,6 @@ License
 #include "boundBox.H"
 #include "demandDrivenData.H"
 #include "objectRefinementList.H"
-#include "VRWGraph.H"
 #include "meshOctreeModifier.H"
 #include "helperFunctions.H"
 #include "HashSet.H"
@@ -50,7 +49,7 @@ License
 void Foam::Module::meshOctreeCreator::refineBoundary()
 {
     meshOctreeModifier octreeModifier(octree_);
-    const LongList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
+    const DynamicList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
 
     // refine DATA boxes to the given level
     Info<< "Refining boundary boxes to the given size" << endl;
@@ -73,7 +72,7 @@ void Foam::Module::meshOctreeCreator::refineBoundary()
             if (oc.hasContainedElements())
             {
                 const label elRowI = oc.containedElements();
-                const VRWGraph& containedTriangles =
+                const labelListList2D& containedTriangles =
                     oc.slotPtr()->containedTriangles_;
 
                 bool refine(false);
@@ -81,8 +80,8 @@ void Foam::Module::meshOctreeCreator::refineBoundary()
                 scalar maxThicknessForLevel(0.0);
                 forAllRow(containedTriangles, elRowI, tI)
                 {
-                    const label triI = containedTriangles(elRowI, tI);
-                    DynList<std::pair<direction, scalar>>& refRequests =
+                    const label triI = containedTriangles[elRowI][tI];
+                    DynamicList<std::pair<direction, scalar>>& refRequests =
                         surfRefLevel_[triI];
 
                     forAllReverse(refRequests, i)
@@ -248,7 +247,7 @@ void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
     // start refining boxes inside the objects
     const boundBox& rootBox = octree_.rootBox();
     meshOctreeModifier octreeModifier(octree_);
-    const LongList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
+    const DynamicList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
 
     bool changed;
     do
@@ -407,8 +406,8 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
     const boundBox& rootBox = octree_.rootBox();
     const vector tol = SMALL*rootBox.span();
     meshOctreeModifier octreeModifier(octree_);
-    const LongList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
-    DynList<label> leavesInBox;
+    const DynamicList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
+    DynamicList<label> leavesInBox;
 
     bool changed;
     do
@@ -588,8 +587,8 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingEdgeMeshes()
     const boundBox& rootBox = octree_.rootBox();
     const vector tol = SMALL*rootBox.span();
     meshOctreeModifier octreeModifier(octree_);
-    const LongList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
-    DynList<label> leavesInBox, intersectedLeaves;
+    const DynamicList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
+    DynamicList<label> leavesInBox, intersectedLeaves;
 
     bool changed;
     do
@@ -696,7 +695,7 @@ void Foam::Module::meshOctreeCreator::refineBoxesNearDataBoxes
 
     // ensure one to one matching with unknown boxes
     meshOctreeModifier octreeModifier(octree_);
-    const LongList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
+    const DynamicList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
 
     labelList refineBox(leaves.size(), 0);
 
@@ -799,7 +798,7 @@ void Foam::Module::meshOctreeCreator::refineBoxes
     {
         nRefined = 0;
 
-        const LongList<meshOctreeCube*>& leaves = octreeMod.leavesAccess();
+        const DynamicList<meshOctreeCube*>& leaves = octreeMod.leavesAccess();
 
         labelList refineCubes(leaves.size(), direction(0));
 

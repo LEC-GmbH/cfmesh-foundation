@@ -91,7 +91,7 @@ inline void Foam::Module::polyMeshGenPoints::removePointFromSubset
 inline void Foam::Module::polyMeshGenPoints::pointInSubsets
 (
     const label pointI,
-    DynList<label>& pointSubsets
+    DynamicList<label>& pointSubsets
 ) const
 {
     pointSubsets.clear();
@@ -108,7 +108,7 @@ inline void Foam::Module::polyMeshGenPoints::pointInSubsets
 
 inline void Foam::Module::polyMeshGenPoints::pointSubsetIndices
 (
-    DynList<label>& indices
+    DynamicList<label>& indices
 ) const
 {
     indices.clear();

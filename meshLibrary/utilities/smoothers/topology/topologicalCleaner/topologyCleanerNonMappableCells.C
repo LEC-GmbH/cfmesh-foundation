@@ -31,7 +31,6 @@ License
 #include "demandDrivenData.H"
 #include "topologicalCleaner.H"
 #include "decomposeFaces.H"
-#include "DynList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -109,7 +108,7 @@ void Foam::Module::topologicalCleaner::checkNonMappableFaces()
     {
         const face& f = faces[faceI];
 
-        DynList<label> bPos;
+        DynamicList<label> bPos;
         forAll(f, pI)
             if (boundaryVertex[f[pI]])
                 bPos.append(pI);

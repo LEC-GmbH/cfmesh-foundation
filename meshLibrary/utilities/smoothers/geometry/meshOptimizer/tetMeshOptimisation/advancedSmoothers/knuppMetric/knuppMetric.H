@@ -66,10 +66,10 @@ class knuppMetric
         point& p_;
 
         //- normals of triangles forming the outer hull
-        DynList<vector, 64> normals_;
+        DynamicList<vector> normals_;
 
         //- centres of triangles forming the outer hull
-        DynList<point, 64> centres_;
+        DynamicList<point> centres_;
 
         //- control parameter. It helps the point get inside the feasible region
         scalar beta_;

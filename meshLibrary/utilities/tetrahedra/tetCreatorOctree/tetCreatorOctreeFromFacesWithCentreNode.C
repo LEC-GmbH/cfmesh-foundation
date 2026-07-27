@@ -39,13 +39,13 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
     Info<< "Creating tets from faces with centre node" << endl;
 
     const labelList& cubeLabel = *cubeLabelPtr_;
-    const VRWGraph& nodeLabels = octreeCheck_.nodeLabels();
-    const VRWGraph& subNodeLabels = *subNodeLabelsPtr_;
-    const FRWGraph<label, 8>& pointLeaves = octreeCheck_.nodeLeaves();
+    const labelListList2D& nodeLabels = octreeCheck_.nodeLabels();
+    const labelListList2D& subNodeLabels = *subNodeLabelsPtr_;
+    const List<FixedList<label, 8>>& pointLeaves = octreeCheck_.nodeLeaves();
 
     if (!faceCentreLabelPtr_)
-        faceCentreLabelPtr_ = new VRWGraph(cubeLabel.size());
-    VRWGraph& faceCentreLabel = *faceCentreLabelPtr_;
+        faceCentreLabelPtr_ = new labelListList2D(cubeLabel.size());
+    labelListList2D& faceCentreLabel = *faceCentreLabelPtr_;
 
     // start creating tets
     forAll(pointLeaves, pointI)
@@ -55,7 +55,7 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
 
         for (label plI = 0; plI < 8; ++plI)
         {
-            pl[plI] = pointLeaves(pointI, plI);
+            pl[plI] = pointLeaves[pointI][plI];
             if (pl[plI] == -1)
             {
                 create = false;
@@ -94,17 +94,17 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
 
 
                 // allocate face centre labels
-                if (faceCentreLabel.sizeOfRow(pl[sp]) == 0)
+                if (faceCentreLabel[pl[sp]].size() == 0)
                 {
-                    faceCentreLabel.setRowSize(pl[sp], 6);
+                    faceCentreLabel[pl[sp]].setSize(6);
                     forAllRow(faceCentreLabel, pl[sp], k)
-                        faceCentreLabel(pl[sp], k) = -1;
+                        faceCentreLabel[pl[sp]][k] = -1;
                 }
-                if (faceCentreLabel.sizeOfRow(pl[ep]) == 0)
+                if (faceCentreLabel[pl[ep]].size() == 0)
                 {
-                    faceCentreLabel.setRowSize(pl[ep], 6);
+                    faceCentreLabel[pl[ep]].setSize(6);
                     forAllRow(faceCentreLabel, pl[ep], k)
-                        faceCentreLabel(pl[ep], k) = -1;
+                        faceCentreLabel[pl[ep]][k] = -1;
                 }
                 // create centre labels
                 label fs, fe;
@@ -119,14 +119,14 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
 
 
                 // create face centre point
-                if (faceCentreLabel(pl[sp], fs) == -1)
+                if (faceCentreLabel[pl[sp]][fs] == -1)
                 {
-                    faceCentreLabel(pl[sp], fs) = tetPoints_.size();
-                    faceCentreLabel(pl[ep], fe) = tetPoints_.size();
+                    faceCentreLabel[pl[sp]][fs] = tetPoints_.size();
+                    faceCentreLabel[pl[ep]][fe] = tetPoints_.size();
                     point p(vector::zero);
                     const label* fn = meshOctreeCubeCoordinates::faceNodes_[fe];
                     for (label i = 0; i < 4; ++i)
-                        p += tetPoints_[nodeLabels(pl[ep], fn[i])];
+                        p += tetPoints_[nodeLabels[pl[ep]][fn[i]]];
                     p /= 4;
                     tetPoints_.append(p);
                 }
@@ -136,9 +136,9 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
                 (
                     partTet
                     (
-                        faceCentreLabel(pl[sp], fs),
-                        subNodeLabels(pl[ep], 7 - eEdge[0]),
-                        subNodeLabels(pl[ep], 7 - eEdge[1]),
+                        faceCentreLabel[pl[sp]][fs],
+                        subNodeLabels[pl[ep]][7 - eEdge[0]],
+                        subNodeLabels[pl[ep]][7 - eEdge[1]],
                         cubeLabel[pl[ep]]
                     )
                 );
@@ -146,18 +146,18 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
                 (
                     partTet
                     (
-                        faceCentreLabel(pl[sp], fs),
-                        subNodeLabels(pl[sp], 7 - sEdge[1]),
-                        subNodeLabels(pl[sp], 7 - sEdge[0]),
+                        faceCentreLabel[pl[sp]][fs],
+                        subNodeLabels[pl[sp]][7 - sEdge[1]],
+                        subNodeLabels[pl[sp]][7 - sEdge[0]],
                         cubeLabel[pl[sp]]
                     )
                 );
 
                 FixedList<label, 4> subNodes;
-                subNodes[0] = subNodeLabels(pl[sp], 7 - sEdge[1]);
-                subNodes[1] = subNodeLabels(pl[sp], 7 - sEdge[0]);
-                subNodes[2] = subNodeLabels(pl[ep], 7 - eEdge[0]);
-                subNodes[3] = subNodeLabels(pl[ep], 7 - eEdge[1]);
+                subNodes[0] = subNodeLabels[pl[sp]][7 - sEdge[1]];
+                subNodes[1] = subNodeLabels[pl[sp]][7 - sEdge[0]];
+                subNodes[2] = subNodeLabels[pl[ep]][7 - eEdge[0]];
+                subNodes[3] = subNodeLabels[pl[ep]][7 - eEdge[1]];
 
 
                 forAll(subNodes, nodeI)
@@ -169,7 +169,7 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
                             pointI,
                             subNodes[nodeI],
                             subNodes[(nodeI + 1)%4],
-                            faceCentreLabel(pl[sEdge[0]], fs)
+                            faceCentreLabel[pl[sEdge[0]]][fs]
                         )
                     );
                 }

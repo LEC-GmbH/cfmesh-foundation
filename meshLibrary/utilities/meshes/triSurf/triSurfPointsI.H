@@ -85,7 +85,7 @@ inline void Foam::Module::triSurfPoints::removePointFromSubset
 inline void Foam::Module::triSurfPoints::pointInSubsets
 (
     const label pointI,
-    DynList<label>& pointSubsets
+    DynamicList<label>& pointSubsets
 ) const
 {
     pointSubsets.clear();
@@ -102,7 +102,7 @@ inline void Foam::Module::triSurfPoints::pointInSubsets
 
 inline void Foam::Module::triSurfPoints::pointSubsetIndices
 (
-    DynList<label>& indices
+    DynamicList<label>& indices
 ) const
 {
     indices.clear();

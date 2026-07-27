@@ -30,13 +30,13 @@ License
 
 #include "polyMeshGenModifier.H"
 #include "demandDrivenData.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::polyMeshGenModifier::removeCells
 (
-    const boolList& removeCell,
-    const bool removeProcFaces
+    const boolList& removeCell
 )
 {
     Info<< "Removing selected cells from the mesh" << endl;
@@ -78,7 +78,7 @@ void Foam::Module::polyMeshGenModifier::removeCells
 
     // remove unwanted cells
     label nCells(0);
-    labelLongList newCellLabel(cells.size(), -1);
+    DynamicList<label> newCellLabel(cells.size(), -1);
     forAll(newCellLabel, cellI)
     {
         if (!removeCell[cellI])

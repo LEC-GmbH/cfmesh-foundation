@@ -40,19 +40,19 @@ void Foam::Module::meshOctreeAddressing::checkAndFixIrregularConnections()
 {
     Info<< "Checking the surface of the selected boxes" << endl;
 
-    const labelLongList& owner = this->octreeFaceOwner();
-    const labelLongList& neighbour = this->octreeFaceNeighbour();
-    const VRWGraph& faceEdges = this->faceEdges();
-    const VRWGraph& edgeFaces = this->edgeFaces();
-    const VRWGraph& edgeLeaves = this->edgeLeaves();
-    const VRWGraph& pointFaces = this->nodeFaces();
+    const DynamicList<label>& owner = this->octreeFaceOwner();
+    const DynamicList<label>& neighbour = this->octreeFaceNeighbour();
+    const labelListList2D& faceEdges = this->faceEdges();
+    const labelListList2D& edgeFaces = this->edgeFaces();
+    const labelListList2D& edgeLeaves = this->edgeLeaves();
+    const labelListList2D& pointFaces = this->nodeFaces();
 
     List<direction>& boxType = *boxTypePtr_;
 
     boolList boundaryFace(owner.size());
 
     label nIrregular;
-    DynList<label> front;
+    DynamicList<label> front;
 
     do
     {
@@ -91,7 +91,7 @@ void Foam::Module::meshOctreeAddressing::checkAndFixIrregularConnections()
             label nBoundaryFaces(0);
             forAllRow(edgeFaces, edgeI, efI)
             {
-                const label faceI = edgeFaces(edgeI, efI);
+                const label faceI = edgeFaces[edgeI][efI];
 
                 if (boundaryFace[faceI])
                 {
@@ -104,7 +104,7 @@ void Foam::Module::meshOctreeAddressing::checkAndFixIrregularConnections()
                 ++nIrregular;
                 forAllRow(edgeLeaves, edgeI, elI)
                 {
-                    const label leafI = edgeLeaves(edgeI, elI);
+                    const label leafI = edgeLeaves[edgeI][elI];
                     boxType[leafI] = BOUNDARY;
                     changedBoxType.insert(leafI);
                 }
@@ -116,10 +116,10 @@ void Foam::Module::meshOctreeAddressing::checkAndFixIrregularConnections()
         forAll(pointFaces, pI)
         {
             // find boundary faces connected to the vertex
-            labelHashSet bndFacesAtNode(pointFaces.sizeOfRow(pI));
+            labelHashSet bndFacesAtNode(pointFaces[pI].size());
             forAllRow(pointFaces, pI, pfI)
             {
-                const label faceI = pointFaces(pI, pfI);
+                const label faceI = pointFaces[pI][pfI];
                 if (boundaryFace[faceI])
                 {
                     bndFacesAtNode.insert(faceI);
@@ -141,12 +141,12 @@ void Foam::Module::meshOctreeAddressing::checkAndFixIrregularConnections()
 
                     forAllRow(faceEdges, fLabel, feI)
                     {
-                        const label eI = faceEdges(fLabel, feI);
+                        const label eI = faceEdges[fLabel][feI];
 
                         bool found(false);
                         forAllRow(edgeFaces, eI, efI)
                         {
-                            const label fJ = edgeFaces(eI, efI);
+                            const label fJ = edgeFaces[eI][efI];
 
                             if (bndFacesAtNode.found(fJ))
                             {
@@ -174,7 +174,7 @@ void Foam::Module::meshOctreeAddressing::checkAndFixIrregularConnections()
                 // this vertex has two groups of faces connected to it
                 forAllRow(pointFaces, pI, pfI)
                 {
-                    const label faceI = pointFaces(pI, pfI);
+                    const label faceI = pointFaces[pI][pfI];
                     if (boundaryFace[faceI])
                     {
                         // set BOUNDARY flag to all boxes connected to it

@@ -30,16 +30,15 @@ License
 
 #include "polyMeshGenModifier.H"
 #include "demandDrivenData.H"
-#include "DynList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 void Foam::Module::polyMeshGenModifier::replaceBoundary
 (
     const wordList& patchNames,
-    const VRWGraph& boundaryFaces,
-    const labelLongList& faceOwners,
-    const labelLongList& facePatches
+    const DynamicList<DynamicList<label>>& boundaryFaces,
+    const DynamicList<label>& faceOwners,
+    const DynamicList<label>& facePatches
 )
 {
     const label nIntFaces = mesh_.nInternalFaces();
@@ -47,7 +46,7 @@ void Foam::Module::polyMeshGenModifier::replaceBoundary
     faceListPMG& faces = this->facesAccess();
     cellListPMG& cells = this->cellsAccess();
 
-    labelLongList newFaceLabel(faces.size(), -1);
+    DynamicList<label> newFaceLabel(faces.size(), -1);
     for (label faceI = 0; faceI < nIntFaces; ++faceI)
     {
         newFaceLabel[faceI] = faceI;
@@ -98,10 +97,10 @@ void Foam::Module::polyMeshGenModifier::replaceBoundary
         const label fLabel = newPatchStart[fPatch] + newPatchSize[fPatch]++;
 
         cells[fOwn].newElmt(nFacesInCell[fOwn]++) = fLabel;
-        faces[fLabel].setSize(boundaryFaces.sizeOfRow(faceI));
+        faces[fLabel].setSize(boundaryFaces[faceI].size());
         forAllRow(boundaryFaces, faceI, pI)
         {
-            faces[fLabel][pI] = boundaryFaces(faceI, pI);
+            faces[fLabel][pI] = boundaryFaces[faceI][pI];
         }
     }
 

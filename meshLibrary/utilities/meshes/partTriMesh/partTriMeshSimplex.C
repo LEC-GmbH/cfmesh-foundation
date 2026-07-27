@@ -43,17 +43,20 @@ Foam::Module::partTriMeshSimplex::partTriMeshSimplex
     trias_()
 {
     const pointField& points = tm.points();
-    const LongList<labelledTri>& trias = tm.triangles();
-    const VRWGraph& pt = tm.pointTriangles();
-    const LongList<direction>& pType = tm.pointType();
+    const DynamicList<labelledTri>& trias = tm.triangles();
+    const labelListList2D& pt = tm.pointTriangles();
+    const DynamicList<direction>& pType = tm.pointType();
 
-    //trias_.setSize(pt.sizeOfRow(pI));
+    pts_.reserve(32);
+    trias_.reserve(32);
+
+    //trias_.setSize(pt[pI].size());
     label counter(0);
 
-    Map<label> addr(2*pt.sizeOfRow(pI));
+    Map<label> addr(2*pt[pI].size());
     forAllRow(pt, pI, tI)
     {
-        const labelledTri& tri = trias[pt(pI, tI)];
+        const labelledTri& tri = trias[pt[pI][tI]];
         for (label i = 0; i < 3; ++i)
         {
             const label tpI = tri[i];

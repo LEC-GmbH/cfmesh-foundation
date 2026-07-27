@@ -33,7 +33,9 @@ License
 #include "polyMeshGenAddressing.H"
 #include "meshSurfaceEngine.H"
 #include "decomposeFaces.H"
-#include "labelLongList.H"
+#include "DynamicList.H"
+
+#include <omp.h>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -64,16 +66,16 @@ void Foam::Module::decomposeCells::checkFaceConnections
     {
         if (decomposeCell[cellI])
         {
-            DynList<label, 32> vrt;
-            DynList<edge, 64> edges;
-            DynList<DynList<label, 8>> faceEdges;
-            DynList<DynList<label, 2>, 64> edgeFaces;
+            DynamicList<label> vrt;
+            DynamicList<edge> edges;
+            labelListList2D faceEdges;
+            DynamicList<DynamicList<label>> edgeFaces;
 
             findAddressingForCell(cellI, vrt, edges, faceEdges, edgeFaces);
 
             forAll(faceEdges, fI)
             {
-                const DynList<label, 8>& fEdges = faceEdges[fI];
+                const DynamicList<label>& fEdges = faceEdges[fI];
 
                 labelHashSet neiFaces;
                 forAll(fEdges, feI)
@@ -107,6 +109,13 @@ void Foam::Module::decomposeCells::createPointsAndCellFaces
     const boolList& decomposeCell
 )
 {
+    if (omp_in_parallel())
+    {
+        FatalErrorInFunction
+            << "Building facesOfNewCells_ inside a parallel region."
+            << " This is not thread safe" << exit(FatalError);
+    }
+
     facesOfNewCells_.clear();
 
     forAll(decomposeCell, cI)
@@ -130,7 +139,7 @@ void Foam::Module::decomposeCells::storeBoundaryFaces
 
     forAll(bFaces, bfI)
     {
-        newBoundaryFaces_.appendList(bFaces[bfI]);
+        appendList(newBoundaryFaces_, bFaces[bfI]);
         newBoundaryPatches_.append(facePatch[bfI]);
     }
 }
@@ -142,7 +151,7 @@ void Foam::Module::decomposeCells::removeDecomposedCells
 )
 {
     polyMeshGenModifier meshModifier(mesh_);
-    meshModifier.removeCells(decomposeCell, false);
+    meshModifier.removeCells(decomposeCell);
 }
 
 
@@ -157,21 +166,21 @@ void Foam::Module::decomposeCells::addNewCells()
     Info<< "Finding bnd faces" << endl;
     const faceListPMG& faces = mesh_.faces();
     const labelList& owner = mesh_.owner();
-    const VRWGraph& pointFaces = mesh_.addressingData().pointFaces();
+    const labelListList2D& pointFaces = mesh_.addressingData().pointFaces();
 
-    labelLongList newBoundaryOwners;
+    DynamicList<label> newBoundaryOwners;
 
     forAll(newBoundaryFaces_, faceI)
     {
-        face bf(newBoundaryFaces_.sizeOfRow(faceI));
+        face bf(newBoundaryFaces_[faceI].size());
         forAllRow(newBoundaryFaces_, faceI, pI)
         {
-            bf[pI] = newBoundaryFaces_(faceI, pI);
+            bf[pI] = newBoundaryFaces_[faceI][pI];
         }
 
         forAllRow(pointFaces, bf[0], pfI)
         {
-            const label fLabel = pointFaces(bf[0], pfI);
+            const label fLabel = pointFaces[bf[0]][pfI];
             if ((mesh_.faceIsInPatch(fLabel) != -1) && (bf == faces[fLabel]))
             {
                 newBoundaryOwners.append(owner[fLabel]);

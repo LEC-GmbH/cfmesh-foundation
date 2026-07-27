@@ -41,7 +41,7 @@ Foam::Module::triSurfFeatureEdges::triSurfFeatureEdges()
 
 Foam::Module::triSurfFeatureEdges::triSurfFeatureEdges
 (
-    const edgeLongList& featureEdges
+    const DynamicList<edge>& featureEdges
 )
 :
     featureEdges_(featureEdges),

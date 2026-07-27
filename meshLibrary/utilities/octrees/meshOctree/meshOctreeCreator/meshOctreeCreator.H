@@ -41,7 +41,6 @@ SourceFiles
 #define meshOctreeCreator_H
 
 #include "boolList.H"
-#include "DynList.H"
 #include "IOdictionary.H"
 #include "meshOctreeModifier.H"
 #include "patchRefinementList.H"
@@ -115,7 +114,7 @@ private:
         direction globalRefLevel_;
 
         //- this list contains ref level for each surface triangle
-        List<DynList<std::pair<direction, scalar>>> surfRefLevel_;
+        List<DynamicList<std::pair<direction, scalar>>> surfRefLevel_;
 
         //- set the boundBox such that maxCellSize is achieved
         void setRootCubeSizeAndRefParameters();

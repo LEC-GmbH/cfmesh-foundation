@@ -56,7 +56,7 @@ Foam::label Foam::Module::meshSurfaceOptimizer::findInvertedVertices
 ) const
 {
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
-    const VRWGraph& pPoints = surfaceEngine_.pointPoints();
+    const labelListList2D& pPoints = surfaceEngine_.pointPoints();
 
     if (smoothVertex.size() != bPoints.size())
     {
@@ -93,7 +93,7 @@ Foam::label Foam::Module::meshSurfaceOptimizer::findInvertedVertices
         forAll(smoothVertex, bpI)
             if (originallySelected[bpI])
                 forAllRow(pPoints, bpI, ppI)
-                    smoothVertex[pPoints(bpI, ppI)] = true;
+                    smoothVertex[pPoints[bpI][ppI]] = true;
 
     }
 
@@ -103,17 +103,16 @@ Foam::label Foam::Module::meshSurfaceOptimizer::findInvertedVertices
 
 void Foam::Module::meshSurfaceOptimizer::smoothEdgePoints
 (
-    const labelLongList& edgePoints,
-    const labelLongList& procEdgePoints
+    const DynamicList<label>& edgePoints
 )
 {
-    List<LongList<labelledPoint>> newPositions(1);
+    List<DynamicList<labelledPoint>> newPositions(1);
     newPositions.setSize(omp_get_num_procs());
 
     // smooth edge vertices
     # pragma omp parallel num_threads(newPositions.size())
     {
-        LongList<labelledPoint>& newPos =
+        DynamicList<labelledPoint>& newPos =
             newPositions[omp_get_thread_num()];
 
         # pragma omp for schedule(dynamic, 40)
@@ -131,7 +130,7 @@ void Foam::Module::meshSurfaceOptimizer::smoothEdgePoints
     meshSurfaceEngineModifier surfaceModifier(surfaceEngine_);
     forAll(newPositions, threadI)
     {
-        const LongList<labelledPoint>& newPos = newPositions[threadI];
+        const DynamicList<labelledPoint>& newPos = newPositions[threadI];
 
         forAll(newPos, i)
             surfaceModifier.moveBoundaryVertexNoUpdate
@@ -147,17 +146,16 @@ void Foam::Module::meshSurfaceOptimizer::smoothEdgePoints
 
 void Foam::Module::meshSurfaceOptimizer::smoothLaplacianFC
 (
-    const labelLongList& selectedPoints,
-    const labelLongList& selectedProcPoints,
+    const DynamicList<label>& selectedPoints,
     const bool transform
 )
 {
-    List<LongList<labelledPoint>> newPositions(1);
+    List<DynamicList<labelledPoint>> newPositions(1);
     newPositions.setSize(omp_get_num_procs());
 
     # pragma omp parallel num_threads(newPositions.size())
     {
-        LongList<labelledPoint>& newPos =
+        DynamicList<labelledPoint>& newPos =
             newPositions[omp_get_thread_num()];
 
         # pragma omp for schedule(dynamic, 40)
@@ -181,7 +179,7 @@ void Foam::Module::meshSurfaceOptimizer::smoothLaplacianFC
     {
         const label threadI = omp_get_thread_num();
 
-        const LongList<labelledPoint>& newPos = newPositions[threadI];
+        const DynamicList<labelledPoint>& newPos = newPositions[threadI];
 
         forAll(newPos, i)
             surfaceModifier.moveBoundaryVertexNoUpdate
@@ -197,8 +195,7 @@ void Foam::Module::meshSurfaceOptimizer::smoothLaplacianFC
 
 void Foam::Module::meshSurfaceOptimizer::smoothSurfaceOptimizer
 (
-    const labelLongList& selectedPoints,
-    const labelLongList& selectedProcPoints
+    const DynamicList<label>& selectedPoints
 )
 {
     // create partTriMesh is it is not yet present
@@ -234,7 +231,7 @@ void Foam::Module::meshSurfaceOptimizer::smoothSurfaceOptimizer
 
 bool Foam::Module::meshSurfaceOptimizer::untangleSurface
 (
-    const labelLongList& selectedBoundaryPoints,
+    const DynamicList<label>& selectedBoundaryPoints,
     const label nAdditionalLayers
 )
 {
@@ -271,8 +268,8 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
     label nInvertedTria;
     label nGlobalIter(0);
 
-    labelLongList procBndPoints, movedPoints;
-    labelLongList procEdgePoints, movedEdgePoints;
+    DynamicList<label> movedPoints;
+    DynamicList<label> movedEdgePoints;
 
     label minNumInverted(bPoints.size());
     FIFOStack<label> nInvertedHistory;
@@ -312,7 +309,7 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
                 throw std::logic_error
                 (
                     "bool meshSurfaceOptimizer::untangleSurface"
-                    "(const labelLongList&, const label)"
+                    "(const DynamicList<label>&, const label)"
                     "Cannot untangle mesh!!"
                 );
             }
@@ -355,9 +352,7 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
             // find points which will be handled by the smoothers
             changed = true;
 
-            procBndPoints.clear();
             movedPoints.clear();
-            procEdgePoints.clear();
             movedEdgePoints.clear();
 
             forAll(bPoints, bpI)
@@ -376,17 +371,17 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
             }
 
             // smooth edge vertices
-            smoothEdgePoints(movedEdgePoints, procEdgePoints);
+            smoothEdgePoints(movedEdgePoints);
             if (remapVertex && mapperPtr)
                 mapperPtr->mapEdgeNodes(movedEdgePoints);
             surfaceModifier.updateGeometry(movedEdgePoints);
 
             // use laplacian smoothing
-            smoothLaplacianFC(movedPoints, procBndPoints);
+            smoothLaplacianFC(movedPoints);
             surfaceModifier.updateGeometry(movedPoints);
 
             // use surface optimizer
-            smoothSurfaceOptimizer(movedPoints, procBndPoints);
+            smoothSurfaceOptimizer(movedPoints);
 
             if (remapVertex && mapperPtr)
                 mapperPtr->mapVerticesOntoSurface(movedPoints);
@@ -411,14 +406,13 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
             Info<< "Smoothing remaining inverted vertices " << endl;
 
             movedPoints.clear();
-            procBndPoints.clear();
             forAll(smoothVertex, bpI)
                 if (smoothVertex[bpI])
                 {
                     movedPoints.append(bpI);
                 }
 
-            smoothLaplacianFC(movedPoints, procBndPoints, false);
+            smoothLaplacianFC(movedPoints, false);
 
             if (remapVertex && mapperPtr)
                 mapperPtr->mapVerticesOntoSurface(movedPoints);
@@ -462,7 +456,8 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
     const label nAdditionalLayers
 )
 {
-    labelLongList selectedPts(surfaceEngine_.boundaryPoints().size());
+    DynamicList<label> selectedPts;
+    selectedPts.setSize(surfaceEngine_.boundaryPoints().size());
     forAll(selectedPts, i)
         selectedPts[i] = i;
 
@@ -490,7 +485,7 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface
     if (octreePtr_)
         mapperPtr = new meshSurfaceMapper(*partitionerPtr_, *octreePtr_);
 
-    labelLongList procBndPoints, edgePoints, partitionPoints, procPoints;
+    DynamicList<label> edgePoints, partitionPoints;
     forAll(bPoints, bpI)
     {
         if (vertexType_[bpI] & LOCKED)
@@ -514,7 +509,7 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface
 
         meshSurfaceEngineModifier bMod(surfaceEngine_);
 
-        smoothEdgePoints(edgePoints, procBndPoints);
+        smoothEdgePoints(edgePoints);
 
         // project vertices back onto the boundary
         if (mapperPtr)
@@ -532,9 +527,9 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface
     Info<< "Optimizing surface vertices. Iteration:";
     for (label i = 0; i < nIterations; ++i)
     {
-        smoothLaplacianFC(partitionPoints, procPoints, true);
+        smoothLaplacianFC(partitionPoints, true);
 
-        smoothSurfaceOptimizer(partitionPoints, procPoints);
+        smoothSurfaceOptimizer(partitionPoints);
 
         Info<< "." << flush;
     }
@@ -568,7 +563,7 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface2D
     surfaceEngine_.boundaryFacePatches();
     surfaceEngine_.pointNormals();
 
-    labelLongList procBndPoints, movedPoints, activeEdges, updatePoints;
+    DynamicList<label> movedPoints, activeEdges, updatePoints;
     forAll(edges, beI)
     {
         const edge& e = edges[beI];
@@ -603,7 +598,7 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface2D
     {
         Info<< "." << flush;
 
-        smoothEdgePoints(movedPoints, procBndPoints);
+        smoothEdgePoints(movedPoints);
 
         // move points with maximum z coordinate
         mesh2DEngine.correctPoints();
@@ -617,7 +612,6 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface2D
     Info<< endl;
 
     // optimize Pts of surface vertices which are not on surface edges
-    procBndPoints.clear();
     movedPoints.clear();
     forAll(bPoints, bpI)
         if (zMinPoint[bPoints[bpI]] && (vertexType_[bpI] & PARTITION))
@@ -629,7 +623,7 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface2D
     {
         Info<< "." << flush;
 
-        smoothSurfaceOptimizer(movedPoints, procBndPoints);
+        smoothSurfaceOptimizer(movedPoints);
 
         // move the points which are not at minimum z coordinate
         mesh2DEngine.correctPoints();
@@ -648,7 +642,7 @@ void Foam::Module::meshSurfaceOptimizer::untangleSurface2D()
 {
     const polyMeshGen& mesh = surfaceEngine_.mesh();
     const faceListPMG& faces = mesh.faces();
-    const VRWGraph& pointFaces = mesh.addressingData().pointFaces();
+    const labelListList2D& pointFaces = mesh.addressingData().pointFaces();
 
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
     const labelList& bp = surfaceEngine_.bp();
@@ -702,7 +696,7 @@ void Foam::Module::meshSurfaceOptimizer::untangleSurface2D()
                     activeBoundaryPoint[bp[f[pI]]] = true;
 
                     forAllRow(pointFaces, f[pI], pfI)
-                        changedFace[pointFaces(f[pI], pfI)] = true;
+                        changedFace[pointFaces[f[pI]][pfI]] = true;
                 }
             }
         }
@@ -710,7 +704,7 @@ void Foam::Module::meshSurfaceOptimizer::untangleSurface2D()
         // apply smoothing to the activated points
         meshSurfaceEngineModifier bMod(surfaceEngine_);
 
-        labelLongList movedPts, procBndPts, edgePts, procEdgePts;
+        DynamicList<label> movedPts, edgePts;
         forAll(bPoints, bpI)
         {
             if (!activeBoundaryPoint[bpI])
@@ -728,11 +722,11 @@ void Foam::Module::meshSurfaceOptimizer::untangleSurface2D()
 
         for (label i = 0; i < 5; ++i)
         {
-            smoothEdgePoints(edgePts, procEdgePts);
+            smoothEdgePoints(edgePts);
 
             bMod.updateGeometry(edgePts);
 
-            smoothSurfaceOptimizer(movedPts, procBndPts);
+            smoothSurfaceOptimizer(movedPts);
 
             bMod.updateGeometry(movedPts);
         }

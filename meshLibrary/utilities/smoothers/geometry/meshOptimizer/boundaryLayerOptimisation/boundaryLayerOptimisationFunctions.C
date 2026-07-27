@@ -210,8 +210,8 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
 {
     const meshSurfaceEngine& mse = meshSurface();
     const edgeList& edges = mse.edges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
-    const VRWGraph& bpEdges = mse.boundaryPointEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
+    const labelListList2D& bpEdges = mse.boundaryPointEdges();
     const labelList& faceOwner = mse.faceOwners();
     const faceList::subList& bFaces = mse.boundaryFaces();
     const labelList& bp = mse.bp();
@@ -248,11 +248,11 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
     forAll(edgeFaces, edgeI)
     {
         // avoid edges at inter-processor boundaries
-        if (edgeFaces.sizeOfRow(edgeI) != 2)
+        if (edgeFaces[edgeI].size() != 2)
             continue;
 
-        const label f0 = edgeFaces(edgeI, 0);
-        const label f1 = edgeFaces(edgeI, 1);
+        const label f0 = edgeFaces[edgeI][0];
+        const label f1 = edgeFaces[edgeI][1];
 
         // both faces have to be part of the same cell
         if (faceOwner[f0] != faceOwner[f1])
@@ -289,9 +289,9 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
         // check if it is a boundary edge
         forAllRow(bpEdges, bpI, peI)
         {
-            const label beI = bpEdges(bpI, peI);
+            const label beI = bpEdges[bpI][peI];
 
-            const edge& be = edges[bpEdges(bpI, peI)];
+            const edge& be = edges[bpEdges[bpI][peI]];
 
             if (be == e)
             {
@@ -324,7 +324,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
     const cellListPMG& cells = mesh_.cells();
     const faceList& faces = mesh_.faces();
 
-    VRWGraph bpFacesHelper(bpEdges.size());
+    labelListList2D bpFacesHelper(bpEdges.size());
     forAll(faceOwner, bfI)
     {
         const label cellI = faceOwner[bfI];
@@ -341,7 +341,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
                 if (bpI < 0)
                     continue;
 
-                bpFacesHelper.appendUniq(bpI, c[fI]);
+                appendUniq(bpFacesHelper[bpI], c[fI]);
             }
         }
     }
@@ -351,12 +351,12 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
         const edge& e = hairEdges_[hairEdgeI];
         const label bpI = bp[e.start()];
 
-        DynList<label> neiHairEdges;
+        DynamicList<label> neiHairEdges;
 
         // find mesh faces comprising of the current hair edge
         forAllRow(bpFacesHelper, bpI, pfI)
         {
-            const face& f = faces[bpFacesHelper(bpI, pfI)];
+            const face& f = faces[bpFacesHelper[bpI][pfI]];
 
             // face must be a quad
             if (f.size() != 4)
@@ -386,7 +386,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
                     {
                         forAllRow(hairEdgesAtBndPoint_, bpJ, pI)
                         {
-                            const label heJ = hairEdgesAtBndPoint_(bpJ, pI);
+                            const label heJ = hairEdgesAtBndPoint_[bpJ][pI];
                             if (hairEdges_[heJ] == fe)
                                 neiHairEdges.append(heJ);
                         }
@@ -395,7 +395,7 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
             }
         }
 
-        hairEdgesNearHairEdge_.setRow(hairEdgeI, neiHairEdges);
+        setRow(hairEdgesNearHairEdge_, hairEdgeI, neiHairEdges);
     }
 
 }
@@ -452,7 +452,7 @@ void Foam::Module::boundaryLayerOptimisation::optimiseLayer()
     meshSurfaceOptimizer surfOpt(meshSurface());
 
     // lock exitting faces and feature edges
-    labelLongList lockedFaces;
+    DynamicList<label> lockedFaces;
     forAll(isExitFace_, bfI)
         if (isExitFace_[bfI])
             lockedFaces.append(bfI);

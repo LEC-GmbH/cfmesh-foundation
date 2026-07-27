@@ -42,7 +42,6 @@ SourceFiles
 #define triSurfaceDetectFeatureEdges_H
 
 #include "triSurf.H"
-#include "VRWGraph.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

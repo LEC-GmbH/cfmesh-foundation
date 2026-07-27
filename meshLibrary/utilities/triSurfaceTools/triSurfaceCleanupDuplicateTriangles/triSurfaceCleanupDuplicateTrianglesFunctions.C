@@ -36,9 +36,9 @@ License
 void Foam::Module::triSurfaceCleanupDuplicateTriangles::
 checkDuplicateTriangles()
 {
-    labelLongList newTriangleLabel(surf_.size(), -1);
+    DynamicList<label> newTriangleLabel(surf_.size(), -1);
 
-    const VRWGraph& pointTriangles = surf_.pointFacets();
+    const labelListList2D& pointTriangles = surf_.pointFacets();
 
     // check if there exist duplicate triangles
     label counter(0);
@@ -55,7 +55,7 @@ checkDuplicateTriangles()
 
         forAll(pointTriangles[tri[0]], ptI)
         {
-            const label triJ = pointTriangles(tri[0], ptI);
+            const label triJ = pointTriangles[tri[0]][ptI];
 
             if (triJ <= triI)
                 continue;
@@ -78,7 +78,8 @@ checkDuplicateTriangles()
     Info<< "New number of triangles " << counter << endl;
 
     // create new list of triangles and store it in the surface mesh
-    LongList<labelledTri> newTriangles(counter);
+    DynamicList<labelledTri> newTriangles;
+    newTriangles.setSize(counter);
 
     forAll(newTriangleLabel, triI)
     {

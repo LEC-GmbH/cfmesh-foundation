@@ -40,8 +40,7 @@ SourceFiles
 #ifndef meshOctreeCube_H
 #define meshOctreeCube_H
 
-#include "DynList.H"
-#include "LongList.H"
+#include "DynamicList.H"
 #include "boolList.H"
 #include "meshOctreeCubeBasic.H"
 
@@ -54,7 +53,6 @@ class Ostream;
 namespace Module
 {
 class triSurf;
-class VRWGraph;
 class meshOctreeCube;
 class meshOctreeSlot;
 Ostream& operator<<(Ostream&, const meshOctreeCube&);
@@ -145,6 +143,13 @@ public:
 
     // Member Functions
 
+        //- clone this cube (needed for PtrList<meshOctreeCube>::operator=,
+        //- itself only required because meshOctreeSlot sits inside a
+        //- plain List<meshOctreeSlot> that must stay copy-assignable, even
+        //- though the copy path is never exercised at runtime - cubes_
+        //- grows once, from empty, per slot)
+        inline autoPtr<meshOctreeCube> clone() const;
+
         //- refine cube in two directions, it is used for generating quadtrees
         void refineCube2D
         (
@@ -158,27 +163,6 @@ public:
         (
             const triSurf&,
             const boundBox&,
-            meshOctreeSlot* slotPtr = nullptr
-        );
-
-        //- create missing child cubes and refine them until the required
-        //- cube is reached (this function is used for parallel octree creation)
-        void refineMissingCube
-        (
-            const triSurf&,
-            const boundBox&,
-            const label scI,
-            meshOctreeSlot* slotPtr = nullptr
-        );
-
-        //- create missing child cubes and refine them until the required
-        //- cube is reached (this function is used for parallel octree creation)
-        //- contained elements and edges are provided as argument
-        void refineMissingCube
-        (
-            const label scI,
-            const label elementsRowI = -1,
-            const label edgesRowI = -1,
             meshOctreeSlot* slotPtr = nullptr
         );
 
@@ -196,14 +180,6 @@ public:
 
         //- return the pointers to the sons
         FixedList<meshOctreeCube*, 8> subCubes() const;
-
-        //- check if this box has some contained triangles
-        bool hasContainedTriangles
-        (
-            const triSurf&,
-            const boundBox&,
-            const VRWGraph& containedElements
-        ) const;
 
         //- return true if the box contains some triangles
         inline bool hasContainedElements() const;
@@ -227,7 +203,7 @@ public:
         (
             const boundBox& rootBox,
             const boundBox& searchingBox,
-            DynList<const meshOctreeCube*, 256>&
+            DynamicList<const meshOctreeCube*>&
         ) const;
 
         //- find leaves within a sphere
@@ -236,23 +212,13 @@ public:
             const boundBox& rootBox,
             const point&,
             const scalar,
-            DynList<label>&
-        ) const;
-
-        //- mark leaves within a sphere
-        void markLeavesInSphere
-        (
-            const boundBox& rootBox,
-            const point&,
-            const scalar,
-            labelList&,
-            bool&
+            DynamicList<label>&
         ) const;
 
         //- find leaves for a given cube
         void findLeaves
         (
-            LongList<meshOctreeCube*>& leaves
+            DynamicList<meshOctreeCube*>& leaves
         ) const;
 
         //- count number of originating from this cube

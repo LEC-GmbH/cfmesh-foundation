@@ -30,6 +30,7 @@ License
 
 #include "polyMeshGenModifier.H"
 #include "demandDrivenData.H"
+#include "DynamicList.H"
 
 #include <omp.h>
 
@@ -48,7 +49,7 @@ void Foam::Module::polyMeshGenModifier::reorderBoundaryFaces()
     // count internal and boundary faces
     const label numBFaces = faces.size() - nInternalFaces;
 
-    labelLongList newFaceLabel(faces.size(), -1);
+    DynamicList<label> newFaceLabel(faces.size(), -1);
 
     // find faces which should be repositioned
     label nReplaced(0);
@@ -66,7 +67,7 @@ void Foam::Module::polyMeshGenModifier::reorderBoundaryFaces()
         label& nItc = nInternalToChangeThread[threadI];
         label& nBtc = nBoundaryToChangeThread[threadI];
 
-        labelLongList internalToChangeLocal, boundaryToChangeLocal;
+        DynamicList<label> internalToChangeLocal, boundaryToChangeLocal;
 
         // find the boundary faces within the range of internal faces
         # pragma omp for schedule(static)

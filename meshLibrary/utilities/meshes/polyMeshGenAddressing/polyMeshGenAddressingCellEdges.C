@@ -29,8 +29,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "polyMeshGenAddressing.H"
-#include "DynList.H"
-#include "VRWGraphSMPModifier.H"
 
 #include <omp.h>
 
@@ -47,10 +45,10 @@ void Foam::Module::polyMeshGenAddressing::calcCellEdges() const
     else
     {
         const cellListPMG& cells = mesh_.cells();
-        const VRWGraph& fe = faceEdges();
+        const labelListList2D& fe = faceEdges();
 
-        cePtr_ = new VRWGraph();
-        VRWGraph& cellEdgeAddr = *cePtr_;
+        cePtr_ = new labelListList2D();
+        labelListList2D& cellEdgeAddr = *cePtr_;
 
         labelList nEdges(cells.size());
 
@@ -69,7 +67,7 @@ void Foam::Module::polyMeshGenAddressing::calcCellEdges() const
             {
                 const cell& c = cells[cellI];
 
-                DynList<label, 32> cEdges;
+                DynamicList<label> cEdges; cEdges.reserve(32);
 
                 forAll(c, fI)
                 {
@@ -77,7 +75,7 @@ void Foam::Module::polyMeshGenAddressing::calcCellEdges() const
 
                     forAllRow(fe, faceI, eI)
                     {
-                        cEdges.appendUniq(fe(faceI, eI));
+                        appendUniq(cEdges, fe[faceI][eI]);
                     }
                 }
 
@@ -87,7 +85,7 @@ void Foam::Module::polyMeshGenAddressing::calcCellEdges() const
             # pragma omp barrier
 
             # pragma omp master
-            VRWGraphSMPModifier(cellEdgeAddr).setSizeAndRowSize(nEdges);
+            setSizeAndRowSize(cellEdgeAddr, nEdges);
 
             # pragma omp barrier
 
@@ -96,7 +94,7 @@ void Foam::Module::polyMeshGenAddressing::calcCellEdges() const
             {
                 const cell& c = cells[cellI];
 
-                DynList<label, 32> cEdges;
+                DynamicList<label> cEdges; cEdges.reserve(32);
 
                 forAll(c, fI)
                 {
@@ -104,11 +102,11 @@ void Foam::Module::polyMeshGenAddressing::calcCellEdges() const
 
                     forAllRow(fe, faceI, eI)
                     {
-                        cEdges.appendUniq(fe(faceI, eI));
+                        appendUniq(cEdges, fe[faceI][eI]);
                     }
                 }
 
-                cellEdgeAddr.setRow(cellI, cEdges);
+                setRow(cellEdgeAddr, cellI, cEdges);
             }
         }
     }
@@ -117,7 +115,7 @@ void Foam::Module::polyMeshGenAddressing::calcCellEdges() const
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-const Foam::Module::VRWGraph&
+const Foam::Module::labelListList2D&
 Foam::Module::polyMeshGenAddressing::cellEdges() const
 {
     if (!cePtr_)

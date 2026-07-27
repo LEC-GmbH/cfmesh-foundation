@@ -31,6 +31,7 @@ License
 #include "cartesianMeshExtractor.H"
 #include "demandDrivenData.H"
 #include "meshOctree.H"
+#include "DynamicList.H"
 
 #include "meshSurfaceEngine.H"
 #include "helperFunctions.H"
@@ -71,9 +72,9 @@ void Foam::Module::cartesianMeshExtractor::createPolyMesh()
     List<direction> nFacesInCell(nCells, direction(0));
     label nFaces(0);
 
-    const VRWGraph& octreeFaces = octreeCheck_.octreeFaces();
-    const labelLongList& owner = octreeCheck_.octreeFaceOwner();
-    const labelLongList& neighbour = octreeCheck_.octreeFaceNeighbour();
+    const labelListList2D& octreeFaces = octreeCheck_.octreeFaces();
+    const DynamicList<label>& owner = octreeCheck_.octreeFaceOwner();
+    const DynamicList<label>& neighbour = octreeCheck_.octreeFaceNeighbour();
 
     forAll(octreeFaces, faceI)
     {
@@ -123,9 +124,9 @@ void Foam::Module::cartesianMeshExtractor::createPolyMesh()
         if ((ownLabel != -1) && (neiLabel != -1))
         {
             // internal face
-            faces[nFaces].setSize(octreeFaces.sizeOfRow(faceI));
+            faces[nFaces].setSize(octreeFaces[faceI].size());
             forAllRow(octreeFaces, faceI, pI)
-                faces[nFaces][pI] = octreeFaces(faceI, pI);
+                faces[nFaces][pI] = octreeFaces[faceI][pI];
 
             cells[ownLabel][nFacesInCell[ownLabel]++] = nFaces;
             cells[neiLabel][nFacesInCell[neiLabel]++] = nFaces;
@@ -134,9 +135,9 @@ void Foam::Module::cartesianMeshExtractor::createPolyMesh()
         else if (ownLabel != -1)
         {
             // boundary face
-            faces[nFaces].setSize(octreeFaces.sizeOfRow(faceI));
+            faces[nFaces].setSize(octreeFaces[faceI].size());
             forAllRow(octreeFaces, faceI, pI)
-                faces[nFaces][pI] = octreeFaces(faceI, pI);
+                faces[nFaces][pI] = octreeFaces[faceI][pI];
 
             cells[ownLabel][nFacesInCell[ownLabel]++] = nFaces;
             ++nFaces;
@@ -144,11 +145,11 @@ void Foam::Module::cartesianMeshExtractor::createPolyMesh()
         else if (neiLabel != -1)
         {
             // boundary face
-            faces[nFaces].setSize(octreeFaces.sizeOfRow(faceI));
-            faces[nFaces][0] = octreeFaces(faceI, 0);
-            for (label pI = octreeFaces.sizeOfRow(faceI)-1; pI > 0; --pI)
-                faces[nFaces][octreeFaces.sizeOfRow(faceI)-pI] =
-                    octreeFaces(faceI, pI);
+            faces[nFaces].setSize(octreeFaces[faceI].size());
+            faces[nFaces][0] = octreeFaces[faceI][0];
+            for (label pI = octreeFaces[faceI].size()-1; pI > 0; --pI)
+                faces[nFaces][octreeFaces[faceI].size()-pI] =
+                    octreeFaces[faceI][pI];
 
             cells[neiLabel][nFacesInCell[neiLabel]++] = nFaces;
             ++nFaces;
@@ -176,14 +177,14 @@ void Foam::Module::cartesianMeshExtractor::createPolyMesh()
         patchNames[1] = "unusedFacesBottom";
         patchNames[2] = "unusedFacesTop";
 
-        VRWGraph boundaryFaces;
-        labelLongList newFaceOwner;
-        labelLongList newFacePatch;
+        DynamicList<DynamicList<label>> boundaryFaces;
+        DynamicList<label> newFaceOwner;
+        DynamicList<label> newFacePatch;
 
         forAll(fNormals, bfI)
         {
             // store the face and its owner
-            boundaryFaces.appendList(bFaces[bfI]);
+            appendList(boundaryFaces, bFaces[bfI]);
             newFaceOwner.append(fOwner[bfI]);
 
             const vector& fNormal = fNormals[bfI];

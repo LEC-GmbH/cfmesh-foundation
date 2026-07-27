@@ -32,9 +32,11 @@ License
 #include "meshSurfaceEngine.H"
 #include "helperFunctions.H"
 #include "demandDrivenData.H"
-#include "VRWGraphList.H"
+#include "DynamicList.H"
 
 #include <map>
+
+#include <omp.h>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -43,22 +45,29 @@ void Foam::Module::boundaryLayers::createNewFacesAndCells
     const boolList& treatPatches
 )
 {
+    if (omp_in_parallel())
+    {
+        FatalErrorInFunction
+            << "Building cellsToAdd inside a parallel region."
+            << " This is not thread safe" << exit(FatalError);
+    }
+
     Info<< "Starting creating layer cells" << endl;
 
     const meshSurfaceEngine& mse = surfaceEngine();
     const faceList::subList& bFaces = mse.boundaryFaces();
-    const VRWGraph& faceEdges = mse.faceEdges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
+    const labelListList2D& faceEdges = mse.faceEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
     const labelList& boundaryFacePatches = mse.boundaryFacePatches();
     const labelList& faceOwners = mse.faceOwners();
 
     // create lists for new boundary faces
-    VRWGraph newBoundaryFaces;
-    labelLongList newBoundaryOwners;
-    labelLongList newBoundaryPatches;
+    DynamicList<DynamicList<label>> newBoundaryFaces;
+    DynamicList<label> newBoundaryOwners;
+    DynamicList<label> newBoundaryPatches;
 
     // create storage for new cells
-    VRWGraphList cellsToAdd;
+    DynamicList<faceList> cellsToAdd;
 
     // create layer cells and store boundary faces
     const label nOldCells = mesh_.cells().size();
@@ -81,7 +90,7 @@ void Foam::Module::boundaryLayers::createNewFacesAndCells
                 newF[pI] = newLabelForVertex_[f[pI]];
             cellFaces[fI++] = newF;
 
-            newBoundaryFaces.appendList(newF);
+            appendList(newBoundaryFaces,newF);
             newBoundaryOwners.append(cellsToAdd.size() + nOldCells);
             newBoundaryPatches.append(boundaryFacePatches[bfI]);
 
@@ -98,29 +107,29 @@ void Foam::Module::boundaryLayers::createNewFacesAndCells
 
                 // check if the face is at the boundary
                 // of the treated partitions
-                const label edgeI = faceEdges(bfI, pI);
-                if (edgeFaces.sizeOfRow(edgeI) == 2)
+                const label edgeI = faceEdges[bfI][pI];
+                if (edgeFaces[edgeI].size() == 2)
                 {
-                    label neiFace = edgeFaces(edgeI, 0);
+                    label neiFace = edgeFaces[edgeI][0];
                     if (neiFace == bfI)
                     {
-                        neiFace = edgeFaces(edgeI, 1);
+                        neiFace = edgeFaces[edgeI][1];
                     }
 
                     if (!treatPatches[boundaryFacePatches[neiFace]])
                     {
-                        newBoundaryFaces.appendList(newF);
+                        appendList(newBoundaryFaces,newF);
                         newBoundaryOwners.append(cellsToAdd.size() + nOldCells);
                         newBoundaryPatches.append(boundaryFacePatches[neiFace]);
                     }
                 }
             }
 
-            cellsToAdd.appendGraph(cellFaces);
+            cellsToAdd.append(cellFaces);
         }
         else
         {
-            newBoundaryFaces.appendList(bFaces[bfI]);
+            appendList(newBoundaryFaces,bFaces[bfI]);
             newBoundaryOwners.append(faceOwners[bfI]);
             newBoundaryPatches.append(boundaryFacePatches[bfI]);
         }

@@ -84,7 +84,7 @@ void Foam::Module::symmetryPlaneOptimisation::detectSymmetryPlanes()
 
 bool Foam::Module::symmetryPlaneOptimisation::pointInPlanes
 (
-    VRWGraph& pointInPlanes
+    labelListList2D& pointInPlanes
 ) const
 {
     const PtrList<boundaryPatch>& boundaries = mesh_.boundaries();
@@ -123,7 +123,7 @@ bool Foam::Module::symmetryPlaneOptimisation::pointInPlanes
                             foundProblematic = true;
                     }
 
-                    pointInPlanes.appendUniq(f[pI], patchI);
+                    appendUniq(pointInPlanes[f[pI]], patchI);
                 }
             }
         }
@@ -152,7 +152,7 @@ void Foam::Module::symmetryPlaneOptimisation::optimizeSymmetryPlanes()
 {
     pointFieldPMG& points = mesh_.points();
 
-    VRWGraph pointInPlane;
+    labelListList2D pointInPlane;
     if (pointInPlanes(pointInPlane))
     {
         Warning
@@ -167,7 +167,7 @@ void Foam::Module::symmetryPlaneOptimisation::optimizeSymmetryPlanes()
 
     forAll(pointInPlane, pointI)
     {
-        const label nPlanes = pointInPlane.sizeOfRow(pointI);
+        const label nPlanes = pointInPlane[pointI].size();
 
         if (nPlanes > 3)
         {
@@ -184,7 +184,7 @@ void Foam::Module::symmetryPlaneOptimisation::optimizeSymmetryPlanes()
         {
             // point is in a plane
             std::map<label, plane>::const_iterator it =
-                symmetryPlanes_.find(pointInPlane(pointI, 0));
+                symmetryPlanes_.find(pointInPlane[pointI][0]);
 
             p = it->second.nearestPoint(p);
         }
@@ -192,9 +192,9 @@ void Foam::Module::symmetryPlaneOptimisation::optimizeSymmetryPlanes()
         {
             // point is at the edge between two planes
             const plane& pl0 =
-                symmetryPlanes_.find(pointInPlane(pointI, 0))->second;
+                symmetryPlanes_.find(pointInPlane[pointI][0])->second;
             const plane& pl1 =
-                symmetryPlanes_.find(pointInPlane(pointI, 1))->second;
+                symmetryPlanes_.find(pointInPlane[pointI][1])->second;
 
             const plane::ray il = pl0.planeIntersect(pl1);
 
@@ -209,11 +209,11 @@ void Foam::Module::symmetryPlaneOptimisation::optimizeSymmetryPlanes()
         {
             // points is a corner between three planes
             const plane& pl0 =
-                symmetryPlanes_.find(pointInPlane(pointI, 0))->second;
+                symmetryPlanes_.find(pointInPlane[pointI][0])->second;
             const plane& pl1 =
-                symmetryPlanes_.find(pointInPlane(pointI, 1))->second;
+                symmetryPlanes_.find(pointInPlane[pointI][1])->second;
             const plane& pl2 =
-                symmetryPlanes_.find(pointInPlane(pointI, 2))->second;
+                symmetryPlanes_.find(pointInPlane[pointI][2])->second;
 
             p = pl0.planePlaneIntersect(pl1, pl2);
         }

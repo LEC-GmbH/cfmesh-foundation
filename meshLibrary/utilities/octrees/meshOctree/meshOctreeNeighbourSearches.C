@@ -87,7 +87,7 @@ void Foam::Module::meshOctree::findLeavesInSphere
 (
     const point& c,
     const scalar r,
-    DynList<label>& containedLeaves
+    DynamicList<label>& containedLeaves
 ) const
 {
     containedLeaves.clear();
@@ -155,7 +155,7 @@ void Foam::Module::meshOctree::findNeighboursOverEdge
 (
     const meshOctreeCubeCoordinates& cc,
     const label eI,
-    DynList<label>& neighbourLeaves
+    DynamicList<label>& neighbourLeaves
 ) const
 {
     if (isQuadtree_ && (eI < 8))
@@ -221,7 +221,7 @@ void Foam::Module::meshOctree::findNeighboursInDirection
 (
     const meshOctreeCubeCoordinates& cc,
     const label dir,
-    DynList<label>& neighbourLeaves
+    DynamicList<label>& neighbourLeaves
 ) const
 {
     if (isQuadtree_ && dir >= 4)
@@ -319,7 +319,7 @@ void Foam::Module::meshOctree::findNeighboursInDirection
 void Foam::Module::meshOctree::findNeighboursForLeaf
 (
     const meshOctreeCubeCoordinates& cc,
-    DynList<label>& neighbourLeaves
+    DynamicList<label>& neighbourLeaves
 ) const
 {
     neighbourLeaves.clear();
@@ -335,7 +335,7 @@ void Foam::Module::meshOctree::findNeighboursForLeaf
 void Foam::Module::meshOctree::findAllLeafNeighbours
 (
     const meshOctreeCubeCoordinates& cc,
-    DynList<label>& neighbourLeaves
+    DynamicList<label>& neighbourLeaves
 ) const
 {
     neighbourLeaves.clear();

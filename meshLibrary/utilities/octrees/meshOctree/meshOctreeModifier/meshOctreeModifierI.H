@@ -84,7 +84,7 @@ Foam::Module::meshOctreeModifier::findCubeForPosition
 inline void Foam::Module::meshOctreeModifier::findLeavesContainedInBox
 (
     const boundBox& bb,
-    DynList<const meshOctreeCube*, 256>& containedLeaves
+    DynamicList<const meshOctreeCube*>& containedLeaves
 ) const
 {
     containedLeaves.clear();
@@ -92,7 +92,7 @@ inline void Foam::Module::meshOctreeModifier::findLeavesContainedInBox
 }
 
 
-inline Foam::Module::LongList<Foam::Module::meshOctreeCube*>&
+inline Foam::DynamicList<Foam::Module::meshOctreeCube*>&
 Foam::Module::meshOctreeModifier::leavesAccess()
 {
     return octree_.leaves_;

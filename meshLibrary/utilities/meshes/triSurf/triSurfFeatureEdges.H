@@ -42,9 +42,10 @@ SourceFiles
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-#include "edgeLongList.H"
+#include "edge.H"
 #include "meshSubset.H"
 #include "Map.H"
+#include "DynamicList.H"
 
 namespace Foam
 {
@@ -60,7 +61,7 @@ protected:
     // Protected data
 
         //- list of feature edges
-        edgeLongList featureEdges_;
+        DynamicList<edge> featureEdges_;
 
         //- map of edge subsets
         Map<meshSubset> featureEdgeSubsets_;
@@ -81,7 +82,7 @@ public:
         triSurfFeatureEdges();
 
         //- Construct from feature edges
-        triSurfFeatureEdges(const edgeLongList& triangles);
+        triSurfFeatureEdges(const DynamicList<edge>& triangles);
 
 
     //- Destructor
@@ -94,7 +95,7 @@ public:
         inline label nFeatureEdges() const;
 
         //- access to feature edges
-        inline const edgeLongList& featureEdges() const;
+        inline const DynamicList<edge>& featureEdges() const;
 
         //- append an edge to the end of the list
         inline void appendFeatureEdge(const edge& e);
@@ -105,8 +106,8 @@ public:
         label edgeSubsetIndex(const word&) const;
         inline void addEdgeToSubset(const label, const label);
         inline void removeEdgeFromSubset(const label, const label);
-        inline void edgeInSubsets(const label, DynList<label>&) const;
-        inline void edgeSubsetIndices(DynList<label>&) const;
+        inline void edgeInSubsets(const label, DynamicList<label>&) const;
+        inline void edgeSubsetIndices(DynamicList<label>&) const;
         template<class ListType>
         inline void edgesInSubset(const label, ListType&) const;
         template<class ListType>

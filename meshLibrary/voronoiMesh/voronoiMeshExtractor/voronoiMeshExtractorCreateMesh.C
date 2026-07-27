@@ -37,8 +37,8 @@ Description
 
 void Foam::Module::voronoiMeshExtractor::createPoints()
 {
-    const LongList<point>& tetPoints = tetCreator_.tetPoints();
-    const LongList<partTet>& tets = tetCreator_.tets();
+    const DynamicList<point>& tetPoints = tetCreator_.tetPoints();
+    const DynamicList<partTet>& tets = tetCreator_.tets();
 
     pointFieldPMG& points = mesh_.points();
     points.setSize(tets.size());
@@ -54,10 +54,10 @@ void Foam::Module::voronoiMeshExtractor::createPoints()
 void Foam::Module::voronoiMeshExtractor::createPolyMesh()
 
 {
-    const VRWGraph& pointEdges = this->pointEdges();
-    const VRWGraph& edgeTets = this->edgeTets();
+    const labelListList2D& pointEdges = this->pointEdges();
+    const DynamicList<DynamicList<label>>& edgeTets = this->edgeTets();
     const boolList& boundaryEdge = this->boundaryEdge();
-    const LongList<edge>& edges = this->edges();
+    const DynamicList<edge>& edges = this->edges();
 
     polyMeshGenModifier meshModifier(mesh_);
     faceListPMG& faces = meshModifier.facesAccess();
@@ -71,13 +71,13 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
     {
         bool create(true);
         forAllRow(pointEdges, pointI, eI)
-            if (boundaryEdge[pointEdges(pointI, eI)])
+            if (boundaryEdge[pointEdges[pointI][eI]])
             {
                 create = false;
                 break;
             }
 
-        if (!create || (pointEdges.sizeOfRow(pointI) == 0))
+        if (!create || (pointEdges[pointI].size() == 0))
             continue;
 
         cellLabel[pointI] = nCells;
@@ -114,11 +114,11 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
         const label faceI = faceLabel[edgeI];
 
         face& f = faces[faceI];
-        f.setSize(edgeTets.sizeOfRow(edgeI));
+        f.setSize(edgeTets[edgeI].size());
 
         // fill the faces with the node labels
         forAllRow(edgeTets, edgeI, pI)
-            f[pI] = edgeTets(edgeI, pI);
+            f[pI] = edgeTets[edgeI][pI];
 
         const edge& e = edges[edgeI];
         const label cOwn = cellLabel[e[0]];

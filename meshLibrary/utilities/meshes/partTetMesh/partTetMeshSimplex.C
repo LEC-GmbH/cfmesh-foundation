@@ -44,17 +44,17 @@ Foam::Module::partTetMeshSimplex::partTetMeshSimplex
     pts_(),
     tets_()
 {
-    const LongList<point>& points = tm.points();
-    const LongList<partTet>& tets = tm.tets();
-    const VRWGraph& pt = tm.pointTets();
+    const DynamicList<point>& points = tm.points();
+    const DynamicList<partTet>& tets = tm.tets();
+    const labelListList2D& pt = tm.pointTets();
 
-    tets_.setSize(pt.sizeOfRow(pI));
+    tets_.setSize(pt[pI].size());
     label counter(0);
 
-    Map<label> addr(2*pt.sizeOfRow(pI));
+    Map<label> addr(2*pt[pI].size());
     forAllRow(pt, pI, tetI)
     {
-        const partTet& tet = tets[pt(pI, tetI)];
+        const partTet& tet = tets[pt[pI][tetI]];
         for (label i = 0; i < 4; ++i)
         {
             const label tpI = tet[i];
@@ -126,14 +126,16 @@ Foam::Module::partTetMeshSimplex::partTetMeshSimplex
 
 Foam::Module::partTetMeshSimplex::partTetMeshSimplex
 (
-    const DynList<point, 128>& pts,
-    const DynList<partTet, 128>& tets,
+    const DynamicList<point>& pts,
+    const DynamicList<partTet>& tets,
     const label pointI
 )
 :
     pts_(pts),
-    tets_(tets.size())
+    tets_()
 {
+    tets_.setSize(tets.size());
+
     forAll(tets, tetI)
     {
         const partTet& tet = tets[tetI];

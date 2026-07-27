@@ -32,6 +32,7 @@ License
 #include "meshSurfaceEngine.H"
 #include "helperFunctions.H"
 #include "HashSet.H"
+#include "DynamicList.H"
 
 #include <set>
 
@@ -62,7 +63,7 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
     std::set<std::pair<label, label>> terminatedPairs;
     forAll(treatPatchesWithPatch_, patchI)
     {
-        const DynList<label>& otherPatches = treatPatchesWithPatch_[patchI];
+        const DynamicList<label>& otherPatches = treatPatchesWithPatch_[patchI];
 
         forAll(otherPatches, patchJ)
         {
@@ -94,12 +95,12 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
         const faceList::subList& bFaces = mse.boundaryFaces();
         const labelList& faceOwner = mse.faceOwners();
         const labelList& facePatches = mse.boundaryFacePatches();
-        const VRWGraph& faceEdges = mse.faceEdges();
-        const VRWGraph& edgeFaces = mse.edgeFaces();
+        const labelListList2D& faceEdges = mse.faceEdges();
+        const labelListList2D& edgeFaces = mse.edgeFaces();
 
-        VRWGraph newBoundaryFaces;
-        labelLongList newBoundaryOwners;
-        labelLongList newBoundaryPatches;
+        DynamicList<DynamicList<label>> newBoundaryFaces;
+        DynamicList<label> newBoundaryOwners;
+        DynamicList<label> newBoundaryPatches;
 
         forAll(bFaces, bfI)
         {
@@ -114,14 +115,14 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
             labelList neiPatches(bf.size());
             forAll(bf, eI)
             {
-                const label beI = faceEdges(bfI, eI);
+                const label beI = faceEdges[bfI][eI];
 
-                if (edgeFaces.sizeOfRow(beI) == 2)
+                if (edgeFaces[beI].size() == 2)
                 {
-                    label neiFace = edgeFaces(beI, 0);
+                    label neiFace = edgeFaces[beI][0];
                     if (neiFace == bfI)
                     {
-                        neiFace = edgeFaces(beI, 1);
+                        neiFace = edgeFaces[beI][1];
                     }
 
                     neiPatches[eI] = facePatches[neiFace];
@@ -188,7 +189,7 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
                     }
                 }
 
-                DynList<edge> removeEdges;
+                DynamicList<edge> removeEdges;
                 if (useNext && usePrev)
                 {
                     removeEdges.setSize(3);
@@ -212,14 +213,14 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
                 const face cutFace = help::removeEdgesFromFace(bf, removeEdges);
                 if (cutFace.size() > 2)
                 {
-                    newBoundaryFaces.appendList(cutFace);
+                    appendList(newBoundaryFaces,cutFace);
                     newBoundaryOwners.append(faceOwner[bfI]);
                     newBoundaryPatches.append(fPatch);
                 }
                 const face rFace = help::createFaceFromRemovedPart(bf, cutFace);
                 if (rFace.size() > 2)
                 {
-                    newBoundaryFaces.appendList(rFace);
+                    appendList(newBoundaryFaces,rFace);
                     newBoundaryOwners.append(faceOwner[bfI]);
                     newBoundaryPatches.append(fPatch);
                 }
@@ -238,7 +239,7 @@ void Foam::Module::boundaryLayers::checkTopologyOfBoundaryFaces
 
             if (!storedFace)
             {
-                newBoundaryFaces.appendList(bf);
+                appendList(newBoundaryFaces,bf);
                 newBoundaryOwners.append(faceOwner[bfI]);
                 newBoundaryPatches.append(fPatch);
             }

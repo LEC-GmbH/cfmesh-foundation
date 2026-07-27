@@ -43,7 +43,7 @@ SourceFiles
 #define workflowControls_H
 
 #include "IOdictionary.H"
-#include "DynList.H"
+#include "DynamicList.H"
 
 #include <map>
 
@@ -73,7 +73,7 @@ class workflowControls
         word restartAfterStep_;
 
         //- completed step before restart
-        DynList<word> completedStepsBeforeRestart_;
+        DynamicList<word> completedStepsBeforeRestart_;
 
         //- holds information whether the workflow has been restarted
         mutable bool isRestarted_;
@@ -99,7 +99,7 @@ class workflowControls
         word lastCompletedStep() const;
 
         //- return the names of completed steps
-        DynList<word> completedSteps() const;
+        DynamicList<word> completedSteps() const;
 
         //- remove completedStep from the dictionary
         void clearCompletedSteps();

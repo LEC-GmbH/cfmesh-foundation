@@ -40,7 +40,7 @@ SourceFiles
 #ifndef helperFunctionsTopologyManipulation_H
 #define helperFunctionsTopologyManipulation_H
 
-#include "DynList.H"
+#include "DynamicList.H"
 #include "face.H"
 #include "boolList.H"
 #include "HashSet.H"
@@ -88,14 +88,14 @@ namespace help
     inline face removeEdgesFromFace
     (
         const face& fOrig,
-        const DynList<edge>& removeEdges
+        const DynamicList<edge>& removeEdges
     );
 
     //- find open edges for a set of faces forming a cell
     inline void findOpenEdges
     (
         const faceList& cellFaces,
-        DynList<edge>& openEdges
+        DynamicList<edge>& openEdges
     );
 
     //- check if two faces share an edge
@@ -128,10 +128,10 @@ namespace help
 
     //- sort the edge chain such that the end of one edge is the beginning
     //- of the next one (valid for singly-connected chains, only)
-    inline labelList sortEdgeChain(const DynList<edge>& bEdges);
+    inline labelList sortEdgeChain(const DynamicList<edge>& bEdges);
 
     //- creates closed edge chains from the open chain
-    inline void zipOpenChain(DynList<edge>& bEdges);
+    inline void zipOpenChain(DynamicList<edge>& bEdges);
 
 } // End namespace help
 

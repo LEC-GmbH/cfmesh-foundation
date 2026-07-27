@@ -330,8 +330,8 @@ Foam::scalar Foam::Module::surfaceOptimizer::optimiseSteepestDescent
 
 Foam::Module::surfaceOptimizer::surfaceOptimizer
 (
-    DynList<point>& pts,
-    const DynList<triFace>& trias
+    DynamicList<point>& pts,
+    const DynamicList<triFace>& trias
 )
 :
     pts_(pts),

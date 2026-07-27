@@ -35,6 +35,7 @@ Description
 #include "argList.H"
 #include "polyMeshGenModifier.H"
 #include "meshOptimizer.H"
+#include "DynamicList.H"
 
 using namespace Foam;
 using namespace Foam::Module;
@@ -111,7 +112,7 @@ int main(int argc, char *argv[])
         mOpt.lockCellsInSubset(constrainedCellSet);
 
         // find boundary faces which shall be locked
-        labelLongList lockedBndFaces, selectedCells;
+        DynamicList<label> lockedBndFaces, selectedCells;
 
         const label sId = pmg.cellSubsetIndex(constrainedCellSet);
         pmg.cellsInSubset(sId, selectedCells);

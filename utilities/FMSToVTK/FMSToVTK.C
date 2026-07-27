@@ -110,7 +110,7 @@ void writeEdgesToVTK
     const fileName& fn,
     const string& /*title*/,
     const UList<point>& points,
-    const LongList<edge>& edges
+    const DynamicList<edge>& edges
 )
 {
     labelList connectivity(edges.size());
@@ -164,14 +164,15 @@ void writeEdgesToVTK
     const fileName& fn,
     const string& title,
     const UList<point>& points,
-    const LongList<edge>& edges,
+    const DynamicList<edge>& edges,
     const UList<label>& addr
 )
 {
     // Remove unused points and create subaddressed edges
     DynamicList<point> newPoints;
     labelList newPointAddr(points.size(), -1);
-    LongList<edge> newEdges(addr.size());
+    DynamicList<edge> newEdges;
+    newEdges.setSize(addr.size());
 
     forAll(addr, addrI)
     {
@@ -210,7 +211,7 @@ void writeFacetsToVTK
     const fileName& fn,
     const string& /*title*/,
     const UList<point>& points,
-    const LongList<labelledTri>& facets
+    const DynamicList<labelledTri>& facets
 )
 {
     labelList connectivity(facets.size());
@@ -280,14 +281,15 @@ void writeFacetsToVTK
     const fileName& fn,
     const string& title,
     const pointField& points,
-    const LongList<labelledTri>& facets,
+    const DynamicList<labelledTri>& facets,
     const UList<label>& addr
 )
 {
     // Remove unused points and create subaddressed facets
     DynamicList<point> newPoints;
     labelList newPointAddr(points.size(), -1);
-    LongList<labelledTri> newFacets(addr.size());
+    DynamicList<labelledTri> newFacets;
+    newFacets.setSize(addr.size());
 
     forAll(addr, addrI)
     {
@@ -353,8 +355,8 @@ int main(int argc, char *argv[])
     triSurf origSurf(inFileName);
 
     const pointField& points = origSurf.points();
-    const LongList<labelledTri>& facets = origSurf.facets();
-    const LongList<edge>& edges = origSurf.featureEdges();
+    const DynamicList<labelledTri>& facets = origSurf.facets();
+    const DynamicList<edge>& edges = origSurf.featureEdges();
     const geometricSurfacePatchList& patches = origSurf.patches();
 
     label index = 0;
@@ -451,7 +453,7 @@ int main(int argc, char *argv[])
         xmlBlock.addAttribute("index", Foam::name(index++));
         xmlBlock.addAttribute("name", "pointSubsets");
 
-        DynList<label> subsetIndices;
+        DynamicList<label> subsetIndices;
         labelList subsetAddr;
 
         origSurf.pointSubsetIndices(subsetIndices);
@@ -484,7 +486,7 @@ int main(int argc, char *argv[])
         xmlBlock.addAttribute("index", Foam::name(index++));
         xmlBlock.addAttribute("name", "edgeSubsets");
 
-        DynList<label> subsetIndices;
+        DynamicList<label> subsetIndices;
         labelList subsetAddr;
 
         origSurf.edgeSubsetIndices(subsetIndices);
@@ -518,7 +520,7 @@ int main(int argc, char *argv[])
         xmlBlock.addAttribute("index", Foam::name(index++));
         xmlBlock.addAttribute("name", "faceSubsets");
 
-        DynList<label> subsetIndices;
+        DynamicList<label> subsetIndices;
         labelList subsetAddr;
 
         origSurf.facetSubsetIndices(subsetIndices);

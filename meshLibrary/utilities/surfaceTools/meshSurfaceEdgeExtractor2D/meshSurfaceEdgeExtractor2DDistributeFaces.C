@@ -29,6 +29,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "demandDrivenData.H"
+#include "DynamicList.H"
 #include "meshSurfaceEdgeExtractor2D.H"
 #include "meshOctree.H"
 #include "triSurf.H"
@@ -55,8 +56,8 @@ void Foam::Module::meshSurfaceEdgeExtractor2D::distributeBoundaryFaces()
     const geometricSurfacePatchList& surfPatches = surf.patches();
 
     // copy boundary faces and their owner face
-    VRWGraph bndFaces;
-    labelLongList origFaceLabel;
+    DynamicList<DynamicList<label>> bndFaces;
+    DynamicList<label> origFaceLabel;
 
     forAll(boundaries, patchI)
     {
@@ -68,7 +69,7 @@ void Foam::Module::meshSurfaceEdgeExtractor2D::distributeBoundaryFaces()
             const label faceI = start + fI;
             const face& bf = faces[faceI];
 
-            bndFaces.appendList(bf);
+            appendList(bndFaces, bf);
             origFaceLabel.append(faceI);
         }
     }
@@ -90,8 +91,10 @@ void Foam::Module::meshSurfaceEdgeExtractor2D::distributeBoundaryFaces()
     patchNames[topEmptyId] = "topEmptyFaces";
     patchTypes[topEmptyId] = "empty";
 
-    labelLongList bndFaceOwner(bndFaces.size());
-    labelLongList bndFacePatch(bndFaces.size());
+    DynamicList<label> bndFaceOwner;
+    bndFaceOwner.setSize(bndFaces.size());
+    DynamicList<label> bndFacePatch;
+    bndFacePatch.setSize(bndFaces.size());
 
     # pragma omp parallel for schedule(dynamic, 50)
     forAll(bndFaces, bfI)

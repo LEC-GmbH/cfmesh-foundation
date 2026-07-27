@@ -42,8 +42,7 @@ SourceFiles
 
 #include "polyMeshGen.H"
 #include "boolList.H"
-#include "labelLongList.H"
-#include "DynList.H"
+#include "DynamicList.H"
 #include "triFace.H"
 #include "meshSurfaceEngine.H"
 #include "meshSurfacePartitioner.H"
@@ -78,7 +77,7 @@ class meshSurfaceOptimizer
         List<direction> vertexType_;
 
         //- locked faces which shall not be changed
-        labelLongList lockedSurfaceFaces_;
+        DynamicList<label> lockedSurfaceFaces_;
 
         //- surface partitioner
         const meshSurfacePartitioner* partitionerPtr_;
@@ -105,7 +104,7 @@ class meshSurfaceOptimizer
         //- calculate surface triangulation
         void calculateTrianglesAndAddressing() const;
         inline const partTriMesh& triMesh() const;
-        inline void updateTriMesh(const labelLongList&);
+        inline void updateTriMesh(const DynamicList<label>&);
         inline void updateTriMesh();
 
         //- find vertices which are inverted
@@ -123,8 +122,8 @@ class meshSurfaceOptimizer
             const plane& pl,
             vector& vecX,
             vector& vecY,
-            DynList<point>& pts,
-            DynList<triFace>& trias
+            DynamicList<point>& pts,
+            DynamicList<triFace>& trias
         ) const;
 
         //- new position of a node after laplacian smoothing
@@ -193,23 +192,20 @@ class meshSurfaceOptimizer
         //- smooth selected edge points
         void smoothEdgePoints
         (
-            const labelLongList& edgePoints,
-            const labelLongList& procEdgePoints
+            const DynamicList<label>& edgePoints
         );
 
         //- smooth selected points using laplaceFC
         void smoothLaplacianFC
         (
-            const labelLongList& selectedPoints,
-            const labelLongList& selectedProcPoints,
+            const DynamicList<label>& selectedPoints,
             const bool transform = true
         );
 
         //- smooth selected points using surface optimizer
         void smoothSurfaceOptimizer
         (
-            const labelLongList& selectedPoints,
-            const labelLongList& selectedProcPoints
+            const DynamicList<label>& selectedPoints
         );
 
 
@@ -281,7 +277,7 @@ public:
         //- runs a surface smoother on the selected boundary points
         bool untangleSurface
         (
-            const labelLongList& activeBoundaryPoints,
+            const DynamicList<label>& activeBoundaryPoints,
             const label nAdditionalLayers = 0
         );
 

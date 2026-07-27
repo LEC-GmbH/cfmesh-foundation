@@ -30,6 +30,7 @@ License
 
 #include "fpmaMesh.H"
 #include "IOmanip.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -103,7 +104,7 @@ void Foam::Module::fpmaMesh::writeSubsets
     label nSubsets(0);
 
     nSubsets += patches.size();
-    DynList<label> indices;
+    DynamicList<label> indices;
     mesh_.pointSubsetIndices(indices);
     nSubsets += indices.size();
     Info<< "Mesh has " << indices.size() << " point subsets" << endl;
@@ -136,7 +137,7 @@ void Foam::Module::fpmaMesh::writeSubsets
     mesh_.pointSubsetIndices(indices);
     forAll(indices, indexI)
     {
-        labelLongList nodesInSubset;
+        DynamicList<label> nodesInSubset;
         mesh_.pointsInSubset(indices[indexI], nodesInSubset);
 
         fpmaGeometryFile << mesh_.pointSubsetName(indices[indexI]) << nl;
@@ -153,7 +154,7 @@ void Foam::Module::fpmaMesh::writeSubsets
     mesh_.faceSubsetIndices(indices);
     forAll(indices, indexI)
     {
-        labelLongList facesInSubset;
+        DynamicList<label> facesInSubset;
         mesh_.facesInSubset(indices[indexI], facesInSubset);
 
         fpmaGeometryFile << mesh_.faceSubsetName(indices[indexI]) << nl;
@@ -170,7 +171,7 @@ void Foam::Module::fpmaMesh::writeSubsets
     mesh_.cellSubsetIndices(indices);
     forAll(indices, indexI)
     {
-        labelLongList cellsInSubset;
+        DynamicList<label> cellsInSubset;
         mesh_.cellsInSubset(indices[indexI], cellsInSubset);
 
         fpmaGeometryFile << mesh_.cellSubsetName(indices[indexI]) << nl;

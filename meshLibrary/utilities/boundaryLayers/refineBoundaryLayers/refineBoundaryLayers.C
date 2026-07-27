@@ -347,7 +347,7 @@ void Foam::Module::refineBoundaryLayers::refineLayers()
 
 void Foam::Module::refineBoundaryLayers::pointsInBndLayer
 (
-    labelLongList& layerPoints
+    DynamicList<label>& layerPoints
 )
 {
     layerPoints.clear();
@@ -358,7 +358,7 @@ void Foam::Module::refineBoundaryLayers::pointsInBndLayer
     {
         forAllRow(newVerticesForSplitEdge_, seI, i)
         {
-            pointInLayer[newVerticesForSplitEdge_(seI, i)] = true;
+            pointInLayer[newVerticesForSplitEdge_[seI][i]] = true;
         }
     }
 
@@ -385,7 +385,7 @@ void Foam::Module::refineBoundaryLayers::pointsInBndLayer(const word subsetName)
     {
         forAllRow(newVerticesForSplitEdge_, seI, i)
         {
-            mesh_.addPointToSubset(sId, newVerticesForSplitEdge_(seI, i));
+            mesh_.addPointToSubset(sId, newVerticesForSplitEdge_[seI][i]);
         }
     }
 }

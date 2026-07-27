@@ -32,6 +32,7 @@ License
 #include "pointIOField.H"
 #include "IOobjectList.H"
 #include "pointSet.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -196,7 +197,7 @@ void Foam::Module::polyMeshGenPoints::write() const
 {
     points_.write();
 
-    labelLongList containedElements;
+    DynamicList<label> containedElements;
 
     // write point selections
     for (std::map<label, meshSubset>::const_iterator setIt = pointSubsets_.cbegin(); setIt != pointSubsets_.cend(); ++setIt)

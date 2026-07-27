@@ -38,10 +38,10 @@ License
 void Foam::Module::decomposeCells::findAddressingForCell
 (
     const label cellI,
-    DynList<label, 32>& vrt,
-    DynList<edge, 64>& edges,
-    DynList<DynList<label, 8>>& faceEdges,
-    DynList<DynList<label, 2>, 64>& edgeFaces
+    DynamicList<label>& vrt,
+    DynamicList<edge>& edges,
+    labelListList2D& faceEdges,
+    DynamicList<DynamicList<label>>& edgeFaces
 ) const
 {
     const cell& c = mesh_.cells()[cellI];
@@ -54,7 +54,7 @@ void Foam::Module::decomposeCells::findAddressingForCell
     const faceListPMG& faces = mesh_.faces();
     forAll(faceEdges, feI)
     {
-        DynList<label, 8>& fEdges = faceEdges[feI];
+        DynamicList<label>& fEdges = faceEdges[feI];
 
         fEdges.setSize(faces[c[feI]].size());
         fEdges = -1;
@@ -99,7 +99,7 @@ void Foam::Module::decomposeCells::findAddressingForCell
             if (store)
             {
                 faceEdges[fI][eI] = edges.size();
-                DynList<label, 2> ef;
+                DynamicList<label> ef;
                 ef.append(fI);
                 edgeFaces.append(ef);
                 edges.append(e);
@@ -133,9 +133,9 @@ void Foam::Module::decomposeCells::findAddressingForCell
 Foam::label Foam::Module::decomposeCells::findTopVertex
 (
     const label cellI,
-    const DynList<label, 32>& /*vrt*/,
-    const DynList<edge, 64>& /*edges*/,
-    const DynList<DynList<label, 2>, 64>& /*edgeFaces*/
+    const DynamicList<label>& /*vrt*/,
+    const DynamicList<edge>& /*edges*/,
+    const DynamicList<DynamicList<label>>& /*edgeFaces*/
 )
 {
     const cell& c = mesh_.cells()[cellI];
@@ -171,11 +171,11 @@ void Foam::Module::decomposeCells::decomposeCellIntoPyramids(const label cellI)
     const cell& c = cells[cellI];
 
     // calculate edges, faceEdges and edgeFaces addressing
-    DynList<label, 32> vrt;
-    DynList<edge, 64> edges;
-    DynList<DynList<label, 8>> faceEdges;
+    DynamicList<label> vrt;
+    DynamicList<edge> edges;
+    labelListList2D faceEdges;
     faceEdges.setSize(c.size());
-    DynList<DynList<label, 2>, 64> edgeFaces;
+    DynamicList<DynamicList<label>> edgeFaces;
     findAddressingForCell(cellI, vrt, edges, faceEdges, edgeFaces);
 
     // find a vertex which will be the top of the pyramids
@@ -187,10 +187,9 @@ void Foam::Module::decomposeCells::decomposeCellIntoPyramids(const label cellI)
     forAll(c, fI)
     {
         const face& f = faces[c[fI]];
-        DynList<DynList<label, 8>> cellFaces;
-        cellFaces.setSize(f.size() + 1);
+        faceList cellFaces(f.size() + 1);
 
-        DynList<triFace> triFaces;
+        DynamicList<triFace> triFaces;
         triFaces.setSize(f.size());
         forAll(triFaces, pI)
         {
@@ -223,7 +222,7 @@ void Foam::Module::decomposeCells::decomposeCellIntoPyramids(const label cellI)
             }
         }
 
-        facesOfNewCells_.appendGraph(cellFaces);
+        facesOfNewCells_.append(cellFaces);
     }
 }
 

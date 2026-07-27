@@ -152,7 +152,7 @@ void Foam::Module::polyMeshGen2DEngine::findZMinOffsetPoints() const
 
     zMinToZMaxPtr_ = new labelList(zMinPointLabels.size());
 
-    const VRWGraph& pointPoints = mesh_.addressingData().pointPoints();
+    const labelListList2D& pointPoints = mesh_.addressingData().pointPoints();
     # pragma omp parallel for schedule(dynamic, 50)
     forAll(zMinPointLabels, pI)
     {
@@ -161,10 +161,10 @@ void Foam::Module::polyMeshGen2DEngine::findZMinOffsetPoints() const
         label nInactive(0), offsetPoint(-1);
         forAllRow(pointPoints, pointI, ppI)
         {
-            if (!zMinPoints[pointPoints(pointI, ppI)])
+            if (!zMinPoints[pointPoints[pointI][ppI]])
             {
                 ++nInactive;
-                offsetPoint = pointPoints(pointI, ppI);
+                offsetPoint = pointPoints[pointI][ppI];
             }
         }
 
@@ -247,7 +247,7 @@ void Foam::Module::polyMeshGen2DEngine::findZMaxOffsetPoints() const
 
     zMaxToZMinPtr_ = new labelList(zMaxPointLabels.size());
 
-    const VRWGraph& pointPoints = mesh_.addressingData().pointPoints();
+    const labelListList2D& pointPoints = mesh_.addressingData().pointPoints();
     # pragma omp parallel for schedule(dynamic, 50)
     forAll(zMaxPointLabels, pI)
     {
@@ -256,10 +256,10 @@ void Foam::Module::polyMeshGen2DEngine::findZMaxOffsetPoints() const
         label nInactive(0), offsetPoint(-1);
         forAllRow(pointPoints, pointI, ppI)
         {
-            if (!zMaxPoints[pointPoints(pointI, ppI)])
+            if (!zMaxPoints[pointPoints[pointI][ppI]])
             {
                 ++nInactive;
-                offsetPoint = pointPoints(pointI, ppI);
+                offsetPoint = pointPoints[pointI][ppI];
             }
         }
 

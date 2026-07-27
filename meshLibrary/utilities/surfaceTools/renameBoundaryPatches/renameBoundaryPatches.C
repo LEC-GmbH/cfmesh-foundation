@@ -32,6 +32,7 @@ License
 #include "symmetryPlaneOptimisation.H"
 #include "demandDrivenData.H"
 #include "IOdictionary.H"
+#include "DynamicList.H"
 
 #include <map>
 
@@ -230,9 +231,9 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
     newPatchTypes.setSize(newPatchI);
 
     // start creating new boundary
-    VRWGraph newBoundaryFaces;
-    labelLongList newBoundaryOwners;
-    labelLongList newBoundaryPatches;
+    DynamicList<DynamicList<label>> newBoundaryFaces;
+    DynamicList<label> newBoundaryOwners;
+    DynamicList<label> newBoundaryPatches;
 
     const faceListPMG& faces = mesh_.faces();
     const labelList& owner = mesh_.owner();
@@ -250,7 +251,7 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
 
         const label patchI = facePatch[faceI - nIntFaces];
 
-        newBoundaryFaces.appendList(faces[faceI]);
+        appendList(newBoundaryFaces, faces[faceI]);
         newBoundaryOwners.append(owner[faceI]);
 
         if ((patchI == -1) || (patchToNew[patchI] == -1))

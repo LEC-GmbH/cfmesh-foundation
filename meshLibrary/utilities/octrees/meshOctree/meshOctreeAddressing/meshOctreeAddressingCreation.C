@@ -30,10 +30,10 @@ License
 
 #include "meshOctreeAddressing.H"
 #include "helperFunctions.H"
-#include "VRWGraphSMPModifier.H"
+#include "labelListListOps.H"
 #include "demandDrivenData.H"
 #include "meshOctree.H"
-#include "labelLongList.H"
+#include "DynamicList.H"
 #include "triSurf.H"
 
 #include <omp.h>
@@ -44,7 +44,7 @@ License
 
 void Foam::Module::meshOctreeAddressing::createOctreePoints() const
 {
-    const VRWGraph& nodeLabels = this->nodeLabels();
+    const labelListList2D& nodeLabels = this->nodeLabels();
     const boundBox& rootBox = octree_.rootBox();
 
     octreePointsPtr_ = new pointField(nNodes_);
@@ -54,7 +54,7 @@ void Foam::Module::meshOctreeAddressing::createOctreePoints() const
     # pragma omp parallel for schedule(guided, 100)
     for (label cubeI = 0; cubeI < nLeaves; ++cubeI)
     {
-        if (nodeLabels.sizeOfRow(cubeI) == 0)
+        if (nodeLabels[cubeI].size() == 0)
         {
             continue;
         }
@@ -65,7 +65,7 @@ void Foam::Module::meshOctreeAddressing::createOctreePoints() const
 
         forAllRow(nodeLabels, cubeI, nI)
         {
-            const label nodeI = nodeLabels(cubeI, nI);
+            const label nodeI = nodeLabels[cubeI][nI];
 
             octreePoints[nodeI] = vertices[nI];
         }
@@ -77,26 +77,26 @@ void Foam::Module::meshOctreeAddressing::createNodeLabels() const
 {
     const List<direction>& boxType = this->boxType();
 
-    nodeLabelsPtr_ = new VRWGraph(octree_.numberOfLeaves());
-    VRWGraph& nodeLabels = *nodeLabelsPtr_;
+    nodeLabelsPtr_ = new labelListList2D(octree_.numberOfLeaves());
+    labelListList2D& nodeLabels = *nodeLabelsPtr_;
 
     // allocate storage for node labels
     forAll(nodeLabels, leafI)
     {
         if (boxType[leafI])
         {
-            nodeLabels.setRowSize(leafI, 8);
+            nodeLabels[leafI].setSize(8);
 
             forAllRow(nodeLabels, leafI, i)
             {
-                nodeLabels(leafI, i) = -1;
+                nodeLabels[leafI][i] = -1;
             }
         }
     }
 
     // start creating node labels
     nNodes_ = 0;
-    DynList<label> numLocalNodes;
+    DynamicList<label> numLocalNodes;
     # pragma omp parallel
     {
         const label nThreads = omp_get_num_threads();
@@ -116,7 +116,7 @@ void Foam::Module::meshOctreeAddressing::createNodeLabels() const
         {
             forAllRow(nodeLabels, leafI, nI)
             {
-                if (nodeLabels(leafI, nI) != -1)
+                if (nodeLabels[leafI][nI] != -1)
                 {
                     continue;
                 }
@@ -163,7 +163,7 @@ void Foam::Module::meshOctreeAddressing::createNodeLabels() const
                         if (validLeaf[plI])
                         {
                             // set node labels to -2 not to repeat searches
-                            nodeLabels(pLeaves[plI], (7 - plI)) = -2;
+                            nodeLabels[pLeaves[plI]][7 - plI] = -2;
                         }
                     }
 
@@ -187,7 +187,7 @@ void Foam::Module::meshOctreeAddressing::createNodeLabels() const
         {
             forAllRow(nodeLabels, leafI, nI)
             {
-                if (nodeLabels(leafI, nI) >= 0)
+                if (nodeLabels[leafI][nI] >= 0)
                 {
                     continue;
                 }
@@ -235,7 +235,7 @@ void Foam::Module::meshOctreeAddressing::createNodeLabels() const
                         {
                             // store the vertex at the corresponding
                             // location in the cube
-                            nodeLabels(pLeaves[plI], (7 - plI)) = startNode;
+                            nodeLabels[pLeaves[plI]][7 - plI] = startNode;
                         }
                     }
 
@@ -257,11 +257,11 @@ void Foam::Module::meshOctreeAddressing::createNodeLabels() const
 void Foam::Module::meshOctreeAddressing::createNodeLeaves() const
 {
     const List<direction>& boxType = this->boxType();
-    const VRWGraph& nodeLabels = this->nodeLabels();
+    const labelListList2D& nodeLabels = this->nodeLabels();
 
     // allocate nodeLeavesPtr_
-    nodeLeavesPtr_ = new FRWGraph<label, 8>(nNodes_);
-    FRWGraph<label, 8>& nodeLeaves = *nodeLeavesPtr_;
+    nodeLeavesPtr_ = new List<FixedList<label, 8>>(nNodes_);
+    List<FixedList<label, 8>>& nodeLeaves = *nodeLeavesPtr_;
 
     boolList storedNode(nNodes_, false);
     # pragma omp parallel for schedule(dynamic, 100)
@@ -269,7 +269,7 @@ void Foam::Module::meshOctreeAddressing::createNodeLeaves() const
     {
         forAllRow(nodeLabels, leafI, nI)
         {
-            const label nodeI = nodeLabels(leafI, nI);
+            const label nodeI = nodeLabels[leafI][nI];
 
             if (storedNode[nodeI])
             {
@@ -294,7 +294,7 @@ void Foam::Module::meshOctreeAddressing::createNodeLeaves() const
                 }
             }
 
-            nodeLeaves.setRow(nodeI, pLeaves);
+            nodeLeaves[nodeI] = pLeaves;
         }
     }
 }
@@ -400,7 +400,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
                 const label subsetID = ts.facetSubsetIndex(patchName);
                 if (subsetID >= 0)
                 {
-                    labelLongList facets;
+                    DynamicList<label> facets;
                     ts.facetsInSubset(subsetID, facets);
 
                     forAll(facets, i)
@@ -411,7 +411,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
             }
 
             // set BOUNDARY flag to boxes intersected by the given facets
-            DynList<label> containedTriangles;
+            DynamicList<label> containedTriangles;
             forAll(boxType, leafI)
             {
                 octree_.containedTriangles(leafI, containedTriangles);
@@ -479,7 +479,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
 
             if (subsetID >= 0)
             {
-                labelLongList facets;
+                DynamicList<label> facets;
                 ts.facetsInSubset(subsetID, facets);
 
                 forAll(facets, i)
@@ -490,7 +490,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
         }
 
         // set MESHCELL flag to boxes intersected by the given facets
-        DynList<label> containedTriangles;
+        DynamicList<label> containedTriangles;
         forAll(boxType, leafI)
         {
             octree_.containedTriangles(leafI, containedTriangles);
@@ -506,7 +506,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
     }
 
     // set BOUNDARY flag to boxes which do not have a MESHCELL flag
-    DynList<label> neighs;
+    DynamicList<label> neighs;
     # pragma omp parallel for if (boxType.size() > 1000) \
     private(neighs) schedule(dynamic, 20)
     forAll(boxType, leafI)
@@ -541,7 +541,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
 
 void Foam::Module::meshOctreeAddressing::calculateNodeType() const
 {
-    const FRWGraph<label, 8>& nodeLeaves = this->nodeLeaves();
+    const List<FixedList<label, 8>>& nodeLeaves = this->nodeLeaves();
 
     nodeTypePtr_ = new List<direction>(nNodes_, NONE);
     List<direction>& nodeType = *nodeTypePtr_;
@@ -549,9 +549,9 @@ void Foam::Module::meshOctreeAddressing::calculateNodeType() const
     # pragma omp parallel for schedule(static, 1)
     forAll(nodeLeaves, nodeI)
     {
-        forAllRow(nodeLeaves, nodeI, nlI)
+        for (label nlI = 0; nlI < 8; ++nlI)
         {
-            const label leafI = nodeLeaves(nodeI, nlI);
+            const label leafI = nodeLeaves[nodeI][nlI];
 
             if (leafI == -1)
             {
@@ -585,11 +585,11 @@ void Foam::Module::meshOctreeAddressing::calculateNodeType() const
 
 void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
 {
-    octreeFacesPtr_ = new VRWGraph();
-    octreeFacesOwnersPtr_ = new labelLongList();
-    octreeFacesNeighboursPtr_ = new labelLongList();
+    octreeFacesPtr_ = new labelListList2D();
+    octreeFacesOwnersPtr_ = new DynamicList<label>();
+    octreeFacesNeighboursPtr_ = new DynamicList<label>();
 
-    const VRWGraph& nodeLabels = this->nodeLabels();
+    const labelListList2D& nodeLabels = this->nodeLabels();
     const List<direction>& boxType = this->boxType();
     this->nodeLeaves();
 
@@ -605,8 +605,8 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
         // improve load balancing. The number of faces generated in each chunk
         // is stored and later in used to store the faces into the octree faces
         // graph in the correct order
-        VRWGraph helperFaces;
-        labelLongList helperOwner, helperNeighbour;
+        DynamicList<DynamicList<label>> helperFaces;
+        DynamicList<label> helperOwner, helperNeighbour;
 
         const label nThreads = omp_get_num_threads();
         const label threadI = omp_get_thread_num();
@@ -647,7 +647,7 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
 
                     for (label fI = 0; fI < 6; ++fI)
                     {
-                        DynList<label> neighbours;
+                        DynamicList<label> neighbours;
                         octree_.findNeighboursInDirection
                         (
                             leafI,
@@ -663,7 +663,8 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
                         const label nei = neighbours[0];
 
                         // create face
-                        DynList<label, 8> f;
+                        DynamicList<label> f;
+                        f.reserve(8);
                         for (label pI = 0; pI < 4; ++pI)
                         {
                             const label nI =
@@ -671,7 +672,7 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
                             const label feI =
                                 meshOctreeCubeCoordinates::faceEdges_[fI][pI];
 
-                            f.append(nodeLabels(leafI, nI));
+                            f.append(nodeLabels[leafI][nI]);
 
                             if (edgeCentreLabel[feI] != -1)
                             {
@@ -682,7 +683,7 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
                         if (nei < 0)
                         {
                             // face is at the boundary of the octree
-                            helperFaces.appendList(f);
+                            appendList(helperFaces, f);
                             helperOwner.append(leafI);
                             helperNeighbour.append(-1);
                         }
@@ -691,7 +692,7 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
                             // face is an internal face
                             if (nei > leafI)
                             {
-                                helperFaces.appendList(f);
+                                appendList(helperFaces, f);
                                 helperOwner.append(leafI);
                                 helperNeighbour.append(nei);
                             }
@@ -710,7 +711,7 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
                                     ++i;
                                 }
 
-                                helperFaces.appendList(f);
+                                appendList(helperFaces, f);
                                 helperOwner.append(nei);
                                 helperNeighbour.append(leafI);
                             }
@@ -718,7 +719,7 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
                         else if (boxType[nei] & BOUNDARY)
                         {
                             // face is at the boundary of the mesh cells
-                            helperFaces.appendList(f);
+                            appendList(helperFaces, f);
                             helperOwner.append(leafI);
                             helperNeighbour.append(nei);
                         }
@@ -728,7 +729,7 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
                 {
                     for (label fI = 0; fI < 6; ++fI)
                     {
-                        DynList<label> neighbours;
+                        DynamicList<label> neighbours;
                         octree_.findNeighboursInDirection
                         (
                             leafI,
@@ -757,10 +758,10 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
                             face cf(4);
                             for (label i = 0; i < 4; ++i)
                             {
-                                cf[i] = nodeLabels(leafI, fNodes[i]);
+                                cf[i] = nodeLabels[leafI][fNodes[i]];
                             }
 
-                            helperFaces.appendList(cf.reverseFace());
+                            appendList(helperFaces, cf.reverseFace());
                             helperOwner.append(nei);
                             helperNeighbour.append(leafI);
                         }
@@ -812,7 +813,7 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
                     helperOwner[localStart];
                 octreeFacesNeighboursPtr_->operator[](start) =
                     helperNeighbour[localStart];
-                rowSizes[start++] = helperFaces.sizeOfRow(localStart++);
+                rowSizes[start++] = helperFaces[localStart++].size();
             }
         }
 
@@ -820,7 +821,7 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
 
         // set the size of octree faces
         # pragma omp master
-        VRWGraphSMPModifier(*octreeFacesPtr_).setSizeAndRowSize(rowSizes);
+        Foam::Module::setSizeAndRowSize(*octreeFacesPtr_, rowSizes);
 
         # pragma omp barrier
 
@@ -845,10 +846,10 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
 
             for (label faceI = 0; faceI < chunkSizes[chunkI]; ++faceI)
             {
-                for (label i = 0; i < helperFaces.sizeOfRow(localStart); ++i)
+                for (label i = 0; i < helperFaces[localStart].size(); ++i)
                 {
-                    octreeFacesPtr_->operator()(start, i) =
-                        helperFaces(localStart, i);
+                    (*octreeFacesPtr_)[start][i] =
+                        helperFaces[localStart][i];
                 }
 
                 ++start;
@@ -861,11 +862,11 @@ void Foam::Module::meshOctreeAddressing::createOctreeFaces() const
 
 void Foam::Module::meshOctreeAddressing::calculateLeafFaces() const
 {
-    const labelLongList& owner = octreeFaceOwner();
-    const labelLongList& neighbour = octreeFaceNeighbour();
+    const DynamicList<label>& owner = octreeFaceOwner();
+    const DynamicList<label>& neighbour = octreeFaceNeighbour();
 
-    leafFacesPtr_ = new VRWGraph(octree_.numberOfLeaves());
-    VRWGraph& leafFaces = *leafFacesPtr_;
+    leafFacesPtr_ = new labelListList2D(octree_.numberOfLeaves());
+    labelListList2D& leafFaces = *leafFacesPtr_;
 
     labelList nlf(leafFaces.size(), 0);
     forAll(owner, fI)
@@ -880,40 +881,39 @@ void Foam::Module::meshOctreeAddressing::calculateLeafFaces() const
 
     forAll(nlf, leafI)
     {
-        leafFaces.setRowSize(leafI, nlf[leafI]);
+        leafFaces[leafI].setSize(nlf[leafI]);
     }
     nlf = 0;
 
     forAll(owner, fI)
     {
-        leafFaces(owner[fI], nlf[owner[fI]]++) = fI;
+        leafFaces[owner[fI]][nlf[owner[fI]]++] = fI;
         if (neighbour[fI] < 0)
         {
             continue;
         }
-        leafFaces(neighbour[fI], nlf[neighbour[fI]]++) = fI;
+        leafFaces[neighbour[fI]][nlf[neighbour[fI]]++] = fI;
     }
 }
 
 
 void Foam::Module::meshOctreeAddressing::calculateNodeFaces() const
 {
-    const VRWGraph& octreeFaces = this->octreeFaces();
-    nodeFacesPtr_ = new VRWGraph(numberOfNodes());
-    VRWGraph& nodeFaces = *nodeFacesPtr_;
+    const labelListList2D& octreeFaces = this->octreeFaces();
+    nodeFacesPtr_ = new labelListList2D(numberOfNodes());
+    labelListList2D& nodeFaces = *nodeFacesPtr_;
 
-    VRWGraphSMPModifier(nodeFaces).reverseAddressing(octreeFaces);
-    nodeFaces.setSize(numberOfNodes());
+    Foam::Module::reverseAddressing(nodeFaces, numberOfNodes(), octreeFaces);
 }
 
 
 void Foam::Module::meshOctreeAddressing::calculateLeafLeaves() const
 {
-    const labelLongList& owner = octreeFaceOwner();
-    const labelLongList& neighbour = octreeFaceNeighbour();
+    const DynamicList<label>& owner = octreeFaceOwner();
+    const DynamicList<label>& neighbour = octreeFaceNeighbour();
 
-    leafLeavesPtr_ = new VRWGraph(octree_.numberOfLeaves());
-    VRWGraph& leafLeaves = *leafLeavesPtr_;
+    leafLeavesPtr_ = new labelListList2D(octree_.numberOfLeaves());
+    labelListList2D& leafLeaves = *leafLeavesPtr_;
 
     labelList nNei(leafLeaves.size(), 0);
     forAll(owner, faceI)
@@ -933,7 +933,7 @@ void Foam::Module::meshOctreeAddressing::calculateLeafLeaves() const
 
     forAll(nNei, leafI)
     {
-        leafLeaves.setRowSize(leafI, nNei[leafI]);
+        leafLeaves[leafI].setSize(nNei[leafI]);
     }
 
     nNei = 0;
@@ -949,53 +949,53 @@ void Foam::Module::meshOctreeAddressing::calculateLeafLeaves() const
             continue;
         }
 
-        leafLeaves(owner[faceI], nNei[owner[faceI]]++) = neighbour[faceI];
-        leafLeaves(neighbour[faceI], nNei[neighbour[faceI]]++) = owner[faceI];
+        leafLeaves[owner[faceI]][nNei[owner[faceI]]++] = neighbour[faceI];
+        leafLeaves[neighbour[faceI]][nNei[neighbour[faceI]]++] = owner[faceI];
     }
 }
 
 
 void Foam::Module::meshOctreeAddressing::createOctreeEdges() const
 {
-    const VRWGraph& faces = this->octreeFaces();
+    const labelListList2D& faces = this->octreeFaces();
 
     // allocate memory for edges, face-edges addressing
     // and node-edges addressing
-    octreeEdgesPtr_ = new LongList<edge>();
-    LongList<edge>& edges = *octreeEdgesPtr_;
-    faceEdgesPtr_ = new VRWGraph(faces.size());
-    VRWGraph& faceEdges = *faceEdgesPtr_;
-    nodeEdgesPtr_ = new VRWGraph();
-    VRWGraph& nodeEdges = *nodeEdgesPtr_;
-    nodeEdges.setSizeAndColumnWidth(nNodes_, 6);
+    octreeEdgesPtr_ = new DynamicList<edge>();
+    DynamicList<edge>& edges = *octreeEdgesPtr_;
+    faceEdgesPtr_ = new labelListList2D(faces.size());
+    labelListList2D& faceEdges = *faceEdgesPtr_;
+    nodeEdgesPtr_ = new labelListList2D();
+    labelListList2D& nodeEdges = *nodeEdgesPtr_;
+    nodeEdges.setSize(nNodes_);
 
     forAll(faces, faceI)
     {
-        faceEdges.setRowSize(faceI, faces[faceI].size());
+        faceEdges[faceI].setSize(faces[faceI].size());
         forAllRow(faceEdges, faceI, feI)
         {
-            faceEdges(faceI, feI) = -1;
+            faceEdges[faceI][feI] = -1;
         }
     }
 
     forAll(faces, faceI)
     {
-        const label nEdges = faces.sizeOfRow(faceI);
+        const label nEdges = faces[faceI].size();
 
         for (label eI = 0; eI < nEdges; ++eI)
         {
             const edge e
             (
-                faces(faceI, eI),
-                faces(faceI, (eI + 1)%nEdges)
+                faces[faceI][eI],
+                faces[faceI][(eI + 1)%nEdges]
             );
 
             label eLabel(-1);
             forAllRow(nodeEdges, e.start(), neI)
             {
-                if (edges[nodeEdges(e.start(), neI)] == e )
+                if (edges[nodeEdges[e.start()][neI]] == e )
                 {
-                    eLabel = nodeEdges(e.start(), neI);
+                    eLabel = nodeEdges[e.start()][neI];
                     break;
                 }
             }
@@ -1003,15 +1003,15 @@ void Foam::Module::meshOctreeAddressing::createOctreeEdges() const
             if (eLabel < 0)
             {
                 // append new edge
-                faceEdges(faceI, eI) = edges.size();
-                nodeEdges.append(e.start(), edges.size());
-                nodeEdges.append(e.end(), edges.size());
+                faceEdges[faceI][eI] = edges.size();
+                nodeEdges[e.start()].append(edges.size());
+                nodeEdges[e.end()].append(edges.size());
 
                 edges.append(e);
             }
             else
             {
-                faceEdges(faceI, eI) = eLabel;
+                faceEdges[faceI][eI] = eLabel;
             }
         }
     }
@@ -1020,41 +1020,45 @@ void Foam::Module::meshOctreeAddressing::createOctreeEdges() const
 
 void Foam::Module::meshOctreeAddressing::calculateLeafEdges() const
 {
-    const VRWGraph& edgeLeaves = this->edgeLeaves();
+    const labelListList2D& edgeLeaves = this->edgeLeaves();
 
-    leafEdgesPtr_ = new VRWGraph();
-    VRWGraph& leafEdges = *leafEdgesPtr_;
+    leafEdgesPtr_ = new labelListList2D();
+    labelListList2D& leafEdges = *leafEdgesPtr_;
 
-    VRWGraphSMPModifier(leafEdges).reverseAddressing(edgeLeaves);
-    leafEdges.setSize(octree_.numberOfLeaves());
+    Foam::Module::reverseAddressing
+    (
+        leafEdges,
+        octree_.numberOfLeaves(),
+        edgeLeaves
+    );
 }
 
 
 void Foam::Module::meshOctreeAddressing::calculateEdgeLeaves() const
 {
-    const VRWGraph& edgeFaces = this->edgeFaces();
-    const labelLongList& owner = this->octreeFaceOwner();
-    const labelLongList& neighbour = this->octreeFaceNeighbour();
+    const labelListList2D& edgeFaces = this->edgeFaces();
+    const DynamicList<label>& owner = this->octreeFaceOwner();
+    const DynamicList<label>& neighbour = this->octreeFaceNeighbour();
 
-    edgeLeavesPtr_ = new VRWGraph();
-    VRWGraph& edgeLeaves = *edgeLeavesPtr_;
-    edgeLeaves.setSizeAndColumnWidth(edgeFaces.size(), 4);
+    edgeLeavesPtr_ = new labelListList2D();
+    labelListList2D& edgeLeaves = *edgeLeavesPtr_;
+    edgeLeaves.setSize(edgeFaces.size());
 
     forAll(edgeFaces, edgeI)
     {
         forAllRow(edgeFaces, edgeI, efI)
         {
-            const label fI = edgeFaces(edgeI, efI);
+            const label fI = edgeFaces[edgeI][efI];
             const label own = owner[fI];
             const label nei = neighbour[fI];
 
-            edgeLeaves.appendUniq(edgeI, own);
+            Foam::Module::appendUniq(edgeLeaves[edgeI], own);
 
             if (nei < 0)
             {
                 continue;
             }
-            edgeLeaves.appendUniq(edgeI, nei);
+            Foam::Module::appendUniq(edgeLeaves[edgeI], nei);
         }
     }
 }
@@ -1062,12 +1066,16 @@ void Foam::Module::meshOctreeAddressing::calculateEdgeLeaves() const
 
 void Foam::Module::meshOctreeAddressing::calculateEdgeFaces() const
 {
-    const VRWGraph& faceEdges = this->faceEdges();
-    edgeFacesPtr_ = new VRWGraph(octreeEdges().size());
-    VRWGraph& edgeFaces = *edgeFacesPtr_;
+    const labelListList2D& faceEdges = this->faceEdges();
+    edgeFacesPtr_ = new labelListList2D(octreeEdges().size());
+    labelListList2D& edgeFaces = *edgeFacesPtr_;
 
-    VRWGraphSMPModifier(edgeFaces).reverseAddressing(faceEdges);
-    edgeFaces.setSize(octreeEdges().size());
+    Foam::Module::reverseAddressing
+    (
+        edgeFaces,
+        octreeEdges().size(),
+        faceEdges
+    );
 }
 
 

@@ -42,6 +42,7 @@ SourceFiles
 #define meshOctreeAutomaticRefinement_H
 
 #include "meshOctreeModifier.H"
+#include "DynamicList.H"
 #include "IOdictionary.H"
 //#include "volFields.H"
 
@@ -102,11 +103,11 @@ class meshOctreeAutomaticRefinement
         void setMaxRefLevel();
 
         //- refine selected boxes
-        void refineSelectedBoxes(labelList&, labelLongList&);
+        void refineSelectedBoxes(labelList&, DynamicList<label>&);
 
         //- refine DATA boxes based on curvature
         bool curvatureRefinement();
-        bool refineBasedOnCurvature(labelList&, const labelLongList&);
+        bool refineBasedOnCurvature(labelList&, const DynamicList<label>&);
 
         //- refine DATA boxes which contain two or more independent parts
         //- of the surface in their vicinity
@@ -114,7 +115,7 @@ class meshOctreeAutomaticRefinement
         bool refineBasedOnProximityTests
         (
             labelList&,
-            const labelLongList&
+            const DynamicList<label>&
         );
 
         //- refine DATA boxes containing 2 or more corners, 2 or more distinct
@@ -122,14 +123,14 @@ class meshOctreeAutomaticRefinement
         bool refineBasedOnContainedPartitions
         (
             labelList&,
-            const labelLongList&
+            const DynamicList<label>&
         );
 
         //- refine boxes based on the number of contained surface corners
         bool refineBasedOnContainedCorners
         (
             labelList&,
-            const labelLongList&
+            const DynamicList<label>&
         );
 
 

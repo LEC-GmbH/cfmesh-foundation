@@ -32,7 +32,7 @@ License
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::triSurfAddressing::pointFacets() const
 {
     if (!pointFacetsPtr_)
@@ -50,7 +50,7 @@ Foam::Module::triSurfAddressing::pointFacets() const
 }
 
 
-inline const Foam::Module::edgeLongList&
+inline const Foam::DynamicList<Foam::edge>&
 Foam::Module::triSurfAddressing::edges() const
 {
     if (!edgesPtr_)
@@ -68,7 +68,7 @@ Foam::Module::triSurfAddressing::edges() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::triSurfAddressing::facetEdges() const
 {
     if (!facetEdgesPtr_)
@@ -86,7 +86,7 @@ Foam::Module::triSurfAddressing::facetEdges() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::triSurfAddressing::edgeFacets() const
 {
     if (!edgeFacetsPtr_)
@@ -104,7 +104,7 @@ Foam::Module::triSurfAddressing::edgeFacets() const
 }
 
 
-inline const Foam::Module::VRWGraph&
+inline const Foam::Module::labelListList2D&
 Foam::Module::triSurfAddressing::pointEdges() const
 {
     if (!pointEdgesPtr_)
@@ -119,24 +119,6 @@ Foam::Module::triSurfAddressing::pointEdges() const
     }
 
     return *pointEdgesPtr_;
-}
-
-
-inline const Foam::Module::VRWGraph&
-Foam::Module::triSurfAddressing::facetFacets() const
-{
-    if (!facetFacetsEdgesPtr_)
-    {
-        if (omp_in_parallel())
-        {
-            FatalErrorInFunction
-                << "Cannot calculate facetFacets" << abort(FatalError);
-        }
-
-        calculateFacetFacetsEdges();
-    }
-
-    return *facetFacetsEdgesPtr_;
 }
 
 

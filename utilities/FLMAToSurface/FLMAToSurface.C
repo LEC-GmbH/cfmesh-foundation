@@ -35,7 +35,7 @@ Description
 #include "triSurf.H"
 #include "triSurfModifier.H"
 #include "triFaceList.H"
-#include "labelLongList.H"
+#include "DynamicList.H"
 #include "IFstream.H"
 
 using namespace Foam;
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     inFile >> counter;
     geometricSurfacePatchList patches(1);
     patches[0].name() = "patch";
-    LongList<labelledTri>& triangles = tsm.facetsAccess();
+    DynamicList<labelledTri>& triangles = tsm.facetsAccess();
     triangles.setSize(counter);
     forAll(triangles, triI)
     {
@@ -132,7 +132,8 @@ int main(int argc, char *argv[])
         // read selection entries
         label size;
         inFile >> size;
-        labelLongList entries(size);
+        DynamicList<label> entries;
+        entries.setSize(size);
         for (label i = 0; i < size; ++i)
             inFile >> entries[i];
 

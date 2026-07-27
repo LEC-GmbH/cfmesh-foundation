@@ -22,7 +22,6 @@ meshSurfaceMapper  =  utilities/surfaceTools/meshSurfaceMapper
 meshSurfaceMapper2D = utilities/surfaceTools/meshSurfaceMapper2D
 edgeExtraction = utilities/surfaceTools/edgeExtraction
 edgeExtractor = $(edgeExtraction)/edgeExtractor
-meshSurfaceEdgeExtractor = utilities/surfaceTools/meshSurfaceEdgeExtractor
 meshSurfaceEdgeExtractorNonTopo = utilities/surfaceTools/meshSurfaceEdgeExtractorNonTopo
 meshSurfaceEdgeExtractor2D = utilities/surfaceTools/meshSurfaceEdgeExtractor2D
 meshSurfaceEdgeExtractorFUN = utilities/surfaceTools/meshSurfaceEdgeExtractorFUN
@@ -113,8 +112,6 @@ edge = utilities/meshes/primitives/edge
 face = utilities/meshes/primitives/face
 
 containers = utilities/containers
-VRWGraph = $(containers)/VRWGraph
-VRWGraphList = $(containers)/VRWGraphList
 lists = $(containers)/Lists
 
 meshZipper = utilities/meshZipper
@@ -142,11 +139,6 @@ $(checkMeshDict)/checkMeshDict.C
 
 $(lists)/pointFieldPMG.C
 $(lists)/faceListPMG.C
-
-$(VRWGraph)/VRWGraph.C
-$(VRWGraph)/VRWGraphSMPModifier.C
-
-$(VRWGraphList)/VRWGraphList.C
 
 $(polyMeshGen)/polyMeshGen.C
 $(polyMeshGen)/polyMeshGenPoints.C
@@ -337,7 +329,6 @@ $(meshSurfaceOptimizer)/meshSurfaceOptimizerOptimizeSurface.C
 $(surfaceOptimizer)/surfaceOptimizer.C
 
 $(meshOctreeCube)/meshOctreeCube.C
-$(meshOctreeCube)/meshOctreeCubeIntersections.C
 $(meshOctreeCube)/meshOctreeCubeRecursiveFunctions.C
 $(meshOctreeCube)/meshOctreeCubeRefine.C
 $(meshOctreeCube)/meshOctreeCubeCoordinatesIntersections.C

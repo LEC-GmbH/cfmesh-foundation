@@ -43,11 +43,10 @@ SourceFiles
 #ifndef boundaryLayerOptimisation_H
 #define boundaryLayerOptimisation_H
 
-#include "DynList.H"
 #include "polyMeshGenModifier.H"
-#include "labelLongList.H"
+#include "DynamicList.H"
 #include "boolList.H"
-#include "edgeLongList.H"
+#include "labelListListOps.H"
 
 #include <map>
 
@@ -83,13 +82,13 @@ class boundaryLayerOptimisation
         mutable const meshSurfacePartitioner* partitionerPtr_;
 
         //- boundary layer hairs
-        edgeLongList hairEdges_;
+        DynamicList<edge> hairEdges_;
 
         //- hair edges attached to a boundary point
-        VRWGraph hairEdgesAtBndPoint_;
+        labelListList2D hairEdgesAtBndPoint_;
 
         //- hair edge to other hair edges
-        VRWGraph hairEdgesNearHairEdge_;
+        labelListList2D hairEdgesNearHairEdge_;
 
         //- is boundary face a base for a prism in the bnd layer
         boolList isBndLayerBase_;
@@ -160,7 +159,7 @@ class boundaryLayerOptimisation
         (
             const label cellI,
             const label baseFaceI,
-            DynList<edge>&
+            DynamicList<edge>&
         ) const;
 
         //- calculate the thickness of the layer for edge heI
@@ -262,10 +261,10 @@ public:
         void setFeatureSizeFactor(const scalar);
 
         //- return hair edges
-        const edgeLongList& hairEdges() const;
+        const DynamicList<edge>& hairEdges() const;
 
         //- hair edges attached to a boundary point
-        const VRWGraph& hairEdgesAtBndPoint() const;
+        const labelListList2D& hairEdgesAtBndPoint() const;
 
         //- boundary faces which serve as base faces of a boundary layer
         //- are set to true

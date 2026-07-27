@@ -74,7 +74,7 @@ void Foam::Module::workflowControls::setStepCompleted() const
         mesh_.metaData().add("lastStep", currentStep_);
     }
 
-    DynList<word> completedSteps;
+    DynamicList<word> completedSteps;
     if (mesh_.metaData().found("completedSteps"))
         completedSteps = wordList(mesh_.metaData().lookup("completedSteps"));
 
@@ -130,10 +130,10 @@ Foam::word Foam::Module::workflowControls::lastCompletedStep() const
 }
 
 
-Foam::Module::DynList<Foam::word> 
+Foam::DynamicList<Foam::word>
 Foam::Module::workflowControls::completedSteps() const
 {
-    DynList<word> completedSteps;
+    DynamicList<word> completedSteps;
 
     if (mesh_.metaData().found("completedSteps"))
     {
@@ -285,7 +285,7 @@ bool Foam::Module::workflowControls::runCurrentStep(const word& stepName)
     // check if the requested step exists in the database of steps
     if (workflowSteps_.find(stepName) == workflowSteps_.end())
     {
-        DynList<word> toc;
+        DynamicList<word> toc;
         for (std::map<word, label>::const_iterator it = workflowSteps_.cbegin(); it != workflowSteps_.cend(); ++it)
         {
             toc.append(it->first);

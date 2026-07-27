@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 
     // generate bounding bound triangles
     const label nTriangles = origSurface.size();
-    LongList<labelledTri>& newTriangles = sMod.facetsAccess();
+    DynamicList<labelledTri>& newTriangles = sMod.facetsAccess();
     newTriangles.setSize(nTriangles + 12);
 
     // create patches

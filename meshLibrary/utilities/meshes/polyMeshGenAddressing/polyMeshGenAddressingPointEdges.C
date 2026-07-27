@@ -29,7 +29,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "polyMeshGenAddressing.H"
-#include "VRWGraphSMPModifier.H"
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
@@ -46,18 +45,17 @@ void Foam::Module::polyMeshGenAddressing::calcPointEdges() const
         const edgeList& e = edges();
 
         // create the addressing
-        pePtr_ = new VRWGraph();
-        VRWGraph& pointEdgeAddr = *pePtr_;
+        pePtr_ = new labelListList2D();
+        labelListList2D& pointEdgeAddr = *pePtr_;
 
-        VRWGraphSMPModifier(pointEdgeAddr).reverseAddressing(e);
-        pointEdgeAddr.setSize(mesh_.points().size());
+        reverseAddressing(pointEdgeAddr, mesh_.points().size(), e);
     }
 }
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-const Foam::Module::VRWGraph&
+const Foam::Module::labelListList2D&
 Foam::Module::polyMeshGenAddressing::pointEdges() const
 {
     if (!pePtr_)

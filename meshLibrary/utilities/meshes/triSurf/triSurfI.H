@@ -30,7 +30,7 @@ License
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-inline Foam::Module::LongList<Foam::labelledTri>&
+inline Foam::DynamicList<Foam::labelledTri>&
 Foam::Module::triSurf::accessToFacets()
 {
     return triSurfFacets::triangles_;

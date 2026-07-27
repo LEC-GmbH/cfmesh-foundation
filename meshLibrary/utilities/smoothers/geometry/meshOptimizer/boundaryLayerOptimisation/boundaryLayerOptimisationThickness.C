@@ -41,7 +41,7 @@ void Foam::Module::boundaryLayerOptimisation::hairEdgesAtBndFace
 (
     const label cellI,
     const label baseFaceI,
-    DynList<edge>& hairEdges
+    DynamicList<edge>& hairEdges
 ) const
 {
     const faceListPMG& faces = mesh_.faces();
@@ -49,9 +49,10 @@ void Foam::Module::boundaryLayerOptimisation::hairEdgesAtBndFace
     const cell& c = mesh_.cells()[cellI];
 
     // check cell topology
-    DynList<edge, 48> edges;
-    DynList<DynList<label, 2>, 48> edgeFaces;
-    DynList<DynList<label, 10>, 24> faceEdges;
+    DynamicList<edge> edges;
+    edges.reserve(48);
+    DynamicList<DynamicList<label>> edgeFaces;
+    labelListList2D faceEdges;
     faceEdges.setSize(c.size());
     label baseFace(-1);
     forAll(c, fI)
@@ -293,7 +294,7 @@ void Foam::Module::boundaryLayerOptimisation::optimiseThicknessVariation
 
     const meshSurfaceEngine& mse = meshSurface();
     const labelList& bp = mse.bp();
-    const VRWGraph& pFaces = mse.pointFaces();
+    const labelListList2D& pFaces = mse.pointFaces();
     const faceList::subList& bFaces = mse.boundaryFaces();
     const label start = mesh_.nInternalFaces();
     const labelList& faceOwner = mse.faceOwners();
@@ -342,11 +343,12 @@ void Foam::Module::boundaryLayerOptimisation::optimiseThicknessVariation
 
                 scalar maxThickness = hairLength[hairEdgeI];
 
-                DynList<label, 64> influencers;
+                DynamicList<label> influencers;
+                influencers.reserve(64);
 
                 forAllRow(pFaces, bpI, pfI)
                 {
-                    const label bfI = pFaces(bpI, pfI);
+                    const label bfI = pFaces[bpI][pfI];
 
                     const face& bf = bFaces[bfI];
                     if (bf.which(he.end()) >= 0)
@@ -369,7 +371,7 @@ void Foam::Module::boundaryLayerOptimisation::optimiseThicknessVariation
                         );
 
                     // check thickness variation over all hair edges
-                    DynList<edge> hairEdges;
+                    DynamicList<edge> hairEdges;
                     hairEdgesAtBndFace(faceOwner[bfI], baseFaceI, hairEdges);
 
                     forAll(bf, pI)
@@ -380,7 +382,7 @@ void Foam::Module::boundaryLayerOptimisation::optimiseThicknessVariation
 
                         forAllRow(hairEdgesAtBndPoint_, bpJ, peJ)
                         {
-                            const label heJ = hairEdgesAtBndPoint_(bpJ, peJ);
+                            const label heJ = hairEdgesAtBndPoint_[bpJ][peJ];
 
                             if (hairEdgeI == heJ)
                                 continue;

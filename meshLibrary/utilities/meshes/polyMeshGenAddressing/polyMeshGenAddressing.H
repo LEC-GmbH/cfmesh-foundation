@@ -58,9 +58,8 @@ SourceFiles
 #include "polyMeshGenCells.H"
 #include "boolList.H"
 #include "HashSet.H"
-#include "DynList.H"
 #include "Map.H"
-#include "VRWGraph.H"
+#include "labelListListOps.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -90,31 +89,31 @@ class polyMeshGenAddressing
     // Connectivity
 
         //- Cell-cells
-        mutable VRWGraph* ccPtr_;
+        mutable labelListList2D* ccPtr_;
 
         //- Point-cells
-        mutable VRWGraph* pcPtr_;
+        mutable labelListList2D* pcPtr_;
 
         //- Edge-faces
-        mutable VRWGraph* efPtr_;
+        mutable labelListList2D* efPtr_;
 
         //- Point-faces
-        mutable VRWGraph* pfPtr_;
+        mutable labelListList2D* pfPtr_;
 
         //- Cell-edges
-        mutable VRWGraph* cePtr_;
+        mutable labelListList2D* cePtr_;
 
         //- Face-edges
-        mutable VRWGraph* fePtr_;
+        mutable labelListList2D* fePtr_;
 
         //- Point-edges
-        mutable VRWGraph* pePtr_;
+        mutable labelListList2D* pePtr_;
 
         //- Point-points
-        mutable VRWGraph* ppPtr_;
+        mutable labelListList2D* ppPtr_;
 
         //- Cell-points
-        mutable VRWGraph* cpPtr_;
+        mutable labelListList2D* cpPtr_;
 
 
     // Geometric data
@@ -233,20 +232,20 @@ public:
 
         // Return mesh connectivity
 
-            const VRWGraph& cellCells() const;
+            const labelListList2D& cellCells() const;
             // faceCells given as faceOwner and faceNeighbour
-            const VRWGraph& pointCells() const;
+            const labelListList2D& pointCells() const;
 
             // faceFaces considered unnecessary
-            const VRWGraph& edgeFaces() const;
-            const VRWGraph& pointFaces() const;
+            const labelListList2D& edgeFaces() const;
+            const labelListList2D& pointFaces() const;
 
-            const VRWGraph& cellEdges() const;
-            const VRWGraph& faceEdges() const;
+            const labelListList2D& cellEdges() const;
+            const labelListList2D& faceEdges() const;
             // edgeEdges considered unnecessary
-            const VRWGraph& pointEdges() const;
-            const VRWGraph& pointPoints() const;
-            const VRWGraph& cellPoints() const;
+            const labelListList2D& pointEdges() const;
+            const labelListList2D& pointPoints() const;
+            const labelListList2D& cellPoints() const;
 
 
         // Geometric data (raw!)

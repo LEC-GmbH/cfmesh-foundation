@@ -29,7 +29,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "triSurfAddressing.H"
-#include "VRWGraphSMPModifier.H"
 #include "demandDrivenData.H"
 
 #include <set>
@@ -40,17 +39,17 @@ License
 
 void Foam::Module::triSurfAddressing::calculatePointFacets() const
 {
-    pointFacetsPtr_ = new VRWGraph();
+    pointFacetsPtr_ = new labelListList2D();
 
-    VRWGraphSMPModifier(*pointFacetsPtr_).reverseAddressing(facets_);
+    reverseAddressing(*pointFacetsPtr_, facets_);
 }
 
 
 void Foam::Module::triSurfAddressing::calculateEdges() const
 {
-    edgesPtr_ = new edgeLongList();
+    edgesPtr_ = new DynamicList<edge>();
 
-    const VRWGraph& pFacets = pointFacets();
+    const labelListList2D& pFacets = pointFacets();
 
     label nThreads = 3*omp_get_num_procs();
     if (pFacets.size() < 1000)
@@ -64,7 +63,7 @@ void Foam::Module::triSurfAddressing::calculateEdges() const
 
     # pragma omp parallel num_threads(nThreads)
     {
-        edgeLongList edgesHelper;
+        DynamicList<edge> edgesHelper;
 
         # pragma omp for schedule(static)
         forAll(pFacets, pI)
@@ -73,7 +72,7 @@ void Foam::Module::triSurfAddressing::calculateEdges() const
 
             forAllRow(pFacets, pI, pfI)
             {
-                const label triI = pFacets(pI, pfI);
+                const label triI = pFacets[pI][pfI];
                 const labelledTri& tri = facets_[triI];
 
                 forAll(tri, i)
@@ -138,11 +137,15 @@ void Foam::Module::triSurfAddressing::calculateEdges() const
 
 void Foam::Module::triSurfAddressing::calculateFacetEdges() const
 {
-    const edgeLongList& edges = this->edges();
-    const VRWGraph& pointFaces = this->pointFacets();
+    const DynamicList<edge>& edges = this->edges();
+    const labelListList2D& pointFaces = this->pointFacets();
 
-    facetEdgesPtr_ = new VRWGraph(facets_.size(), 3, -1);
-    VRWGraph& faceEdges = *facetEdgesPtr_;
+    facetEdgesPtr_ = new labelListList2D(facets_.size());
+    labelListList2D& faceEdges = *facetEdgesPtr_;
+    forAll(faceEdges, i)
+    {
+        faceEdges[i].setSize(3, -1);
+    }
 
     # pragma omp parallel for schedule(dynamic, 100)
     forAll(edges, edgeI)
@@ -152,7 +155,7 @@ void Foam::Module::triSurfAddressing::calculateFacetEdges() const
 
         forAllRow(pointFaces, pI, pfI)
         {
-            const label fI = pointFaces(pI, pfI);
+            const label fI = pointFaces[pI][pfI];
 
             const labelledTri& tri = facets_[fI];
             forAll(tri, eI)
@@ -161,7 +164,7 @@ void Foam::Module::triSurfAddressing::calculateFacetEdges() const
 
                 if (e == ee)
                 {
-                    faceEdges(fI, eI) = edgeI;
+                    faceEdges[fI][eI] = edgeI;
                 }
             }
         }
@@ -171,62 +174,28 @@ void Foam::Module::triSurfAddressing::calculateFacetEdges() const
 
 void Foam::Module::triSurfAddressing::calculateEdgeFacets() const
 {
-    const edgeLongList& edges = this->edges();
-    const VRWGraph& faceEdges = this->facetEdges();
+    const DynamicList<edge>& edges = this->edges();
+    const labelListList2D& faceEdges = this->facetEdges();
 
-    edgeFacetsPtr_ = new VRWGraph(edges.size());
+    edgeFacetsPtr_ = new labelListList2D(edges.size());
 
-    VRWGraphSMPModifier(*edgeFacetsPtr_).reverseAddressing(faceEdges);
+    reverseAddressing(*edgeFacetsPtr_, faceEdges);
 }
 
 
 void Foam::Module::triSurfAddressing::calculatePointEdges() const
 {
-    const edgeLongList& edges = this->edges();
+    const DynamicList<edge>& edges = this->edges();
 
-    pointEdgesPtr_ = new VRWGraph(points_.size());
+    pointEdgesPtr_ = new labelListList2D(points_.size());
 
-    pointEdgesPtr_->reverseAddressing(edges);
-}
-
-
-void Foam::Module::triSurfAddressing::calculateFacetFacetsEdges() const
-{
-    facetFacetsEdgesPtr_ = new VRWGraph();
-
-    const VRWGraph& facetEdges = this->facetEdges();
-    const VRWGraph& edgeFacets = this->edgeFacets();
-
-    facetFacetsEdgesPtr_->setSize(facets_.size());
-
-    forAll(facetEdges, facetI)
-    {
-        labelHashSet fLabels;
-
-        forAllRow(facetEdges, facetI, feI)
-        {
-            const label edgeI = facetEdges(facetI, feI);
-
-            forAllRow(edgeFacets, edgeI, efI)
-            {
-                fLabels.insert(edgeFacets(edgeI, efI));
-            }
-        }
-
-        facetFacetsEdgesPtr_->setRowSize(facetI, fLabels.size());
-
-        label counter(0);
-        for (const label facei : fLabels.toc())
-        {
-            facetFacetsEdgesPtr_->operator()(facetI, counter++) = facei;
-        }
-    }
+    reverseAddressing(*pointEdgesPtr_, edges);
 }
 
 
 void Foam::Module::triSurfAddressing::calculatePointNormals() const
 {
-    const VRWGraph& pFacets = pointFacets();
+    const labelListList2D& pFacets = pointFacets();
     const vectorField& fNormals = facetNormals();
 
     pointNormalsPtr_ = new vectorField(pFacets.size());
@@ -239,7 +208,7 @@ void Foam::Module::triSurfAddressing::calculatePointNormals() const
 
         forAllRow(pFacets, pI, pfI)
         {
-            normal += fNormals[pFacets(pI, pfI)];
+            normal += fNormals[pFacets[pI][pfI]];
         }
 
         const scalar d = mag(normal);
@@ -287,7 +256,7 @@ void Foam::Module::triSurfAddressing::calculateFacetCentres() const
 Foam::Module::triSurfAddressing::triSurfAddressing
 (
     const pointField& points,
-    const LongList<labelledTri>& triangles)
+    const DynamicList<labelledTri>& triangles)
 :
     points_(points),
     facets_(triangles),
@@ -296,7 +265,6 @@ Foam::Module::triSurfAddressing::triSurfAddressing
     facetEdgesPtr_(nullptr),
     edgeFacetsPtr_(nullptr),
     pointEdgesPtr_(nullptr),
-    facetFacetsEdgesPtr_(nullptr),
     pointNormalsPtr_(nullptr),
     facetNormalsPtr_(nullptr),
     facetCentresPtr_(nullptr)
@@ -322,7 +290,6 @@ void Foam::Module::triSurfAddressing::clearAddressing()
     deleteDemandDrivenData(facetEdgesPtr_);
     deleteDemandDrivenData(edgeFacetsPtr_);
     deleteDemandDrivenData(pointEdgesPtr_);
-    deleteDemandDrivenData(facetFacetsEdgesPtr_);
 }
 
 

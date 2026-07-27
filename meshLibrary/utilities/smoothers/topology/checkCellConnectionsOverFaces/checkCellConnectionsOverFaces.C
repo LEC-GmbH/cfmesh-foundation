@@ -29,7 +29,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "checkCellConnectionsOverFaces.H"
-#include "labelLongList.H"
 
 #include <set>
 #include <map>
@@ -65,7 +64,7 @@ public:
         return mesh_.cells().size();
     }
 
-    void operator()(const label cellI, DynList<label>& neighbourCells) const
+    void operator()(const label cellI, DynamicList<label>& neighbourCells) const
     {
         neighbourCells.clear();
 

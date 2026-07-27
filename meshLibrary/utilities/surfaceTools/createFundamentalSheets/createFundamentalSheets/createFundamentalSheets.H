@@ -42,7 +42,6 @@ SourceFiles
 #define createFundamentalSheets_H
 
 #include "polyMeshGenModifier.H"
-#include "labelLongList.H"
 #include "boolList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

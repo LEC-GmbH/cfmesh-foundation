@@ -41,7 +41,7 @@ SourceFiles
 #ifndef triSurfaceCleanupDuplicateTriangles_H
 #define triSurfaceCleanupDuplicateTriangles_H
 
-#include "VRWGraph.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -65,7 +65,7 @@ class triSurfaceCleanupDuplicateTriangles
         triSurf& surf_;
 
         //- new triangle labels in case some of them is removed
-        labelLongList newTriangleLabel_;
+        DynamicList<label> newTriangleLabel_;
 
 
     // Private member functions

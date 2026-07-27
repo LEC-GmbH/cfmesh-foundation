@@ -144,23 +144,23 @@ Foam::Module::meshOctreeAddressing::~meshOctreeAddressing()
 void Foam::Module::meshOctreeAddressing::edgeIntersections
 (
     const label eI,
-    DynList<point>& intersections
+    DynamicList<point>& intersections
 ) const
 {
     intersections.clear();
 
-    const LongList<edge>& edges = this->octreeEdges();
+    const DynamicList<edge>& edges = this->octreeEdges();
     const pointField& points = this->octreePoints();
-    const VRWGraph& edgeCubes = this->edgeLeaves();
+    const labelListList2D& edgeCubes = this->edgeLeaves();
     const scalar tol =
         SMALL*mag(points[edges[eI].start()] - points[edges[eI].end()]);
 
     Map<label> nAppearances;
-    DynList<label> triangles;
+    DynamicList<label> triangles;
 
     forAllRow(edgeCubes, eI, i)
     {
-        const label leafI = edgeCubes(eI, i);
+        const label leafI = edgeCubes[eI][i];
         if (!octree_.hasContainedTriangles(leafI))
         {
             return;
@@ -185,7 +185,7 @@ void Foam::Module::meshOctreeAddressing::edgeIntersections
 
     forAllConstIter(Map<label>, nAppearances, iter)
     {
-        if (iter() == edgeCubes.sizeOfRow(eI))
+        if (iter() == edgeCubes[eI].size())
         {
             // check for geometric intersection
             const bool intersectionExists =
@@ -226,32 +226,32 @@ void Foam::Module::meshOctreeAddressing::cubesAroundEdge
     FixedList<label, 4>& edgeCubes
 ) const
 {
-    const VRWGraph& nl = this->nodeLabels();
-    const label nodeI = nl(leafI, meshOctreeCubeCoordinates::edgeNodes_[eI][0]);
-    const FRWGraph<label, 8>& pLeaves = this->nodeLeaves();
+    const labelListList2D& nl = this->nodeLabels();
+    const label nodeI = nl[leafI][meshOctreeCubeCoordinates::edgeNodes_[eI][0]];
+    const List<FixedList<label, 8>>& pLeaves = this->nodeLeaves();
 
     switch(eI)
     {
         case 0: case 1: case 2: case 3:
         {
-            edgeCubes[0] = pLeaves(nodeI, 1);
-            edgeCubes[1] = pLeaves(nodeI, 3);
-            edgeCubes[2] = pLeaves(nodeI, 5);
-            edgeCubes[3] = pLeaves(nodeI, 7);
+            edgeCubes[0] = pLeaves[nodeI][1];
+            edgeCubes[1] = pLeaves[nodeI][3];
+            edgeCubes[2] = pLeaves[nodeI][5];
+            edgeCubes[3] = pLeaves[nodeI][7];
         } break;
         case 4: case 5: case 6: case 7:
         {
-            edgeCubes[0] = pLeaves(nodeI, 2);
-            edgeCubes[1] = pLeaves(nodeI, 3);
-            edgeCubes[2] = pLeaves(nodeI, 6);
-            edgeCubes[3] = pLeaves(nodeI, 7);
+            edgeCubes[0] = pLeaves[nodeI][2];
+            edgeCubes[1] = pLeaves[nodeI][3];
+            edgeCubes[2] = pLeaves[nodeI][6];
+            edgeCubes[3] = pLeaves[nodeI][7];
         } break;
         case 8: case 9: case 10: case 11:
         {
-            edgeCubes[0] = pLeaves(nodeI, 4);
-            edgeCubes[1] = pLeaves(nodeI, 5);
-            edgeCubes[2] = pLeaves(nodeI, 6);
-            edgeCubes[3] = pLeaves(nodeI, 7);
+            edgeCubes[0] = pLeaves[nodeI][4];
+            edgeCubes[1] = pLeaves[nodeI][5];
+            edgeCubes[2] = pLeaves[nodeI][6];
+            edgeCubes[3] = pLeaves[nodeI][7];
         } break;
         default:
         {
@@ -274,9 +274,9 @@ Foam::label Foam::Module::meshOctreeAddressing::findEdgeCentre
     }
 
     const meshOctreeCubeBasic& oc = octree_.returnLeaf(leafI);
-    const VRWGraph& nl = this->nodeLabels();
-    const label nodeI = nl(leafI, meshOctreeCubeCoordinates::edgeNodes_[eI][0]);
-    const FRWGraph<label, 8>& pLeaves = this->nodeLeaves();
+    const labelListList2D& nl = this->nodeLabels();
+    const label nodeI = nl[leafI][meshOctreeCubeCoordinates::edgeNodes_[eI][0]];
+    const List<FixedList<label, 8>>& pLeaves = this->nodeLeaves();
 
     const direction level = oc.level();
 
@@ -306,16 +306,16 @@ Foam::label Foam::Module::meshOctreeAddressing::findEdgeCentre
     {
         const label fNode = meshOctreeCubeCoordinates::faceNodes_[fI][i];
 
-        if (pLeaves(nodeI, fNode) < 0)
+        if (pLeaves[nodeI][fNode] < 0)
         {
             continue;
         }
 
-        const label leafJ = pLeaves(nodeI, fNode);
+        const label leafJ = pLeaves[nodeI][fNode];
         if (octree_.returnLeaf(leafJ).level() > level)
         {
             const label shift = (i + 2)%4;
-            return nl(leafJ, meshOctreeCubeCoordinates::faceNodes_[fI][shift]);
+            return nl[leafJ][meshOctreeCubeCoordinates::faceNodes_[fI][shift]];
         }
     }
 

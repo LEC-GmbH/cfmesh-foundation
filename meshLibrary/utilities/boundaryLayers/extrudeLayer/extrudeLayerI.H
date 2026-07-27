@@ -120,14 +120,14 @@ Foam::Module::extrudeLayer::addressingCalculator::faceSharingEdge
     label otherFace(-1);
     forAllRow(pointExtruded_, pointI, pfI)
     {
-        const label currFaceI = pointExtruded_(pointI, pfI);
+        const label currFaceI = pointExtruded_[pointI][pfI];
 
         if (currFaceI == extrudedI)
         {
             continue;
         }
 
-        if (pointExtruded_.found(nextI, currFaceI))
+        if (found(pointExtruded_, nextI, currFaceI))
         {
             if (otherFace != -1)
             {
@@ -148,16 +148,16 @@ inline void Foam::Module::extrudeLayer::addressingCalculator::facesSharingEdge
 (
     const label start,
     const label end,
-    DynList<label>& edgeFaces
+    DynamicList<label>& edgeFaces
 ) const
 {
     edgeFaces.clear();
 
     forAllRow(pointExtruded_, start, pfI)
     {
-        const label currFaceI = pointExtruded_(start, pfI);
+        const label currFaceI = pointExtruded_[start][pfI];
 
-        if (pointExtruded_.found(end, currFaceI))
+        if (found(pointExtruded_, end, currFaceI))
         {
             edgeFaces.append(currFaceI);
         }

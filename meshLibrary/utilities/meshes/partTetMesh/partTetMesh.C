@@ -31,7 +31,6 @@ License
 #include "demandDrivenData.H"
 #include "partTetMesh.H"
 #include "polyMeshGenModifier.H"
-#include "VRWGraphList.H"
 #include "polyMeshGenAddressing.H"
 #include "helperFunctions.H"
 
@@ -44,7 +43,7 @@ License
 Foam::Module::partTetMesh::partTetMesh
 (
     polyMeshGen& mesh,
-    const labelLongList& lockedPoints
+    const DynamicList<label>& lockedPoints
 )
 :
     origMesh_(mesh),
@@ -71,7 +70,7 @@ Foam::Module::partTetMesh::partTetMesh
 Foam::Module::partTetMesh::partTetMesh
 (
     polyMeshGen& mesh,
-    const labelLongList& lockedPoints,
+    const DynamicList<label>& lockedPoints,
     const direction nLayers
 )
 :
@@ -88,7 +87,7 @@ Foam::Module::partTetMesh::partTetMesh
     const cellListPMG& cells = mesh.cells();
     const labelList& owner = mesh.owner();
     const PtrList<boundaryPatch>& boundaries = mesh.boundaries();
-    const VRWGraph& pointCells = mesh.addressingData().pointCells();
+    const labelListList2D& pointCells = mesh.addressingData().pointCells();
 
     List<direction> useCell(cells.size(), direction(0));
 
@@ -121,7 +120,7 @@ Foam::Module::partTetMesh::partTetMesh
                     {
                         forAllRow(pointCells, f[pI], pcI)
                         {
-                            const label cLabel = pointCells(f[pI], pcI);
+                            const label cLabel = pointCells[f[pI]][pcI];
                             if (!useCell[cLabel])
                             {
                                 useCell[cLabel] = layerI + 1;
@@ -146,7 +145,7 @@ Foam::Module::partTetMesh::partTetMesh
 Foam::Module::partTetMesh::partTetMesh
 (
     polyMeshGen& mesh,
-    const labelLongList& lockedPoints,
+    const DynamicList<label>& lockedPoints,
     labelHashSet& badFaces,
     const direction additionalLayers
 )
@@ -162,7 +161,7 @@ Foam::Module::partTetMesh::partTetMesh
 {
     const faceListPMG& faces = mesh.faces();
     const cellListPMG& cells = mesh.cells();
-    const VRWGraph& pointCells = mesh.addressingData().pointCells();
+    const labelListList2D& pointCells = mesh.addressingData().pointCells();
 
     List<direction> useCell(cells.size(), direction(0));
 
@@ -177,7 +176,7 @@ Foam::Module::partTetMesh::partTetMesh
             {
                 forAllRow(pointCells, f[pI], pcI)
                 {
-                    useCell[pointCells(f[pI], pcI)] = 1;
+                    useCell[pointCells[f[pI]][pcI]] = 1;
                 }
             }
         }
@@ -200,7 +199,7 @@ Foam::Module::partTetMesh::partTetMesh
                     {
                         forAllRow(pointCells, f[pI], pcI)
                         {
-                            const label cLabel = pointCells(f[pI], pcI);
+                            const label cLabel = pointCells[f[pI]][pcI];
                             if (!useCell[cLabel])
                             {
                                 useCell[cLabel] = layerI + 1;
@@ -231,7 +230,7 @@ Foam::Module::partTetMesh::~partTetMesh()
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-const Foam::Module::VRWGraph&
+const Foam::Module::labelListList2D&
 Foam::Module::partTetMesh::internalPointOrdering() const
 {
     if (omp_in_parallel())
@@ -250,7 +249,7 @@ Foam::Module::partTetMesh::internalPointOrdering() const
 }
 
 
-const Foam::Module::VRWGraph& 
+const Foam::Module::labelListList2D&
 Foam::Module::partTetMesh::boundaryPointOrdering() const
 {
     if (omp_in_parallel())
@@ -285,13 +284,14 @@ void Foam::Module::partTetMesh::updateVertex
     }
 
     // find face centres attached
-    DynList<label, 64> helper;
+    DynamicList<label> helper;
+    helper.reserve(64);
     forAllRow(pointTets_, pointI, ptI)
     {
-        const label centreI = tets_[pointTets_(pointI, ptI)][2];
+        const label centreI = tets_[pointTets_[pointI][ptI]][2];
         if (smoothVertex_[centreI] & FACECENTRE)
         {
-            helper.appendUniq(centreI);
+            appendUniq(helper, centreI);
         }
     }
 
@@ -304,7 +304,7 @@ void Foam::Module::partTetMesh::updateVertex
         scalar faceArea(0.0);
         forAllRow(pointTets_, centreI, ptI)
         {
-            const partTet& tet = tets_[pointTets_(centreI, ptI)];
+            const partTet& tet = tets_[pointTets_[centreI][ptI]];
             point c(vector::zero);
             for (label i = 0; i < 3; ++i)
             {
@@ -324,10 +324,10 @@ void Foam::Module::partTetMesh::updateVertex
     helper.clear();
     forAllRow(pointTets_, pointI, ptI)
     {
-        const label centreI = tets_[pointTets_(pointI, ptI)][3];
+        const label centreI = tets_[pointTets_[pointI][ptI]][3];
         if (smoothVertex_[centreI] & CELLCENTRE)
         {
-            helper.appendUniq(centreI);
+            appendUniq(helper, centreI);
         }
     }
 
@@ -340,7 +340,7 @@ void Foam::Module::partTetMesh::updateVertex
         scalar cellVol(0.0);
         forAllRow(pointTets_, centreI, ptI)
         {
-            const partTet& tet = tets_[pointTets_(centreI, ptI)];
+            const partTet& tet = tets_[pointTets_[centreI][ptI]];
             const point c = tet.centroid(points_);
             const scalar vol = Foam::mag(tet.mag(points_)) + VSMALL;
 
@@ -355,14 +355,14 @@ void Foam::Module::partTetMesh::updateVertex
 
 void Foam::Module::partTetMesh::updateVerticesSMP
 (
-    const List<LongList<labelledPoint>>& np
+    const List<DynamicList<labelledPoint>>& np
 )
 {
     List<direction> updateType(points_.size(), direction(0));
 
     # pragma omp parallel num_threads(np.size())
     {
-        const LongList<labelledPoint>& newPoints = np[omp_get_thread_num()];
+        const DynamicList<labelledPoint>& newPoints = np[omp_get_thread_num()];
 
         forAll(newPoints, i)
         {
@@ -373,7 +373,7 @@ void Foam::Module::partTetMesh::updateVerticesSMP
 
             forAllRow(pointTets_, pointI, ptI)
             {
-                const partTet& pt = tets_[pointTets_(pointI, ptI)];
+                const partTet& pt = tets_[pointTets_[pointI][ptI]];
 
                 if (smoothVertex_[pt[3]] & CELLCENTRE)
                 {
@@ -402,7 +402,7 @@ void Foam::Module::partTetMesh::updateVerticesSMP
                 scalar cellVol(0.0);
                 forAllRow(pointTets_, pI, ptI)
                 {
-                    const partTet& tet = tets_[pointTets_(pI, ptI)];
+                    const partTet& tet = tets_[pointTets_[pI][ptI]];
                     const point c = tet.centroid(points_);
                     const scalar vol = Foam::mag(tet.mag(points_)) + VSMALL;
 
@@ -418,7 +418,7 @@ void Foam::Module::partTetMesh::updateVerticesSMP
                 scalar faceArea(0.0);
                 forAllRow(pointTets_, pI, ptI)
                 {
-                    const partTet& tet = tets_[pointTets_(pI, ptI)];
+                    const partTet& tet = tets_[pointTets_[pI][ptI]];
                     point c(vector::zero);
                     for (label i = 0; i < 3; ++i)
                     {
@@ -461,7 +461,7 @@ void Foam::Module::partTetMesh::updateOrigMesh(boolList* changedFacePtr)
         chF = false;
 
         const cellListPMG& cells = origMesh_.cells();
-        const VRWGraph& pointCells = origMesh_.addressingData().pointCells();
+        const labelListList2D& pointCells = origMesh_.addressingData().pointCells();
 
         # pragma omp parallel for if (pointCells.size() > 100) \
         schedule(dynamic, 20)
@@ -471,7 +471,7 @@ void Foam::Module::partTetMesh::updateOrigMesh(boolList* changedFacePtr)
             {
                 forAllRow(pointCells, pointI, pcI)
                 {
-                    const cell& c = cells[pointCells(pointI, pcI)];
+                    const cell& c = cells[pointCells[pointI][pcI]];
 
                     forAll(c, fI)
                     {
@@ -499,6 +499,13 @@ void Foam::Module::partTetMesh::updateOrigMesh(boolList* changedFacePtr)
 
 void Foam::Module::partTetMesh::createPolyMesh(polyMeshGen& pmg) const
 {
+    if (omp_in_parallel())
+    {
+        FatalErrorInFunction
+            << "Building cellFaces inside a parallel region."
+            << " This is not thread safe" << exit(FatalError);
+    }
+
     polyMeshGenModifier meshModifier(pmg);
 
     pointFieldPMG& pAccess = meshModifier.pointsAccess();
@@ -508,35 +515,39 @@ void Foam::Module::partTetMesh::createPolyMesh(polyMeshGen& pmg) const
         pAccess[pI] = points_[pI];
     }
 
-    VRWGraphList cellFaces;
+    DynamicList<faceList> cellFaces;
 
     forAll(tets_, tetI)
     {
         const partTet& tet = tets_[tetI];
 
-        FixedList<FixedList<label, 3>, 4> tetFaces;
+        faceList tetFaces(4);
 
         // face 0
+        tetFaces[0].setSize(3);
         tetFaces[0][0] = tet[0];
         tetFaces[0][1] = tet[2];
         tetFaces[0][2] = tet[1];
 
         // face 1
+        tetFaces[1].setSize(3);
         tetFaces[1][0] = tet[0];
         tetFaces[1][1] = tet[1];
         tetFaces[1][2] = tet[3];
 
         // face 2
+        tetFaces[2].setSize(3);
         tetFaces[2][0] = tet[0];
         tetFaces[2][1] = tet[3];
         tetFaces[2][2] = tet[2];
 
         // face 3
+        tetFaces[3].setSize(3);
         tetFaces[3][0] = tet[1];
         tetFaces[3][1] = tet[2];
         tetFaces[3][2] = tet[3];
 
-        cellFaces.appendGraph(tetFaces);
+        cellFaces.append(tetFaces);
     }
 
     meshModifier.addCells(cellFaces);
@@ -568,8 +579,8 @@ void Foam::Module::partTetMesh::createPolyMesh(polyMeshGen& pmg) const
         }
     }
 
-    const VRWGraph& internalOrdering = internalPointOrdering();
-    const VRWGraph& boundaryOrdering = boundaryPointOrdering();
+    const labelListList2D& internalOrdering = internalPointOrdering();
+    const labelListList2D& boundaryOrdering = boundaryPointOrdering();
 
     forAll(internalOrdering, i)
     {
@@ -578,7 +589,7 @@ void Foam::Module::partTetMesh::createPolyMesh(polyMeshGen& pmg) const
 
         forAllRow(internalOrdering, i, nI)
         {
-            pmg.addPointToSubset(orderID, internalOrdering(i, nI));
+            pmg.addPointToSubset(orderID, internalOrdering[i][nI]);
         }
     }
 
@@ -589,7 +600,7 @@ void Foam::Module::partTetMesh::createPolyMesh(polyMeshGen& pmg) const
 
         forAllRow(boundaryOrdering, i, nI)
         {
-            pmg.addPointToSubset(orderID, boundaryOrdering(i, nI));
+            pmg.addPointToSubset(orderID, boundaryOrdering[i][nI]);
         }
     }
 }

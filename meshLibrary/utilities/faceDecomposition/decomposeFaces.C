@@ -54,7 +54,7 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
     newFacesForFace_.setSize(mesh_.faces().size());
     forAll(newFacesForFace_, fI)
     {
-        newFacesForFace_.setRowSize(fI, 0);
+        newFacesForFace_[fI].setSize(0);
     }
 
     const label nIntFaces = mesh_.nInternalFaces();
@@ -82,7 +82,7 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
     }
 
     nFaces = 0;
-    VRWGraph newFaces;
+    DynamicList<DynamicList<label>> newFaces;
 
     // decompose internal faces
     for (label faceI = 0; faceI < nIntFaces; ++faceI)
@@ -101,8 +101,8 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
                 newF[2] = nPoints;
 
 
-                newFaces.appendList(newF);
-                newFacesForFace_.append(faceI, nFaces++);
+                appendList(newFaces, newF);
+                newFacesForFace_[faceI].append(nFaces++);
             }
 
             p = help::stableFaceCentre(f, points);
@@ -112,8 +112,8 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
         else
         {
 
-            newFaces.appendList(f);
-            newFacesForFace_.append(faceI, nFaces++);
+            appendList(newFaces, f);
+            newFacesForFace_[faceI].append(nFaces++);
         }
     }
 
@@ -141,8 +141,8 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
                     newF[2] = nPoints;
 
 
-                    newFaces.appendList(newF);
-                    newFacesForFace_.append(bfI, nFaces++);
+                    appendList(newFaces, newF);
+                    newFacesForFace_[bfI].append(nFaces++);
                 }
 
                 p = help::stableFaceCentre(f, points);
@@ -151,8 +151,8 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
             else
             {
 
-                newFaces.appendList(f);
-                newFacesForFace_.append(bfI, nFaces++);
+                appendList(newFaces, f);
+                newFacesForFace_[bfI].append(nFaces++);
             }
         }
 
@@ -165,11 +165,11 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
     forAll(faces, faceI)
     {
         face& f = faces[faceI];
-        f.setSize(newFaces.sizeOfRow(faceI));
+        f.setSize(newFaces[faceI].size());
 
         forAll(f, pI)
         {
-            f[pI] = newFaces(faceI, pI);
+            f[pI] = newFaces[faceI][pI];
         }
     }
     newFaces.setSize(0);
@@ -185,13 +185,13 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
     {
         cell& c = cells[cellI];
 
-        DynList<label> newC;
+        DynamicList<label> newC;
 
         forAll(c, fJ)
         {
             const label faceI = c[fJ];
             forAllRow(newFacesForFace_, faceI, nfI)
-            newC.append(newFacesForFace_(faceI, nfI));
+            newC.append(newFacesForFace_[faceI][nfI]);
         }
 
 
@@ -216,7 +216,7 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
 
     newFacesForFace_.setSize(mesh_.faces().size());
     forAll(newFacesForFace_, fI)
-        newFacesForFace_.setRowSize(fI, 0);
+        newFacesForFace_[fI].setSize(0);
 
     const label nIntFaces = mesh_.nInternalFaces();
 
@@ -230,8 +230,8 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
             << "Incorrect size of the concaveVertex list!" << abort(FatalError);
     }
 
-    VRWGraph newFaces;
-    DynList<label> newF;
+    DynamicList<DynamicList<label>> newFaces;
+    DynamicList<label> newF;
     newF.setSize(3);
 
 
@@ -240,7 +240,7 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
     {
         const face& f = faces[faceI];
 
-        DynList<label> concavePos;
+        DynamicList<label> concavePos;
         forAll(f, pI)
         {
             if (concaveVertex[f[pI]])
@@ -261,8 +261,8 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
                 newF[2] = f.nextLabel(pJ);
 
 
-                newFacesForFace_.append(faceI, newFaces.size());
-                newFaces.appendList(newF);
+                newFacesForFace_[faceI].append(newFaces.size());
+                appendList(newFaces, newF);
             }
         }
         else if (concavePos.size() > 1)
@@ -275,8 +275,8 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
                 newF[2] = f.nextLabel(pI);
 
 
-                newFacesForFace_.append(faceI, newFaces.size());
-                newFaces.appendList(newF);
+                newFacesForFace_[faceI].append(newFaces.size());
+                appendList(newFaces, newF);
             }
 
             const point fCent = help::stableFaceCentre(f, points);
@@ -285,8 +285,8 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
         else
         {
 
-            newFacesForFace_.append(faceI, newFaces.size());
-            newFaces.appendList(f);
+            newFacesForFace_[faceI].append(newFaces.size());
+            appendList(newFaces, f);
         }
     }
 
@@ -302,8 +302,8 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
         // store faces into newFaces
         for (label bfI = start; bfI < end; ++bfI)
         {
-            newFacesForFace_.append(bfI, newFaces.size());
-            newFaces.appendList(faces[bfI]);
+            newFacesForFace_[bfI].append(newFaces.size());
+            appendList(newFaces, faces[bfI]);
         }
     }
 
@@ -311,11 +311,11 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
     faces.setSize(newFaces.size());
     forAll(newFaces, faceI)
     {
-        faces[faceI].setSize(newFaces.sizeOfRow(faceI));
+        faces[faceI].setSize(newFaces[faceI].size());
 
         forAllRow(newFaces, faceI, pI)
         {
-            faces[faceI][pI] = newFaces(faceI, pI);
+            faces[faceI][pI] = newFaces[faceI][pI];
         }
     }
 
@@ -329,13 +329,14 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
     {
         cell& c = cells[cellI];
 
-        DynList<label, 24> newC;
+        DynamicList<label> newC;
+        newC.reserve(24);
 
         forAll(c, fJ)
         {
             const label faceI = c[fJ];
             forAllRow(newFacesForFace_, faceI, nfI)
-            newC.append(newFacesForFace_(faceI, nfI));
+            newC.append(newFacesForFace_[faceI][nfI]);
         }
 
 
@@ -358,7 +359,7 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
 }
 
 
-const Foam::Module::VRWGraph&
+const Foam::Module::labelListList2D&
 Foam::Module::decomposeFaces::newFacesForFace() const
 {
     if (!done_)

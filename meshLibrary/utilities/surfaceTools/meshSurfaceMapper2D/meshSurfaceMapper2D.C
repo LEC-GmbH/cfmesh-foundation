@@ -44,7 +44,7 @@ License
 
 void Foam::Module::meshSurfaceMapper2D::findActiveBoundaryEdges()
 {
-    const VRWGraph& edgeFaces = surfaceEngine_.edgeFaces();
+    const labelListList2D& edgeFaces = surfaceEngine_.edgeFaces();
 
     const polyMeshGen2DEngine& mesh2DEngine = this->mesh2DEngine();
     const boolList& activeFace = mesh2DEngine.activeFace();
@@ -56,10 +56,10 @@ void Foam::Module::meshSurfaceMapper2D::findActiveBoundaryEdges()
     // check which edges are at the boundary
     forAll(edgeFaces, edgeI)
     {
-        if (edgeFaces.sizeOfRow(edgeI) == 2)
+        if (edgeFaces[edgeI].size() == 2)
         {
-            const bool active0 = activeFace[startFace + edgeFaces(edgeI, 0)];
-            const bool active1 = activeFace[startFace + edgeFaces(edgeI, 1)];
+            const bool active0 = activeFace[startFace + edgeFaces[edgeI][0]];
+            const bool active1 = activeFace[startFace + edgeFaces[edgeI][1]];
 
             if (active0 && active1)
                 activeBoundaryEdges_.append(edgeI);

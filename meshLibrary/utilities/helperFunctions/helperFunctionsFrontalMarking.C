@@ -31,9 +31,10 @@ License
 
 #include "error.H"
 #include "helperFunctionsFrontalMarking.H"
-#include "DynList.H"
+#include "DynamicList.H"
 #include "labelPair.H"
 #include "HashSet.H"
+#include "labelListListOps.H"
 
 #include <omp.h>
 
@@ -50,15 +51,15 @@ class graphNeiOp
 {
     // Private data
 
-        // const reference to VRWGraph
-        const VRWGraph& neiGroups_;
+        // const reference to labelListList2D
+        const labelListList2D& neiGroups_;
 
 public:
 
     // Constructors
 
-        // Construct from VRWGraph
-        inline graphNeiOp(const VRWGraph& neiGroups)
+        // Construct from labelListList2D
+        inline graphNeiOp(const labelListList2D& neiGroups)
         :
             neiGroups_(neiGroups)
         {}
@@ -73,11 +74,11 @@ public:
         }
 
         // operator for finding neighbours
-        inline void operator()(const label groupI, DynList<label>& ng) const
+        inline void operator()(const label groupI, DynamicList<label>& ng) const
         {
-            ng.setSize(neiGroups_.sizeOfRow(groupI));
+            ng.setSize(neiGroups_[groupI].size());
             forAllRow(neiGroups_, groupI, i)
-                ng[i] = neiGroups_(groupI, i);
+                ng[i] = neiGroups_[groupI][i];
         }
 };
 
@@ -86,16 +87,16 @@ class graphSelectorOp
 {
     // Private data
 
-        // const reference to VRWGraph
-        const VRWGraph& neiGroups_;
+        // const reference to labelListList2D
+        const labelListList2D& neiGroups_;
 
 
 public:
 
     // Constructors
 
-        // Construct from VRWGraph
-        inline graphSelectorOp(const VRWGraph& neiGroups)
+        // Construct from labelListList2D
+        inline graphSelectorOp(const labelListList2D& neiGroups)
         :
             neiGroups_(neiGroups)
         {}
@@ -132,7 +133,7 @@ void Foam::Module::help::frontalMarking
     result.append(startingIndex);
 
     // add the starting element to the front
-    labelLongList front;
+    DynamicList<label> front;
     front.append(startingIndex);
 
     // store information which element were already visited
@@ -144,7 +145,7 @@ void Foam::Module::help::frontalMarking
         const label eLabel = front.remove();
 
         // find neighbours of the current element
-        DynList<label> neighbours;
+        DynamicList<label> neighbours;
         neighbourCalculator(eLabel, neighbours);
 
         forAll(neighbours, neiI)
@@ -184,13 +185,13 @@ Foam::label Foam::Module::help::groupMarking
     elementInGroup.setSize(neighbourCalculator.size());
     elementInGroup = -1;
 
-    VRWGraph neighbouringGroups;
+    labelListList2D neighbouringGroups;
 
     label nThreads(1);
 
     //nThreads = 3*omp_get_num_procs();
 
-    DynList<label> nGroupsAtThread(nThreads, 0);
+    DynamicList<label> nGroupsAtThread(nThreads, 0);
 
     # pragma omp parallel num_threads(nThreads)
     {
@@ -199,7 +200,7 @@ Foam::label Foam::Module::help::groupMarking
 
         const label threadI = omp_get_thread_num();
 
-        LongList<std::pair<label, label>> threadCommPairs;
+        DynamicList<std::pair<label, label>> threadCommPairs;
 
         const label minEl = threadI*chunkSize;
 
@@ -224,14 +225,14 @@ Foam::label Foam::Module::help::groupMarking
             }
 
             elementInGroup[elI] = groupI;
-            labelLongList front;
+            DynamicList<label> front;
             front.append(elI);
 
             while (front.size())
             {
                 const label eLabel = front.remove();
 
-                DynList<label> neighbours;
+                DynamicList<label> neighbours;
                 neighbourCalculator(eLabel, neighbours);
 
                 forAll(neighbours, neiI)
@@ -285,7 +286,7 @@ Foam::label Foam::Module::help::groupMarking
         # pragma omp barrier
 
         // find group to neighbouring groups addressing
-        List<DynList<label>> localNeiGroups(nGroups);
+        labelListList2D localNeiGroups(nGroups);
         forAll(threadCommPairs, cfI)
         {
             const std::pair<label, label>& lp = threadCommPairs[cfI];
@@ -301,8 +302,8 @@ Foam::label Foam::Module::help::groupMarking
 
             if (neiGroup != -1)
             {
-                localNeiGroups[groupI].appendUniq(neiGroup);
-                localNeiGroups[neiGroup].appendUniq(groupI);
+                appendUniq(localNeiGroups[groupI], neiGroup);
+                appendUniq(localNeiGroups[neiGroup], groupI);
             }
         }
 
@@ -312,13 +313,13 @@ Foam::label Foam::Module::help::groupMarking
 
             forAll(localNeiGroups, groupI)
             {
-                const DynList<label>& lGroups = localNeiGroups[groupI];
+                const DynamicList<label>& lGroups = localNeiGroups[groupI];
 
-                neighbouringGroups.appendUniq(groupI, groupI);
+                appendUniq(neighbouringGroups[groupI], groupI);
 
                 forAll(lGroups, i)
                 {
-                    neighbouringGroups.appendUniq(groupI, lGroups[i]);
+                    appendUniq(neighbouringGroups[groupI], lGroups[i]);
                 }
             }
         }
@@ -326,20 +327,20 @@ Foam::label Foam::Module::help::groupMarking
 
     forAll(neighbouringGroups, i)
     {
-        labelList helper(neighbouringGroups.sizeOfRow(i));
+        labelList helper(neighbouringGroups[i].size());
         forAllRow(neighbouringGroups, i, j)
         {
-            helper[j] = neighbouringGroups(i, j);
+            helper[j] = neighbouringGroups[i][j];
         }
 
         sort(helper);
 
-        neighbouringGroups[i] = helper;
+        setRow(neighbouringGroups, i, helper);
     }
 
     // start processing connections between the group and merge the connected
     // ones into a new group
-    DynList<label> globalGroupLabel;
+    DynamicList<label> globalGroupLabel;
     globalGroupLabel.setSize(nGroups);
     globalGroupLabel = -1;
 
@@ -353,7 +354,7 @@ Foam::label Foam::Module::help::groupMarking
             continue;
         }
 
-        DynList<label> connectedGroups;
+        DynamicList<label> connectedGroups;
         frontalMarking
         (
             connectedGroups,
@@ -381,7 +382,7 @@ Foam::label Foam::Module::help::groupMarking
 
         forAllRow(neighbouringGroups, groupI, ngI)
         {
-            globalGroupLabel[neighbouringGroups(groupI, ngI)] = counter;
+            globalGroupLabel[neighbouringGroups[groupI][ngI]] = counter;
         }
 
         ++counter;

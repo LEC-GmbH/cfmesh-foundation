@@ -38,8 +38,9 @@ Description
 #ifndef meshOctreeSlot_H
 #define meshOctreeSlot_H
 
-#include "VRWGraph.H"
-#include "FRWGraph.H"
+#include "labelListListOps.H"
+#include "PtrList.H"
+#include "FixedList.H"
 #include "meshOctreeCube.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -60,16 +61,48 @@ public:
     // Public data
 
         //- List of octree cubes
-        LongList<meshOctreeCube> cubes_;
+        //  PtrList, not DynamicList/LongList: cube addresses are cached
+        //  forever once appended (initialCubePtr_/subCubesPtr_ elsewhere
+        //  hold raw pointers into specific cubes_ elements, dereferenced
+        //  by any thread at any later time) - PtrList only ever
+        //  reallocates its array of pointers, never the individually
+        //  heap-allocated cube objects themselves. Safe without the
+        //  reserve+counter+trim scheme used for containedTriangles_/
+        //  containedEdges_ below: unlike those, cubes_ is never indexed
+        //  by a different thread than the one that just appended to it -
+        //  all other access goes through already-cached pointers
+        //  (initialCubePtr_, subCubesPtr_), never by re-indexing into
+        //  cubes_ itself, so the pointer array's own reallocation is
+        //  never observed by a concurrent reader.
+        PtrList<meshOctreeCube> cubes_;
 
         //- Pointers to child cubes
-        FRWGraph<meshOctreeCube*, 8> childCubes_;
+        //  PtrList, not DynamicList: rows must stay stable in memory
+        //  forever once appended (subCubesPtr_ elsewhere holds a raw
+        //  pointer into a specific row) - a DynamicList's own backing
+        //  array can be reallocated by a later append, invalidating any
+        //  such pointer, whereas PtrList only ever reallocates its array
+        //  of pointers, never the pointed-to row objects themselves
+        PtrList<FixedList<meshOctreeCube*, 8>> childCubes_;
 
         //- surface triangles contained in an octree cube
-        VRWGraph containedTriangles_;
+        labelListList2D containedTriangles_;
 
         //- feature edges contained in an octree cube
-        VRWGraph containedEdges_;
+        labelListList2D containedEdges_;
+
+        //- next free row to claim in containedTriangles_/containedEdges_
+        //  while a parallel refinement round is active (see
+        //  meshOctreeModifier::reserveSlotCapacity/trimSlotCapacity).
+        //  Only the one thread that owns this slot ever touches these
+        //  two counters or appends to the graphs above, so plain
+        //  (non-atomic) increments are safe - the row capacity is
+        //  pre-reserved up front so the outer array never reallocates
+        //  mid-round, which is what makes it safe for OTHER threads to
+        //  concurrently read pre-existing rows of this same slot via a
+        //  cube's activeSlotPtr_ (see meshOctreeCube::activeSlotPtr_)
+        label nextContainedTrianglesRow_ = 0;
+        label nextContainedEdgesRow_ = 0;
 };
 
 

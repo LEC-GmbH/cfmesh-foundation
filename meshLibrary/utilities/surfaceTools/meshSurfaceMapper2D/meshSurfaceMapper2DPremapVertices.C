@@ -44,15 +44,13 @@ void Foam::Module::meshSurfaceMapper2D::preMapVertices(const label nIterations)
     const pointFieldPMG& points = surfaceEngine_.points();
     const labelList& bp = surfaceEngine_.bp();
     const vectorField& faceCentres = surfaceEngine_.faceCentres();
-    const VRWGraph& edgeFaces = surfaceEngine_.edgeFaces();
+    const labelListList2D& edgeFaces = surfaceEngine_.edgeFaces();
     const edgeList& edges = surfaceEngine_.edges();
 
     List<labelledPoint> preMapPositions(activeBoundaryEdges_.size());
 
     for (label iterI = 0; iterI < nIterations; ++iterI)
     {
-        labelLongList parBndEdges;
-
         // use the shrinking laplace first
         # pragma omp parallel for schedule(dynamic, 40)
         forAll(activeBoundaryEdges_, eI)
@@ -61,22 +59,19 @@ void Foam::Module::meshSurfaceMapper2D::preMapVertices(const label nIterations)
 
             labelledPoint lp(0, vector::zero);
 
-            if (edgeFaces.sizeOfRow(beI) == 2)
+            if (edgeFaces[beI].size() == 2)
             {
                 forAllRow(edgeFaces, beI, efI)
                 {
                     ++lp.pointLabel();
-                    lp.coordinates() += faceCentres[edgeFaces(beI, efI)];
+                    lp.coordinates() += faceCentres[edgeFaces[beI][efI]];
                 }
 
             }
-            else if (edgeFaces.sizeOfRow(beI) == 1)
+            else if (edgeFaces[beI].size() == 1)
             {
                 ++lp.pointLabel();
-                lp.coordinates() += faceCentres[edgeFaces(beI, 0)];
-
-                # pragma omp critical
-                parBndEdges.append(eI);
+                lp.coordinates() += faceCentres[edgeFaces[beI][0]];
             }
 
             // store the information

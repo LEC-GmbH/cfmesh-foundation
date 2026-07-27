@@ -36,6 +36,7 @@ License
 #include "triSurf.H"
 #include "helperFunctions.H"
 #include "meshOctreeModifier.H"
+#include "labelListListOps.H"
 
 #include "Map.H"
 
@@ -67,7 +68,7 @@ void Foam::Module::meshOctreeAutomaticRefinement::automaticRefinement()
 bool Foam::Module::meshOctreeAutomaticRefinement::curvatureRefinement()
 {
     labelList refineBox(octree_.numberOfLeaves(), direction(0));
-    labelLongList refinementCandidates;
+    DynamicList<label> refinementCandidates;
     forAll(refineBox, i)
     {
         refinementCandidates.append(i);
@@ -86,7 +87,7 @@ bool Foam::Module::meshOctreeAutomaticRefinement::proximityRefinement()
 {
     bool refine(false);
     labelList refineBox(octree_.numberOfLeaves(), direction(0));
-    labelLongList refinementCandidates;
+    DynamicList<label> refinementCandidates;
     forAll(refineBox, i)
     {
         refinementCandidates.append(i);
@@ -129,11 +130,11 @@ bool Foam::Module::meshOctreeAutomaticRefinement::proximityRefinement()
 bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnContainedCorners
 (
     labelList& refineBox,
-    const labelLongList& refCandidates
+    const DynamicList<label>& refCandidates
 )
 {
     meshOctreeModifier octreeModifier(octree_);
-    const LongList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
+    const DynamicList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
     const boundBox& rootBox = octree_.rootBox();
     const triSurf& surface = octree_.surface();
     const pointField& points = surface.points();
@@ -167,7 +168,7 @@ bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnContainedCorners
         }
     }
 
-    DynList<label> leavesInBox;
+    DynamicList<label> leavesInBox;
     # pragma omp parallel for if (refCandidates.size() > 1000) \
     private(leavesInBox) shared(cornerInLeaf) \
     reduction(+ : nMarked) schedule(dynamic, 20)
@@ -236,7 +237,7 @@ bool Foam::Module::meshOctreeAutomaticRefinement::
 refineBasedOnContainedPartitions
 (
     labelList& refineBox,
-    const labelLongList& refCandidates
+    const DynamicList<label>& refCandidates
 )
 {
     const boundBox& rootBox = octree_.rootBox();
@@ -251,9 +252,9 @@ refineBasedOnContainedPartitions
 
     meshOctreeModifier octreeModifier(octree_);
     const triSurf& surf = octree_.surface();
-    const LongList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
+    const DynamicList<meshOctreeCube*>& leaves = octreeModifier.leavesAccess();
 
-    DynList<label> patches, eGroups, helper;
+    DynamicList<label> patches, eGroups, helper;
     # pragma omp parallel for if (refCandidates.size() > 1000) \
     private(patches, eGroups, helper) \
     reduction(+ : nMarked) schedule(dynamic, 20)
@@ -279,7 +280,7 @@ refineBasedOnContainedPartitions
         patches.clear();
         forAll(helper, i)
         {
-            patches.appendUniq(surf[helper[i]].region());
+            appendUniq(patches, surf[helper[i]].region());
         }
 
         // find edge partitions contained in this box
@@ -288,7 +289,7 @@ refineBasedOnContainedPartitions
         eGroups.clear();
         forAll(helper, i)
         {
-            eGroups.appendUniq(edgeGroups[helper[i]]);
+            appendUniq(eGroups, edgeGroups[helper[i]]);
         }
 
         bool refine(false);
@@ -337,7 +338,7 @@ refineBasedOnContainedPartitions
 bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnCurvature
 (
     labelList& refineBox,
-    const labelLongList& refCandidates
+    const DynamicList<label>& refCandidates
 )
 {
     const triSurfaceCurvatureEstimator& curv = curvature();
@@ -345,7 +346,7 @@ bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnCurvature
     const boundBox& rootBox = octree_.rootBox();
 
     label nMarked(0);
-    DynList<label> containedTrias;
+    DynamicList<label> containedTrias;
     # pragma omp parallel for if (refCandidates.size() > 10000) \
     private(containedTrias) \
     reduction(+ : nMarked) schedule(dynamic, 100)
@@ -415,14 +416,14 @@ bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnCurvature
 bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnProximityTests
 (
     labelList& refineBox,
-    const labelLongList& refCandidates
+    const DynamicList<label>& refCandidates
 )
 {
     const boundBox& rootBox = octree_.rootBox();
     const triSurf& surf = octree_.surface();
 
     label nMarked(0);
-    DynList<label> helper;
+    DynamicList<label> helper;
     # pragma omp parallel for if (refCandidates.size() > 1000) \
     private(helper) reduction(+ : nMarked) schedule(dynamic, 20)
     forAll(refCandidates, refI)
@@ -487,17 +488,17 @@ bool Foam::Module::meshOctreeAutomaticRefinement::refineBasedOnProximityTests
 void Foam::Module::meshOctreeAutomaticRefinement::refineSelectedBoxes
 (
     labelList& refineBox,
-    labelLongList& refCandidates
+    DynamicList<label>& refCandidates
 )
 {
     meshOctreeModifier octreeModifier(octree_);
-    LongList<meshOctreeCube*> leaves = octreeModifier.leavesAccess();
+    DynamicList<meshOctreeCube*> leaves = octreeModifier.leavesAccess();
 
     octreeModifier.markAdditionalLayers(refineBox, 1);
     octreeModifier.refineSelectedBoxes(refineBox, hexRefinement_);
 
     // find the cubes which have been marked for refinement
-    LongList<meshOctreeCubeCoordinates> refinedCubes;
+    DynamicList<meshOctreeCubeCoordinates> refinedCubes;
     forAll(refineBox, i)
     {
         if (refineBox[i])
@@ -507,7 +508,7 @@ void Foam::Module::meshOctreeAutomaticRefinement::refineSelectedBoxes
     }
     leaves.setSize(0);
 
-    LongList<meshOctreeCubeCoordinates> receivedCoordinates;
+    DynamicList<meshOctreeCubeCoordinates> receivedCoordinates;
 
     forAll(refinedCubes, i)
     {

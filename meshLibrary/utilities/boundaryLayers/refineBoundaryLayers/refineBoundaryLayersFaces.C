@@ -39,7 +39,7 @@ void Foam::Module::refineBoundaryLayers::refineFace
 (
     const face& f,
     const FixedList<label, 2>& nLayersInDirection,
-    DynList<DynList<label, 4>, 128>& newFaces
+    DynamicList<DynamicList<label>>& newFaces
 )
 {
     // this face must be a quad
@@ -55,7 +55,8 @@ void Foam::Module::refineBoundaryLayers::refineFace
     if ((nLayersInDirection[0] <= 1) && (nLayersInDirection[1] <= 1))
     {
         // this face may comprise of some split edges
-        DynList<label, 64> newF;
+        DynamicList<label> newF;
+        newF.reserve(64);
         forAll(f, eI)
         {
             const edge e = f.faceEdge(eI);
@@ -66,26 +67,26 @@ void Foam::Module::refineBoundaryLayers::refineFace
             // check if a split edge matches this face edge
             forAllRow(splitEdgesAtPoint_, f[eI], peI)
             {
-                const label seI = splitEdgesAtPoint_(f[eI], peI);
+                const label seI = splitEdgesAtPoint_[f[eI]][peI];
                 const edge& se = splitEdges_[seI];
 
                 if (e == se)
                 {
                     // check the orientation and add new vertices created
                     // on this edge
-                    const label s = newVerticesForSplitEdge_.sizeOfRow(seI) - 1;
+                    const label s = newVerticesForSplitEdge_[seI].size() - 1;
                     if (e.start() == se.start())
                     {
                         for (label pI = 1; pI < s; ++pI)
                         {
-                            newF.append(newVerticesForSplitEdge_(seI, pI));
+                            newF.append(newVerticesForSplitEdge_[seI][pI]);
                         }
                     }
                     else
                     {
                         for (label pI = s - 1; pI > 0; --pI)
                         {
-                            newF.append(newVerticesForSplitEdge_(seI, pI));
+                            newF.append(newVerticesForSplitEdge_[seI][pI]);
                         }
                     }
                 }
@@ -108,11 +109,11 @@ void Foam::Module::refineBoundaryLayers::refineFace
         bool start(false), end(false);
         forAllRow(splitEdgesAtPoint_, e.start(), i)
         {
-            const edge& se = splitEdges_[splitEdgesAtPoint_(e.start(), i)];
+            const edge& se = splitEdges_[splitEdgesAtPoint_[e.start()][i]];
 
             if ((se.start() == e.start()) && (se.end() == f.prevLabel(eI)))
             {
-                ses = splitEdgesAtPoint_(e.start(), i);
+                ses = splitEdgesAtPoint_[e.start()][i];
                 start = true;
                 break;
             }
@@ -120,11 +121,11 @@ void Foam::Module::refineBoundaryLayers::refineFace
 
         forAllRow(splitEdgesAtPoint_, e.end(), i)
         {
-            const edge& se = splitEdges_[splitEdgesAtPoint_(e.end(), i)];
+            const edge& se = splitEdges_[splitEdgesAtPoint_[e.end()][i]];
 
             if ((se.start() == e.end()) && (se.end() == f[(eI + 2)%4]))
             {
-                see = splitEdgesAtPoint_(e.end(), i);
+                see = splitEdgesAtPoint_[e.end()][i];
                 end = true;
                 break;
             }
@@ -197,7 +198,7 @@ void Foam::Module::refineBoundaryLayers::refineFace
     const label nLayersDir1 = dir1>=0?nLayersInDirection[dir1%2]:1;
 
     // map the face onto a matrix for easier orientation
-    DynList<DynList<label>> facePoints;
+    labelListList2D facePoints;
     facePoints.setSize(nLayersDir0 + 1);
     forAll(facePoints, i)
     {
@@ -208,18 +209,18 @@ void Foam::Module::refineBoundaryLayers::refineFace
     // add points in the matrix
     for (label i = 0; i < nLayersDir0; ++i)
     {
-        facePoints[i][0] = newVerticesForSplitEdge_(dir0Edges.second(), i);
+        facePoints[i][0] = newVerticesForSplitEdge_[dir0Edges.second()][i];
         facePoints[i][nLayersDir1] =
-            newVerticesForSplitEdge_(dir0Edges.first(), i);
+            newVerticesForSplitEdge_[dir0Edges.first()][i];
     }
     facePoints[nLayersDir0][0] = splitEdges_[dir0Edges.second()].end();
     facePoints[nLayersDir0][nLayersDir1] = splitEdges_[dir0Edges.first()].end();
 
     for (label i = 1; i < nLayersDir1; ++i)
     {
-        facePoints[0][i] = newVerticesForSplitEdge_(dir1Edges.first(), i);
+        facePoints[0][i] = newVerticesForSplitEdge_[dir1Edges.first()][i];
         facePoints[nLayersDir0][i] =
-            newVerticesForSplitEdge_(dir1Edges.second(), i);
+            newVerticesForSplitEdge_[dir1Edges.second()][i];
     }
 
     // create missing vertices if there are any
@@ -271,7 +272,8 @@ void Foam::Module::refineBoundaryLayers::refineFace
         for (label i = 0; i < nLayersDir0; ++i)
         {
             // create quad face
-            DynList<label, 4> f;
+            DynamicList<label> f;
+            f.reserve(4);
 
             f.append(facePoints[i][j]);
 
@@ -281,11 +283,11 @@ void Foam::Module::refineBoundaryLayers::refineFace
                 // add additional points on edge
                 const label eLabel = dir0Edges.second();
                 const label size =
-                    newVerticesForSplitEdge_.sizeOfRow(eLabel) - 1;
+                    newVerticesForSplitEdge_[eLabel].size() - 1;
 
                 for (label index = i + 1; index < size; ++index)
                 {
-                    f.append(newVerticesForSplitEdge_(eLabel, index));
+                    f.append(newVerticesForSplitEdge_[eLabel][index]);
                 }
             }
 
@@ -302,11 +304,11 @@ void Foam::Module::refineBoundaryLayers::refineFace
                 // add additional points on edge
                 const label eLabel = dir1Edges.second();
                 const label size =
-                    newVerticesForSplitEdge_.sizeOfRow(eLabel) - 1;
+                    newVerticesForSplitEdge_[eLabel].size() - 1;
 
                 for (label index = j + 1; index < size; ++index)
                 {
-                    f.append(newVerticesForSplitEdge_(eLabel, index));
+                    f.append(newVerticesForSplitEdge_[eLabel][index]);
                 }
             }
 
@@ -317,10 +319,10 @@ void Foam::Module::refineBoundaryLayers::refineFace
 
                 const label eLabel = dir0Edges.first();
                 const label size =
-                    newVerticesForSplitEdge_.sizeOfRow(eLabel) - 2;
+                    newVerticesForSplitEdge_[eLabel].size() - 2;
                 for (label index = size; index > i; --index)
                 {
-                    f.append(newVerticesForSplitEdge_(eLabel, index));
+                    f.append(newVerticesForSplitEdge_[eLabel][index]);
                 }
             }
 
@@ -331,10 +333,10 @@ void Foam::Module::refineBoundaryLayers::refineFace
 
                 const label eLabel = dir1Edges.first();
                 const label size =
-                    newVerticesForSplitEdge_.sizeOfRow(eLabel) - 2;
+                    newVerticesForSplitEdge_[eLabel].size() - 2;
                 for (label index = size; index > j; --index)
                 {
-                    f.append(newVerticesForSplitEdge_(eLabel, index));
+                    f.append(newVerticesForSplitEdge_[eLabel][index]);
                 }
             }
 
@@ -348,182 +350,94 @@ void Foam::Module::refineBoundaryLayers::refineFace
 void Foam::Module::refineBoundaryLayers::sortFacePoints
 (
     const label faceI,
-    DynList<DynList<label>>& facePoints,
+    labelListList2D& facePoints,
     const label transpose
 ) const
 {
     const faceListPMG& faces = mesh_.faces();
     const face& f = faces[faceI];
 
-    const label procStart = mesh_.faces().size();
+    // start the procedure by finding the number of splits in
+    // both i and j direction
+    label numSplitsI(1);
 
-    if (faceI < procStart)
+    const label pos = f.which(newFaces_[facesFromFace_[faceI][0]][0]);
+
+    forAllRow(facesFromFace_, faceI, i)
     {
-        // orientation of new faces is the same as the face itself
-        // start the procedure by finding the number of splits in
-        // both i and j direction
-        label numSplitsI(1);
+        const label nfI = facesFromFace_[faceI][i];
 
-        const label pos = f.which(newFaces_(facesFromFace_(faceI, 0), 0));
-
-        forAllRow(facesFromFace_, faceI, i)
+        if ((numSplitsI == 1) && found(newFaces_, nfI, f.nextLabel(pos)))
         {
-            const label nfI = facesFromFace_(faceI, i);
-
-            if ((numSplitsI == 1) && newFaces_.found(nfI, f.nextLabel(pos)))
-            {
-                numSplitsI = i + 1;
-                break;
-            }
+            numSplitsI = i + 1;
+            break;
         }
-
-        const label numSplitsJ = (facesFromFace_.sizeOfRow(faceI) / numSplitsI);
-
-        facePoints.setSize(numSplitsI + 1);
-        forAll(facePoints, i)
-        {
-            facePoints[i].setSize(numSplitsJ + 1);
-        }
-
-        // start filling in the matrix
-        forAllRow(facesFromFace_, faceI, fI)
-        {
-            const label nfI = facesFromFace_(faceI, fI);
-
-            const label i = fI % numSplitsI;
-            const label j = fI/numSplitsI;
-
-            if (newFaces_.sizeOfRow(nfI) == 4)
-            {
-                facePoints[i][j] = newFaces_(nfI, 0);
-                facePoints[i + 1][j] = newFaces_(nfI, 1);
-                facePoints[i + 1][j + 1] = newFaces_(nfI, 2);
-                facePoints[i][j + 1] = newFaces_(nfI, 3);
-            }
-            else
-            {
-                if (j == 0)
-                {
-                    forAllRow(newFaces_, nfI, pI)
-                    {
-                        if (f.which(newFaces_(nfI, pI)) >= 0)
-                        {
-                            facePoints[i + 1][0] = newFaces_(nfI, pI);
-                            break;
-                        }
-                    }
-                }
-                else if (i == 0)
-                {
-                    forAllRow(newFaces_, nfI, pI)
-                    {
-                        if (f.which(newFaces_(nfI, pI)) >= 0)
-                        {
-                            facePoints[0][j + 1] = newFaces_(nfI, pI);
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    forAllRow(newFaces_, nfI, pI)
-                    {
-                        if (f.which(newFaces_(nfI, pI)) >= 0)
-                        {
-                            facePoints[i + 1][j + 1] = newFaces_(nfI, pI);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
     }
-    else
+
+    const label numSplitsJ = (facesFromFace_[faceI].size() / numSplitsI);
+
+    facePoints.setSize(numSplitsI + 1);
+    forAll(facePoints, i)
     {
-        // this situation exists on inter-processor boundaries
-        // on neighbour processor. i and j coordinates are reversed
-        label numSplitsJ(1);
+        facePoints[i].setSize(numSplitsJ + 1);
+    }
 
-        const label pos = f.which(newFaces_(facesFromFace_(faceI, 0), 0));
+    // start filling in the matrix
+    forAllRow(facesFromFace_, faceI, fI)
+    {
+        const label nfI = facesFromFace_[faceI][fI];
 
-        forAllRow(facesFromFace_, faceI, j)
+        const label i = fI % numSplitsI;
+        const label j = fI/numSplitsI;
+
+        if (newFaces_[nfI].size() == 4)
         {
-            const label nfI = facesFromFace_(faceI, j);
-
-            if ((numSplitsJ == 1) && newFaces_.found(nfI, f.prevLabel(pos)))
+            facePoints[i][j] = newFaces_[nfI][0];
+            facePoints[i + 1][j] = newFaces_[nfI][1];
+            facePoints[i + 1][j + 1] = newFaces_[nfI][2];
+            facePoints[i][j + 1] = newFaces_[nfI][3];
+        }
+        else
+        {
+            if (j == 0)
             {
-                numSplitsJ = j + 1;
-                break;
+                forAllRow(newFaces_, nfI, pI)
+                {
+                    if (f.which(newFaces_[nfI][pI]) >= 0)
+                    {
+                        facePoints[i + 1][0] = newFaces_[nfI][pI];
+                        break;
+                    }
+                }
             }
-        }
-
-        const label numSplitsI = (facesFromFace_.sizeOfRow(faceI) / numSplitsJ);
-
-        facePoints.setSize(numSplitsI + 1);
-        forAll(facePoints, i)
-        {
-            facePoints[i].setSize(numSplitsJ + 1);
-        }
-
-        // start filling in the matrix
-        forAllRow(facesFromFace_, faceI, fI)
-        {
-            const label nfI = facesFromFace_(faceI, fI);
-
-            const label i = fI/numSplitsJ;
-            const label j = fI % numSplitsJ;
-
-            if (newFaces_.sizeOfRow(nfI) == 4)
+            else if (i == 0)
             {
-                facePoints[i][j] = newFaces_(nfI, 0);
-                facePoints[i + 1][j] = newFaces_(nfI, 1);
-                facePoints[i + 1][j + 1] = newFaces_(nfI, 2);
-                facePoints[i][j + 1] = newFaces_(nfI, 3);
+                forAllRow(newFaces_, nfI, pI)
+                {
+                    if (f.which(newFaces_[nfI][pI]) >= 0)
+                    {
+                        facePoints[0][j + 1] = newFaces_[nfI][pI];
+                        break;
+                    }
+                }
             }
             else
             {
-                if (i == 0)
+                forAllRow(newFaces_, nfI, pI)
                 {
-                    forAllRow(newFaces_, nfI, pI)
+                    if (f.which(newFaces_[nfI][pI]) >= 0)
                     {
-                        if (f.which(newFaces_(nfI, pI)) >= 0)
-                        {
-                            facePoints[0][j + 1] = newFaces_(nfI, pI);
-                            break;
-                        }
-                    }
-                }
-                else if (j == 0)
-                {
-                    forAllRow(newFaces_, nfI, pI)
-                    {
-                        if (f.which(newFaces_(nfI, pI)) >= 0)
-                        {
-                            facePoints[i + 1][0] = newFaces_(nfI, pI);
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    forAllRow(newFaces_, nfI, pI)
-                    {
-                        if (f.which(newFaces_(nfI, pI)) >= 0)
-                        {
-                            facePoints[i + 1][j + 1] = newFaces_(nfI, pI);
-                            break;
-                        }
+                        facePoints[i + 1][j + 1] = newFaces_[nfI][pI];
+                        break;
                     }
                 }
             }
         }
-
     }
 
     if (transpose)
     {
-        DynList<DynList<label>> transposedFacePoints;
+        labelListList2D transposedFacePoints;
         transposedFacePoints.setSize(facePoints[0].size());
         forAll(transposedFacePoints, j)
         {
@@ -547,98 +461,52 @@ void Foam::Module::refineBoundaryLayers::sortFacePoints
 void Foam::Module::refineBoundaryLayers::sortFaceFaces
 (
     const label faceI,
-    DynList<DynList<label>>& faceFaces,
+    labelListList2D& faceFaces,
     const label transpose
 ) const
 {
     const faceListPMG& faces = mesh_.faces();
     const face& f = faces[faceI];
 
-    const label procStart = mesh_.faces().size();
+    // start the procedure by finding the number of splits in
+    // both i and j direction
+    label numSplitsI(1);
 
-    if (faceI < procStart)
+    const label pos = f.which(newFaces_[facesFromFace_[faceI][0]][0]);
+
+    forAllRow(facesFromFace_, faceI, i)
     {
-        // orientation of new faces is the same as the face itself
-        // start the procedure by finding the number of splits in
-        // both i and j direction
-        label numSplitsI(1);
+        const label nfI = facesFromFace_[faceI][i];
 
-        const label pos = f.which(newFaces_(facesFromFace_(faceI, 0), 0));
-
-        forAllRow(facesFromFace_, faceI, i)
+        if ((numSplitsI == 1) && found(newFaces_, nfI, f.nextLabel(pos)))
         {
-            const label nfI = facesFromFace_(faceI, i);
-
-            if ((numSplitsI == 1) && newFaces_.found(nfI, f.nextLabel(pos)))
-            {
-                numSplitsI = i + 1;
-                break;
-            }
+            numSplitsI = i + 1;
+            break;
         }
-
-        label numSplitsJ = (facesFromFace_.sizeOfRow(faceI) / numSplitsI);
-
-        faceFaces.setSize(numSplitsI);
-        forAll(faceFaces, i)
-        {
-            faceFaces[i].setSize(numSplitsJ);
-        }
-
-        // start filling in the matrix
-        forAllRow(facesFromFace_, faceI, fI)
-        {
-            const label nfI = facesFromFace_(faceI, fI);
-
-            const label i = fI % numSplitsI;
-            const label j = fI/numSplitsI;
-
-            faceFaces[i][j] = nfI;
-        }
-
     }
-    else
+
+    label numSplitsJ = (facesFromFace_[faceI].size() / numSplitsI);
+
+    faceFaces.setSize(numSplitsI);
+    forAll(faceFaces, i)
     {
-        // this situation exists on inter-processor boundaries
-        // on neighbour processor. i and j coordinates are reversed
-        label numSplitsJ(1);
+        faceFaces[i].setSize(numSplitsJ);
+    }
 
-        const label pos = f.which(newFaces_(facesFromFace_(faceI, 0), 0));
+    // start filling in the matrix
+    forAllRow(facesFromFace_, faceI, fI)
+    {
+        const label nfI = facesFromFace_[faceI][fI];
 
-        forAllRow(facesFromFace_, faceI, j)
-        {
-            const label nfI = facesFromFace_(faceI, j);
+        const label i = fI % numSplitsI;
+        const label j = fI/numSplitsI;
 
-            if ((numSplitsJ == 1) && newFaces_.found(nfI, f.prevLabel(pos)))
-            {
-                numSplitsJ = j + 1;
-                break;
-            }
-        }
-
-        const label numSplitsI = (facesFromFace_.sizeOfRow(faceI) / numSplitsJ);
-
-        faceFaces.setSize(numSplitsI);
-        forAll(faceFaces, i)
-        {
-            faceFaces[i].setSize(numSplitsJ);
-        }
-
-        // start filling in the matrix
-        forAllRow(facesFromFace_, faceI, fI)
-        {
-            const label nfI = facesFromFace_(faceI, fI);
-
-            const label i = fI/numSplitsJ;
-            const label j = fI % numSplitsJ;
-
-            faceFaces[i][j] = nfI;
-        }
-
+        faceFaces[i][j] = nfI;
     }
 
     if (transpose)
     {
-        DynList<DynList<label>> transposedFaceFaces;
+        labelListList2D transposedFaceFaces;
         transposedFaceFaces.setSize(faceFaces[0].size());
         forAll(transposedFaceFaces, j)
         {
@@ -668,9 +536,9 @@ void Foam::Module::refineBoundaryLayers::generateNewFaces()
     const labelList& facePatches = mse.boundaryFacePatches();
     const edgeList& edges = mse.edges();
     const labelList& bp = mse.bp();
-    const VRWGraph& bfEdges = mse.faceEdges();
-    const VRWGraph& bpEdges = mse.boundaryPointEdges();
-    const VRWGraph& beFaces = mse.edgeFaces();
+    const labelListList2D& bfEdges = mse.faceEdges();
+    const labelListList2D& bpEdges = mse.boundaryPointEdges();
+    const labelListList2D& beFaces = mse.edgeFaces();
 
     // mesh data
     const label nInternalFaces = mesh_.nInternalFaces();
@@ -688,8 +556,8 @@ void Foam::Module::refineBoundaryLayers::generateNewFaces()
         // only quad faces can be split
         if (f.size() != 4)
         {
-            facesFromFace_.append(faceI, newFaces_.size());
-            newFaces_.appendList(f);
+            facesFromFace_[faceI].append(newFaces_.size());
+            appendList(newFaces_, f);
             continue;
         }
 
@@ -709,14 +577,14 @@ void Foam::Module::refineBoundaryLayers::generateNewFaces()
 
             forAllRow(bpEdges, bps, bpsI)
             {
-                const label beI = bpEdges(bps, bpsI);
+                const label beI = bpEdges[bps][bpsI];
 
                 if (edges[beI] == fe)
                 {
                     // this edge is attached to the boundary
                     // get the number of layers for neighbouring cells
-                    const label nSplits0 = nLayersAtBndFace_[beFaces(beI, 0)];
-                    const label nSplits1 = nLayersAtBndFace_[beFaces(beI, 1)];
+                    const label nSplits0 = nLayersAtBndFace_[beFaces[beI][0]];
+                    const label nSplits1 = nLayersAtBndFace_[beFaces[beI][1]];
 
                     // set the number of layers for the given direction
                     const label dir = eI % 2;
@@ -731,14 +599,14 @@ void Foam::Module::refineBoundaryLayers::generateNewFaces()
         }
 
         // refine the face
-        DynList<DynList<label, 4>, 128> newFacesForFace;
+        DynamicList<DynamicList<label>> newFacesForFace;
         refineFace(f, nRefinementInDirection, newFacesForFace);
 
         // store decomposed faces
         forAll(newFacesForFace, fI)
         {
-            facesFromFace_.append(faceI, newFaces_.size());
-            newFaces_.appendList(newFacesForFace[fI]);
+            facesFromFace_[faceI].append(newFaces_.size());
+            appendList(newFaces_, newFacesForFace[fI]);
         }
 
     }
@@ -754,8 +622,8 @@ void Foam::Module::refineBoundaryLayers::generateNewFaces()
         // only quad faces can be split
         if (bf.size() != 4)
         {
-            facesFromFace_.append(faceI, newFaces_.size());
-            newFaces_.appendList(bf);
+            facesFromFace_[faceI].append(newFaces_.size());
+            appendList(newFaces_, bf);
             continue;
         }
 
@@ -764,23 +632,23 @@ void Foam::Module::refineBoundaryLayers::generateNewFaces()
 
         forAll(bf, eI)
         {
-            const label beI = bfEdges(bfI, eI);
+            const label beI = bfEdges[bfI][eI];
 
-            if (beFaces.sizeOfRow(beI) != 2)
+            if (beFaces[beI].size() != 2)
             {
                 continue;
             }
 
             // get the neighbour face over the edge
-            label neiFace = beFaces(beI, 0);
+            label neiFace = beFaces[beI][0];
 
             if (neiFace == bfI)
             {
-                neiFace = beFaces(beI, 1);
+                neiFace = beFaces[beI][1];
             }
 
             // faces cannot be in the same layer
-            const DynList<label>& neiLayers =
+            const DynamicList<label>& neiLayers =
                 layerAtPatch_[facePatches[neiFace]];
 
             if (neiLayers.size() == 0)
@@ -788,7 +656,7 @@ void Foam::Module::refineBoundaryLayers::generateNewFaces()
                 continue;
             }
 
-            const DynList<label>& currLayers = layerAtPatch_[facePatches[bfI]];
+            const DynamicList<label>& currLayers = layerAtPatch_[facePatches[bfI]];
 
             bool foundSame(false);
 
@@ -811,14 +679,14 @@ void Foam::Module::refineBoundaryLayers::generateNewFaces()
         }
 
         // refine the face
-        DynList<DynList<label, 4>, 128> newFacesForFace;
+        DynamicList<DynamicList<label>> newFacesForFace;
         refineFace(bf, nRefinementInDirection, newFacesForFace);
 
         // store the refined faces
         forAll(newFacesForFace, fI)
         {
-            facesFromFace_.append(faceI, newFaces_.size());
-            newFaces_.appendList(newFacesForFace[fI]);
+            facesFromFace_[faceI].append(newFaces_.size());
+            appendList(newFaces_, newFacesForFace[fI]);
         }
 
     }

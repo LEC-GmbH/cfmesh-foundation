@@ -31,6 +31,7 @@ License
 #include "tetCreatorOctree.H"
 #include "meshOctree.H"
 #include "triSurface.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -41,18 +42,18 @@ void Foam::Module::tetCreatorOctree::selectElements()
     const boundBox& rootBox = octree.rootBox();
 
     // store nodeLabels first
-    const VRWGraph& nodeLabels = octreeCheck_.nodeLabels();
+    const labelListList2D& nodeLabels = octreeCheck_.nodeLabels();
     tetPoints_.setSize(octreeCheck_.numberOfNodes());
 
     forAll(nodeLabels, leafI)
-        if (nodeLabels.sizeOfRow(leafI) != 0)
+        if (nodeLabels[leafI].size() != 0)
         {
             const meshOctreeCubeBasic& oc = octree.returnLeaf(leafI);
             FixedList<point, 8> lv;
             oc.vertices(rootBox, lv);
 
             forAll(lv, vI)
-                tetPoints_[nodeLabels(leafI, vI)] = lv[vI];
+                tetPoints_[nodeLabels[leafI][vI]] = lv[vI];
         }
 
     // create cubeLabel list
@@ -78,11 +79,11 @@ void Foam::Module::tetCreatorOctree::createPointsAndAddressing()
 
     const meshOctree& octree = octreeCheck_.octree();
     const boundBox& rootBox = octree.rootBox();
-    const VRWGraph& nodeLabels = octreeCheck_.nodeLabels();
+    const labelListList2D& nodeLabels = octreeCheck_.nodeLabels();
 
     if (!subNodeLabelsPtr_)
-        subNodeLabelsPtr_ = new VRWGraph(octree.numberOfLeaves());
-    VRWGraph& subNodeLabels = *subNodeLabelsPtr_;
+        subNodeLabelsPtr_ = new labelListList2D(octree.numberOfLeaves());
+    labelListList2D& subNodeLabels = *subNodeLabelsPtr_;
 
     // store nodeLabels
     direction maxLevel(0);
@@ -101,7 +102,7 @@ void Foam::Module::tetCreatorOctree::createPointsAndAddressing()
     }
 
     // create subNodeLabels
-    const FRWGraph<label, 8>& pointLeaves = octreeCheck_.nodeLeaves();
+    const List<FixedList<label, 8>>& pointLeaves = octreeCheck_.nodeLeaves();
 
     forAll(pointLeaves, pointI)
     {
@@ -109,7 +110,7 @@ void Foam::Module::tetCreatorOctree::createPointsAndAddressing()
         direction levelI(0);
         for (label i = 0; i < 8; ++i)
         {
-            const label pointLeafI = pointLeaves(pointI, i);
+            const label pointLeafI = pointLeaves[pointI][i];
 
             if (pointLeafI == -1)
             {
@@ -119,7 +120,7 @@ void Foam::Module::tetCreatorOctree::createPointsAndAddressing()
             {
                 validLeaf[i] = true;
                 for (label j = i + 1; j < 8; ++j)
-                    if (pointLeafI == pointLeaves(pointI, j))
+                    if (pointLeafI == pointLeaves[pointI][j])
                     {
                         validLeaf[i] = false;
                         validLeaf[j] = false;
@@ -136,21 +137,21 @@ void Foam::Module::tetCreatorOctree::createPointsAndAddressing()
         for (label plI = 0; plI < 8; ++plI)
             if (validLeaf[plI])
             {
-                const label pointLeafI = pointLeaves(pointI, plI);
+                const label pointLeafI = pointLeaves[pointI][plI];
 
                 const meshOctreeCubeBasic& lc =
                     octree.returnLeaf(pointLeafI);
 
                 if (lc.level() < levelI)
                 {
-                    if (subNodeLabels.sizeOfRow(pointLeafI) != 8)
+                    if (subNodeLabels[pointLeafI].size() != 8)
                     {
-                        subNodeLabels.setRowSize(pointLeafI, 8);
+                        subNodeLabels[pointLeafI].setSize(8);
                         forAllRow(subNodeLabels, pointLeafI, k)
-                            subNodeLabels(pointLeafI, k) = -1;
+                            subNodeLabels[pointLeafI][k] = -1;
                     }
 
-                    subNodeLabels(pointLeafI, (7 - plI)) = tetPoints_.size();
+                    subNodeLabels[pointLeafI][(7 - plI)] = tetPoints_.size();
                     FixedList<point, 8> lv;
                     lc.vertices(rootBox, lv);
 
@@ -170,8 +171,8 @@ void Foam::Module::tetCreatorOctree::createFaceCentreLabels()
 {
     Info<< "Creating face centre labels " << endl;
     const labelList& cubeLabel = *cubeLabelPtr_;
-    const VRWGraph& nodeLabels = octreeCheck_.nodeLabels();
-    const FRWGraph<label, 8>& pointLeaves = octreeCheck_.nodeLeaves();
+    const labelListList2D& nodeLabels = octreeCheck_.nodeLabels();
+    const List<FixedList<label, 8>>& pointLeaves = octreeCheck_.nodeLeaves();
     const meshOctree& octree = octreeCheck_.octree();
 
     List<direction> nodeLevel(pointLeaves.size(), direction(0));
@@ -181,7 +182,7 @@ void Foam::Module::tetCreatorOctree::createFaceCentreLabels()
 
         forAllRow(nodeLabels, leafI, nlI)
         {
-            const label nLabel = nodeLabels(leafI, nlI);
+            const label nLabel = nodeLabels[leafI][nlI];
 
             if (nodeLevel[nLabel] < level)
                 nodeLevel[nLabel] = level;
@@ -189,8 +190,8 @@ void Foam::Module::tetCreatorOctree::createFaceCentreLabels()
     }
 
     if (!faceCentreLabelPtr_)
-        faceCentreLabelPtr_ = new VRWGraph(cubeLabel.size());
-    VRWGraph& faceCentreLabel = *faceCentreLabelPtr_;
+        faceCentreLabelPtr_ = new labelListList2D(cubeLabel.size());
+    labelListList2D& faceCentreLabel = *faceCentreLabelPtr_;
 
     forAll(cubeLabel, cubeI)
         if (cubeLabel[cubeI] != -1)
@@ -200,8 +201,8 @@ void Foam::Module::tetCreatorOctree::createFaceCentreLabels()
             for (label i = 0; i < 6; ++i)
             {
                 if (
-                    (faceCentreLabel.sizeOfRow(cubeI) != 0) &&
-                    (faceCentreLabel(cubeI, i) != -1)
+                    (faceCentreLabel[cubeI].size() != 0) &&
+                    (faceCentreLabel[cubeI][i] != -1)
                 )
                     continue;
 
@@ -212,7 +213,7 @@ void Foam::Module::tetCreatorOctree::createFaceCentreLabels()
 
                 label highLevelNode(-1);
                 for (label j = 0; j < 4; ++j)
-                    if (nodeLevel[nodeLabels(cubeI, faceNodes[j])] > level)
+                    if (nodeLevel[nodeLabels[cubeI][faceNodes[j]]] > level)
                     {
                         highLevelNode = j;
                         break;
@@ -221,58 +222,58 @@ void Foam::Module::tetCreatorOctree::createFaceCentreLabels()
                 if (highLevelNode == -1)
                     continue;
 
-                DynList<label> neighbours;
+                DynamicList<label> neighbours;
                 octree.findNeighboursInDirection(cubeI, i, neighbours);
 
                 if ((neighbours.size() != 1) || (neighbours[0] == -1))
                     continue;
 
-                if (faceCentreLabel.sizeOfRow(cubeI) == 0)
+                if (faceCentreLabel[cubeI].size() == 0)
                 {
-                    faceCentreLabel.setRowSize(cubeI, 6);
+                    faceCentreLabel[cubeI].setSize(6);
                     forAllRow(faceCentreLabel, cubeI, colI)
-                        faceCentreLabel(cubeI, colI) = -1;
+                        faceCentreLabel[cubeI][colI] = -1;
                 }
                 const label cNei = neighbours[0];
-                if (faceCentreLabel.sizeOfRow(cNei) == 0)
+                if (faceCentreLabel[cNei].size() == 0)
                 {
-                    faceCentreLabel.setRowSize(cNei, 6);
+                    faceCentreLabel[cNei].setSize(6);
                     forAllRow(faceCentreLabel, cNei, colI)
-                        faceCentreLabel(cNei, colI) = -1;
+                        faceCentreLabel[cNei][colI] = -1;
                 }
 
-                faceCentreLabel(cubeI, i) = tetPoints_.size();
+                faceCentreLabel[cubeI][i] = tetPoints_.size();
                 switch(i)
                 {
                     case 0:
                     {
-                        faceCentreLabel(cNei, 1) = tetPoints_.size();
+                        faceCentreLabel[cNei][1] = tetPoints_.size();
                     } break;
                     case 1:
                     {
-                        faceCentreLabel(cNei, 0) = tetPoints_.size();
+                        faceCentreLabel[cNei][0] = tetPoints_.size();
                     } break;
                     case 2:
                     {
-                        faceCentreLabel(cNei, 3) = tetPoints_.size();
+                        faceCentreLabel[cNei][3] = tetPoints_.size();
                     } break;
                     case 3:
                     {
-                        faceCentreLabel(cNei, 2) = tetPoints_.size();
+                        faceCentreLabel[cNei][2] = tetPoints_.size();
                     } break;
                     case 4:
                     {
-                        faceCentreLabel(cNei, 5) = tetPoints_.size();
+                        faceCentreLabel[cNei][5] = tetPoints_.size();
                     } break;
                     case 5:
                     {
-                        faceCentreLabel(cNei, 4) = tetPoints_.size();
+                        faceCentreLabel[cNei][4] = tetPoints_.size();
                     } break;
                 };
 
                 point p(vector::zero);
                 for (label j = 0; j < 4; ++j)
-                    p += tetPoints_[nodeLabels(cubeI, faceNodes[j])];
+                    p += tetPoints_[nodeLabels[cubeI][faceNodes[j]]];
                 p /= 4;
                 tetPoints_.append(p);
             }

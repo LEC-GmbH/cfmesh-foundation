@@ -40,7 +40,7 @@ License
 Foam::label Foam::Module::triSurfaceChecks::checkAngles
 (
     const triSurf& surf,
-    labelLongList& badTriangles,
+    DynamicList<label>& badTriangles,
     const scalar angleTol
 )
 {
@@ -83,7 +83,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkAngles
     const scalar angleTol
 )
 {
-    labelLongList badTriangles;
+    DynamicList<label> badTriangles;
 
     if (checkAngles(surf, badTriangles, angleTol))
     {
@@ -116,10 +116,10 @@ class surfaceNeiOp
     // Private data
 
         // const reference to face-edges addressing
-        const VRWGraph& faceEdges_;
+        const labelListList2D& faceEdges_;
 
         // const reference to edge-faces addressing
-        const VRWGraph& edgeFaces_;
+        const labelListList2D& edgeFaces_;
 
 
 public:
@@ -128,8 +128,8 @@ public:
 
         surfaceNeiOp
         (
-            const VRWGraph& faceEdges,
-            const VRWGraph& edgeFaces
+            const labelListList2D& faceEdges,
+            const labelListList2D& edgeFaces
         )
         :
             faceEdges_(faceEdges),
@@ -144,22 +144,22 @@ public:
             return faceEdges_.size();
         }
 
-        void operator()(const label tI, DynList<label>& neiTriangles) const
+        void operator()(const label tI, DynamicList<label>& neiTriangles) const
         {
             neiTriangles.clear();
 
             forAllRow(faceEdges_, tI, teI)
             {
-                const label eI = faceEdges_(tI, teI);
+                const label eI = faceEdges_[tI][teI];
 
-                if (edgeFaces_.sizeOfRow(eI) != 2)
+                if (edgeFaces_[eI].size() != 2)
                     continue;
 
                 // ind the neighbour triangle over the edge
-                label nei = edgeFaces_(eI, 0);
+                label nei = edgeFaces_[eI][0];
 
                 if (nei == tI)
-                    nei = edgeFaces_(eI, 1);
+                    nei = edgeFaces_[eI][1];
 
                 neiTriangles.append(nei);
             }
@@ -168,9 +168,9 @@ public:
         template<class labelListType>
         void collectGroups
         (
-            std::map<label, DynList<label>>& /*neiGroups*/,
+            std::map<label, DynamicList<label>>& /*neiGroups*/,
             const labelListType& /*elementInGroup*/,
-            const DynList<label>& /*localGroupLabel*/
+            const DynamicList<label>& /*localGroupLabel*/
         ) const
         {
         }
@@ -221,11 +221,11 @@ public:
 Foam::label Foam::Module::triSurfaceChecks::checkSurfaceManifolds
 (
     const triSurf& surf,
-    labelLongList& triangleInManifold
+    DynamicList<label>& triangleInManifold
 )
 {
-    const VRWGraph& faceEdges = surf.facetEdges();
-    const VRWGraph& edgeFaces = surf.edgeFacets();
+    const labelListList2D& faceEdges = surf.facetEdges();
+    const labelListList2D& edgeFaces = surf.edgeFacets();
 
     const label nManifolds =
         help::groupMarking
@@ -245,7 +245,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkSurfaceManifolds
     const word subsetPrefix
 )
 {
-    labelLongList facetInManifold;
+    DynamicList<label> facetInManifold;
 
     const label nManifolds = checkSurfaceManifolds(surf, facetInManifold);
 
@@ -272,20 +272,20 @@ Foam::label Foam::Module::triSurfaceChecks::checkSurfaceManifolds
 Foam::label Foam::Module::triSurfaceChecks::checkForHoles
 (
     const triSurf& surf,
-    labelLongList& badTriangles
+    DynamicList<label>& badTriangles
 )
 {
     badTriangles.clear();
 
-    const VRWGraph& edgeFacets = surf.edgeFacets();
+    const labelListList2D& edgeFacets = surf.edgeFacets();
 
     # pragma omp parallel for schedule(dynamic, 100)
     forAll(edgeFacets, eI)
     {
-        if (edgeFacets.sizeOfRow(eI) == 1)
+        if (edgeFacets[eI].size() == 1)
         {
             # pragma omp critical
-            badTriangles.append(edgeFacets(eI, 0));
+            badTriangles.append(edgeFacets[eI][0]);
         }
     }
 
@@ -299,7 +299,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkForHoles
     const word subsetName
 )
 {
-    labelLongList trianglesNearHoles;
+    DynamicList<label> trianglesNearHoles;
 
     if (checkForHoles(surf, trianglesNearHoles))
     {
@@ -319,22 +319,22 @@ Foam::label Foam::Module::triSurfaceChecks::checkForHoles
 Foam::label Foam::Module::triSurfaceChecks::checkForNonManifoldEdges
 (
     const triSurf& surf,
-    labelLongList& badTriangles
+    DynamicList<label>& badTriangles
 )
 {
     badTriangles.clear();
 
-    const VRWGraph& edgeFacets = surf.edgeFacets();
+    const labelListList2D& edgeFacets = surf.edgeFacets();
 
     # pragma omp parallel for schedule(dynamic, 100)
     forAll(edgeFacets, eI)
     {
-        if (edgeFacets.sizeOfRow(eI) > 2)
+        if (edgeFacets[eI].size() > 2)
         {
             # pragma omp critical
             {
                 forAllRow(edgeFacets, eI, efI)
-                    badTriangles.append(edgeFacets(eI, efI));
+                    badTriangles.append(edgeFacets[eI][efI]);
             }
         }
     }
@@ -349,7 +349,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkForNonManifoldEdges
     const word subsetPrefix
 )
 {
-    labelLongList trianglesNearHoles;
+    DynamicList<label> trianglesNearHoles;
 
     if (checkForHoles(surf, trianglesNearHoles))
     {
@@ -381,13 +381,13 @@ class surfaceNeiOp
 {
     // Private data
         // const reference to face-edges addressing
-        const VRWGraph& faceEdges_;
+        const labelListList2D& faceEdges_;
 
         // const reference to edge-faces addressing
-        const VRWGraph& edgeFaces_;
+        const labelListList2D& edgeFaces_;
 
         // const reference to triangles
-        const LongList<labelledTri>& triangles_;
+        const DynamicList<labelledTri>& triangles_;
 
 public:
 
@@ -395,9 +395,9 @@ public:
 
         surfaceNeiOp
         (
-            const VRWGraph& faceEdges,
-            const VRWGraph& edgeFaces,
-            const LongList<labelledTri>& triangles
+            const labelListList2D& faceEdges,
+            const labelListList2D& edgeFaces,
+            const DynamicList<labelledTri>& triangles
         )
         :
             faceEdges_(faceEdges),
@@ -412,7 +412,7 @@ public:
             return triangles_.size();
         }
 
-        void operator()(const label tI, DynList<label>& neiTriangles) const
+        void operator()(const label tI, DynamicList<label>& neiTriangles) const
         {
             neiTriangles.clear();
 
@@ -420,16 +420,16 @@ public:
 
             forAllRow(faceEdges_, tI, teI)
             {
-                const label eI = faceEdges_(tI, teI);
+                const label eI = faceEdges_[tI][teI];
 
-                if (edgeFaces_.sizeOfRow(eI) != 2)
+                if (edgeFaces_[eI].size() != 2)
                     continue;
 
                 // ind the neighbour triangle over the edge
-                label nei = edgeFaces_(eI, 0);
+                label nei = edgeFaces_[eI][0];
 
                 if (nei == tI)
-                    nei = edgeFaces_(eI, 1);
+                    nei = edgeFaces_[eI][1];
 
                 const labelledTri& neiTri = triangles_[nei];
 
@@ -453,9 +453,9 @@ public:
         template<class labelListType>
         void collectGroups
         (
-            std::map<label, DynList<label>>& /*neiGroups*/,
+            std::map<label, DynamicList<label>>& /*neiGroups*/,
             const labelListType& /*elementInGroup*/,
-            const DynList<label>& /*localGroupLabel*/
+            const DynamicList<label>& /*localGroupLabel*/
         ) const
         {}
 };
@@ -473,16 +473,16 @@ public:
 Foam::label Foam::Module::triSurfaceChecks::checkOrientation
 (
     const triSurf& surf,
-    labelLongList& triangleInGroup
+    DynamicList<label>& triangleInGroup
 )
 {
     triangleInGroup.setSize(surf.size());
     triangleInGroup = -1;
     label nGroups(0);
 
-    const VRWGraph& edgeFacets = surf.edgeFacets();
-    const VRWGraph& faceEdges = surf.facetEdges();
-    const LongList<labelledTri>& triangles = surf.facets();
+    const labelListList2D& edgeFacets = surf.edgeFacets();
+    const labelListList2D& faceEdges = surf.facetEdges();
+    const DynamicList<labelledTri>& triangles = surf.facets();
 
     nGroups =
         help::groupMarking
@@ -502,7 +502,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkOrientation
     const word subsetPrefix
 )
 {
-    labelLongList triangleInGroup;
+    DynamicList<label> triangleInGroup;
 
     const label nGroups = checkOrientation(surf, triangleInGroup);
 
@@ -543,10 +543,10 @@ class surfaceNeiOp
     // Private data
 
         // const reference to face-edges addressing
-        const VRWGraph& faceEdges_;
+        const labelListList2D& faceEdges_;
 
         // const reference to edge-faces addressing
-        const VRWGraph& edgeFaces_;
+        const labelListList2D& edgeFaces_;
 
 
 public:
@@ -555,8 +555,8 @@ public:
 
         surfaceNeiOp
         (
-            const VRWGraph& faceEdges,
-            const VRWGraph& edgeFaces
+            const labelListList2D& faceEdges,
+            const labelListList2D& edgeFaces
         )
         :
             faceEdges_(faceEdges),
@@ -571,17 +571,17 @@ public:
             return faceEdges_.size();
         }
 
-        void operator()(const label tI, DynList<label>& neiTriangles) const
+        void operator()(const label tI, DynamicList<label>& neiTriangles) const
         {
             neiTriangles.clear();
 
             forAllRow(faceEdges_, tI, teI)
             {
-                const label eI = faceEdges_(tI, teI);
+                const label eI = faceEdges_[tI][teI];
 
                 forAllRow(edgeFaces_, eI, efI)
                 {
-                    const label tJ = edgeFaces_(eI, efI);
+                    const label tJ = edgeFaces_[eI][efI];
 
                     if (tJ == tI)
                         continue;
@@ -594,9 +594,9 @@ public:
         template<class labelListType>
         void collectGroups
         (
-            std::map<label, DynList<label>>& /*neiGroups*/,
+            std::map<label, DynamicList<label>>& /*neiGroups*/,
             const labelListType& /*elementInGroup*/,
-            const DynList<label>& /*localGroupLabel*/
+            const DynamicList<label>& /*localGroupLabel*/
         ) const
         {
         }
@@ -614,15 +614,15 @@ public:
 Foam::label Foam::Module::triSurfaceChecks::checkDisconnectedParts
 (
     const triSurf& surf,
-    labelLongList& triangleInRegion
+    DynamicList<label>& triangleInRegion
 )
 {
     triangleInRegion.setSize(surf.size());
     triangleInRegion = -1;
     label nGroups(0);
 
-    const VRWGraph& edgeFacets = surf.edgeFacets();
-    const VRWGraph& faceEdges = surf.facetEdges();
+    const labelListList2D& edgeFacets = surf.edgeFacets();
+    const labelListList2D& faceEdges = surf.facetEdges();
 
     nGroups =
         help::groupMarking
@@ -642,7 +642,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkDisconnectedParts
     const word subsetPrefix
 )
 {
-    labelLongList triangleInRegion;
+    DynamicList<label> triangleInRegion;
 
     const label nGroups = checkDisconnectedParts(surf, triangleInRegion);
 
@@ -681,7 +681,7 @@ void Foam::Module::triSurfaceChecks::calculateBoundingBox
 Foam::label Foam::Module::triSurfaceChecks::checkCollocatedPoints
 (
     const triSurf& surf,
-    labelLongList& collocatedPoints,
+    DynamicList<label>& collocatedPoints,
     const scalar distTol
 )
 {
@@ -704,14 +704,14 @@ Foam::label Foam::Module::triSurfaceChecks::checkCollocatedPoints
         bb.min() -= point(distTol, distTol, distTol);
         bb.max() += point(distTol, distTol, distTol);
 
-        DynList<label> leavesInBox;
+        DynamicList<label> leavesInBox;
         octree.findLeavesContainedInBox(bb, leavesInBox);
 
         forAll(leavesInBox, i)
         {
             const label leafI = leavesInBox[i];
 
-            DynList<label> trianglesInBox;
+            DynamicList<label> trianglesInBox;
 
             octree.containedTriangles(leafI, trianglesInBox);
 
@@ -750,7 +750,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkCollocatedPoints
     const scalar distTol
 )
 {
-    labelLongList collocatedPoints;
+    DynamicList<label> collocatedPoints;
 
     if (checkCollocatedPoints(surf, collocatedPoints, distTol))
     {
@@ -770,7 +770,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkCollocatedPoints
 Foam::label Foam::Module::triSurfaceChecks::checkSelfIntersections
 (
     const triSurf& surf,
-    labelLongList& badFaces,
+    DynamicList<label>& badFaces,
     const scalar tol
 )
 {
@@ -805,14 +805,14 @@ Foam::label Foam::Module::triSurfaceChecks::checkSelfIntersections
         bb.min() -= point(tol, tol, tol);
         bb.max() += point(tol, tol, tol);
 
-        DynList<label> leavesInBox;
+        DynamicList<label> leavesInBox;
         octree.findLeavesContainedInBox(bb, leavesInBox);
 
         forAll(leavesInBox, i)
         {
             const label leafI = leavesInBox[i];
 
-            DynList<label> trianglesInBox;
+            DynamicList<label> trianglesInBox;
 
             octree.containedTriangles(leafI, trianglesInBox);
 
@@ -824,7 +824,8 @@ Foam::label Foam::Module::triSurfaceChecks::checkSelfIntersections
                 if (tI >= triJ)
                     continue;
 
-                DynList<label, 3> sharedPoints;
+                DynamicList<label> sharedPoints;
+                sharedPoints.reserve(3);
                 forAll(nt, pJ)
                 {
                     forAll(tri, pI)
@@ -899,7 +900,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkSelfIntersections
     const scalar tol
 )
 {
-    labelLongList badFacets;
+    DynamicList<label> badFacets;
 
     if (checkSelfIntersections(surf, badFacets, tol))
     {
@@ -919,7 +920,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkSelfIntersections
 Foam::label Foam::Module::triSurfaceChecks::checkOverlaps
 (
     const triSurf& surf,
-    labelLongList& badFaces,
+    DynamicList<label>& badFaces,
     const scalar tol,
     const scalar angleTol
 )
@@ -957,14 +958,14 @@ Foam::label Foam::Module::triSurfaceChecks::checkOverlaps
         bb.min() -= point(tol, tol, tol);
         bb.max() += point(tol, tol, tol);
 
-        DynList<label> leavesInBox;
+        DynamicList<label> leavesInBox;
         octree.findLeavesContainedInBox(bb, leavesInBox);
 
         forAll(leavesInBox, i)
         {
             const label leafI = leavesInBox[i];
 
-            DynList<label> trianglesInBox;
+            DynamicList<label> trianglesInBox;
 
             octree.containedTriangles(leafI, trianglesInBox);
 
@@ -983,7 +984,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkOverlaps
                     pts[nt[2]]
                 );
 
-                DynList<point> commonPolygon;
+                DynamicList<point> commonPolygon;
 
                 const bool intersect =
                     help::doTrianglesOverlap
@@ -1023,7 +1024,7 @@ Foam::label Foam::Module::triSurfaceChecks::checkOverlaps
     const scalar angleTol
 )
 {
-    labelLongList badFaces;
+    DynamicList<label> badFaces;
 
     if (checkOverlaps(surf, badFaces, tol, angleTol))
     {

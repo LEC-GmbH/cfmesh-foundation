@@ -29,7 +29,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "polyMeshGenAddressing.H"
-#include "VRWGraphSMPModifier.H"
 
 #include <omp.h>
 
@@ -49,8 +48,8 @@ void Foam::Module::polyMeshGenAddressing::calcCellPoints() const
         const faceListPMG& faces = mesh_.faces();
 
         // create the storage
-        cpPtr_ = new VRWGraph(cells.size());
-        VRWGraph& cellPointsAddr = *cpPtr_;
+        cpPtr_ = new labelListList2D(cells.size());
+        labelListList2D& cellPointsAddr = *cpPtr_;
 
         labelList nPoints(cells.size());
 
@@ -68,14 +67,14 @@ void Foam::Module::polyMeshGenAddressing::calcCellPoints() const
             {
                 const cell& c = cells[cellI];
 
-                DynList<label, 32> cPoints;
+                DynamicList<label> cPoints; cPoints.reserve(32);
                 forAll(c, fI)
                 {
                     const face& f = faces[c[fI]];
 
                     forAll(f, pI)
                     {
-                        cPoints.appendUniq(f[pI]);
+                        appendUniq(cPoints, f[pI]);
                     }
                 }
 
@@ -85,7 +84,7 @@ void Foam::Module::polyMeshGenAddressing::calcCellPoints() const
             # pragma omp barrier
 
             # pragma omp master
-            VRWGraphSMPModifier(cellPointsAddr).setSizeAndRowSize(nPoints);
+            setSizeAndRowSize(cellPointsAddr, nPoints);
 
             # pragma omp barrier
 
@@ -94,18 +93,18 @@ void Foam::Module::polyMeshGenAddressing::calcCellPoints() const
             {
                 const cell& c = cells[cellI];
 
-                DynList<label, 32> cPoints;
+                DynamicList<label> cPoints; cPoints.reserve(32);
                 forAll(c, fI)
                 {
                     const face& f = faces[c[fI]];
 
                     forAll(f, pI)
                     {
-                        cPoints.appendUniq(f[pI]);
+                        appendUniq(cPoints, f[pI]);
                     }
                 }
 
-                cellPointsAddr.setRow(cellI, cPoints);
+                setRow(cellPointsAddr, cellI, cPoints);
             }
         }
     }
@@ -114,7 +113,7 @@ void Foam::Module::polyMeshGenAddressing::calcCellPoints() const
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-const Foam::Module::VRWGraph&
+const Foam::Module::labelListList2D&
 Foam::Module::polyMeshGenAddressing::cellPoints() const
 {
     if (!cpPtr_)

@@ -41,7 +41,7 @@ void Foam::Module::meshOctreeCube::leavesInBox
 (
     const boundBox& rootBox,
     const boundBox& searchingBox,
-    DynList<const meshOctreeCube*, 256>& leaves
+    DynamicList<const meshOctreeCube*>& leaves
 ) const
 {
     boundBox cubeBox;
@@ -79,7 +79,7 @@ void Foam::Module::meshOctreeCube::leavesInSphere
     const boundBox& rootBox,
     const point& c,
     const scalar r,
-    DynList<label>& containedLeaves
+    DynamicList<label>& containedLeaves
 ) const
 {
     const point cubeCentre = this->centre(rootBox);
@@ -113,50 +113,9 @@ void Foam::Module::meshOctreeCube::leavesInSphere
 }
 
 
-void Foam::Module::meshOctreeCube::markLeavesInSphere
-(
-    const boundBox& rootBox,
-    const point& c,
-    const scalar r,
-    labelList& markedLeaves,
-    bool& atProcessorBnd
-) const
-{
-    const point cubeCentre = this->centre(rootBox);
-    const scalar size = 1.732*this->size(rootBox);
-
-    if (magSqr(cubeCentre-c) < sqr(r + size))
-    {
-        if (this->isLeaf())
-        {
-            markedLeaves[this->cubeLabel()] |= 2;
-        }
-        else
-        {
-            for (label scI = 0; scI < 8; ++scI)
-            {
-                meshOctreeCube* scPtr = subCubesPtr_[scI];
-
-                if (scPtr)
-                {
-                    scPtr->markLeavesInSphere
-                    (
-                        rootBox,
-                        c,
-                        r,
-                        markedLeaves,
-                        atProcessorBnd
-                    );
-                }
-            }
-        }
-    }
-}
-
-
 void Foam::Module::meshOctreeCube::findLeaves
 (
-    LongList<meshOctreeCube*>& leaves
+    DynamicList<meshOctreeCube*>& leaves
 ) const
 {
     if (this->isLeaf())

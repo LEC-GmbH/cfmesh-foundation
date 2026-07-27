@@ -41,24 +41,24 @@ void Foam::Module::meshUntangler::cutRegion::findNewFaces()
     {
         finished = true;
 
-        const DynList<DynList<label, 8>, 64>& fcs = *facesPtr_;
-        DynList<edge, 128>& cEdges = *cEdgesPtr_;
+        const DynamicList<DynamicList<label>>& fcs = *facesPtr_;
+        DynamicList<edge>& cEdges = *cEdgesPtr_;
 
-        cFacesPtr_ = new DynList<DynList<label, 8>, 64>();
-        DynList<DynList<label, 8>, 64>& cFaces = *cFacesPtr_;
+        cFacesPtr_ = new DynamicList<DynamicList<label>>();
+        DynamicList<DynamicList<label>>& cFaces = *cFacesPtr_;
 
-        DynList<label, 8> faceInPlane;
+        DynamicList<label> faceInPlane;
 
-        DynList<label, 64> pointUsage;
+        DynamicList<label> pointUsage;
         pointUsage.setSize(cPtsPtr_->size());
 
         forAll(fcs, fI)
         {
-            const DynList<label, 8>& f = fcs[fI];
+            const DynamicList<label>& f = fcs[fI];
 
             pointUsage = 0;
 
-            DynList<label, 8> newFace;
+            DynamicList<label> newFace;
 
             forAll(f, eI)
             {
@@ -77,7 +77,7 @@ void Foam::Module::meshUntangler::cutRegion::findNewFaces()
 
             if (newFace.size() > 1)
             {
-                DynList<label, 4> newEdge;
+                DynamicList<label> newEdge;
                 forAll(pointUsage, pI)
                     if (pointUsage[pI] == 1)
                         newEdge.append(pI);
@@ -104,12 +104,12 @@ void Foam::Module::meshUntangler::cutRegion::findNewFaces()
         if (!finished) continue;
 
         // find edges which form the faceInPlane
-        DynList<label, 128> edgeUsage;
+        DynamicList<label> edgeUsage;
         edgeUsage.setSize(cEdges.size());
         edgeUsage = 0;
         forAll(cFaces, fI)
         {
-            const DynList<label, 8>& f = cFaces[fI];
+            const DynamicList<label>& f = cFaces[fI];
 
             forAll(f, eI)
                 ++edgeUsage[f[eI]];

@@ -37,17 +37,18 @@ License
 void Foam::Module::meshOctree::findBoundaryPatchesForLeaf
 (
     const label leafI,
-    DynList<label>& patches
+    DynamicList<label>& patches
 ) const
 {
     if (leaves_[leafI]->hasContainedElements())
     {
         patches.clear();
-        const VRWGraph& ct = leaves_[leafI]->slotPtr()->containedTriangles_;
-        const constRow ce =
+        const labelListList2D& ct =
+            leaves_[leafI]->slotPtr()->containedTriangles_;
+        const DynamicList<label>& ce =
             ct[leaves_[leafI]->containedElements()];
         forAll(ce, elI)
-            patches.appendUniq(surface_[ce[elI]].region());
+            appendUniq(patches, surface_[ce[elI]].region());
     }
     else
     {

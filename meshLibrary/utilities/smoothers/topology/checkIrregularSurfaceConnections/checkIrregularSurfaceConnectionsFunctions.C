@@ -51,14 +51,14 @@ checkAndFixCellGroupsAtBndVertices
     faceListPMG& faces = meshModifier.facesAccess();
     cellListPMG& cells = meshModifier.cellsAccess();
 
-    const VRWGraph& cellCells = mesh_.addressingData().cellCells();
-    const VRWGraph& pointCells = mesh_.addressingData().pointCells();
+    const labelListList2D& cellCells = mesh_.addressingData().cellCells();
+    const labelListList2D& pointCells = mesh_.addressingData().pointCells();
 
     // check cells connected to surface nodes
     // cells connected to a vertex must create a single loop when cells
     // are visited over faces from to the other
     label nBadVertices(0);
-    DynList<label> frontCells;
+    DynamicList<label> frontCells;
 
     const label size = bPoints.size();
     # pragma omp parallel for private(frontCells) schedule(dynamic, 1000)
@@ -66,13 +66,13 @@ checkAndFixCellGroupsAtBndVertices
     {
         const label pointI = bPoints[bpI];
 
-        Map<label> cellGroup(pointCells.sizeOfRow(pointI));
+        Map<label> cellGroup(pointCells[pointI].size());
 
         label nGroup(0);
 
         forAllRow(pointCells, pointI, cI)
         {
-            const label cellI = pointCells(pointI, cI);
+            const label cellI = pointCells[pointI][cI];
 
             if (cellGroup.found(cellI))
                 continue;
@@ -87,12 +87,12 @@ checkAndFixCellGroupsAtBndVertices
 
                 forAllRow(cellCells, cLabel, nI)
                 {
-                    const label neiCell = cellCells(cLabel, nI);
+                    const label neiCell = cellCells[cLabel][nI];
 
                     if (cellGroup.found(neiCell))
                         continue;
 
-                    if (pointCells.found(pointI, neiCell))
+                    if (found(pointCells, pointI, neiCell))
                     {
                         cellGroup.insert(neiCell, nGroup);
                         frontCells.append(neiCell);
@@ -116,7 +116,7 @@ checkAndFixCellGroupsAtBndVertices
                     const label nPoints = points.size();
                     forAllRow(pointCells, pointI, pcI)
                     {
-                        const label cellI = pointCells(pointI, pcI);
+                        const label cellI = pointCells[pointI][pcI];
 
                         if (cellGroup[cellI] != 0)
                         {
@@ -170,14 +170,14 @@ bool Foam::Module::checkIrregularSurfaceConnections::checkEdgeFaceConnections
     const meshSurfaceEngine& mse = surfaceEngine();
     const labelList& bp = mse.bp();
     const edgeList& edges = mse.edges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
-    const VRWGraph& pointEdges = mse.boundaryPointEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
+    const labelListList2D& pointEdges = mse.boundaryPointEdges();
 
     labelHashSet badEdges;
 
     forAll(edgeFaces, edgeI)
     {
-        if (edgeFaces.sizeOfRow(edgeI) > 2)
+        if (edgeFaces[edgeI].size() > 2)
         {
             badVertices.insert(edges[edgeI].start());
             badVertices.insert(edges[edgeI].end());
@@ -213,7 +213,7 @@ bool Foam::Module::checkIrregularSurfaceConnections::checkEdgeFaceConnections
 
                     forAllRow(pointEdges, bpI, peI)
                     {
-                        const label edgeI = pointEdges(bpI, peI);
+                        const label edgeI = pointEdges[bpI][peI];
                         if ((edges[edgeI] == e) && badEdges.found(edgeI))
                         {
                             removeCell[owner[faceI]] = true;
@@ -250,21 +250,21 @@ checkFaceGroupsAtBndVertices
     const meshSurfaceEngine& mse = surfaceEngine();
 
     const labelList& bPoints = mse.boundaryPoints();
-    const VRWGraph& pointFaces = mse.pointFaces();
-    const VRWGraph& faceFaces = mse.faceFaces();
+    const labelListList2D& pointFaces = mse.pointFaces();
+    const labelListList2D& faceFaces = mse.faceFaces();
 
     // check number of face groups
-    DynList<label> front;
+    DynamicList<label> front;
     const label size = pointFaces.size();
     # pragma omp parallel for private(front) schedule(dynamic)
     for (label bpI = 0; bpI < size; ++bpI)
     {
-        Map<label> faceGroup(pointFaces.sizeOfRow(bpI));
+        Map<label> faceGroup(pointFaces[bpI].size());
         label nGroup(0);
 
         forAllRow(pointFaces, bpI, pfI)
         {
-            const label fI = pointFaces(bpI, pfI);
+            const label fI = pointFaces[bpI][pfI];
 
             if (faceGroup.found(fI))
                 continue;
@@ -279,12 +279,12 @@ checkFaceGroupsAtBndVertices
 
                 forAllRow(faceFaces, fLabel, ffI)
                 {
-                    const label neiFace = faceFaces(fLabel, ffI);
+                    const label neiFace = faceFaces[fLabel][ffI];
 
                     if (faceGroup.found(neiFace))
                         continue;
 
-                    if (pointFaces.found(bpI, neiFace))
+                    if (Foam::Module::found(pointFaces, bpI, neiFace))
                     {
                         front.append(neiFace);
                         faceGroup.insert(neiFace, nGroup);
@@ -312,7 +312,7 @@ checkFaceGroupsAtBndVertices
 
     if (nBadVertices != 0 && removeCells)
     {
-        const VRWGraph& pointCells = mesh_.addressingData().pointCells();
+        const labelListList2D& pointCells = mesh_.addressingData().pointCells();
 
         boolList removeCell(mesh_.cells().size(), false);
 
@@ -320,7 +320,7 @@ checkFaceGroupsAtBndVertices
         {
             forAllRow(pointCells, verti, pcI)
             {
-                removeCell[pointCells(verti, pcI)] = true;
+                removeCell[pointCells[verti][pcI]] = true;
             }
         }
 

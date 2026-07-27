@@ -47,9 +47,9 @@ void Foam::Module::meshSurfaceCheckEdgeTypes::classifyEdges()
 {
     const pointFieldPMG& points = surfaceEngine_.points();
     const labelList& bp = surfaceEngine_.bp();
-    const VRWGraph& pointFaces = surfaceEngine_.pointFaces();
+    const labelListList2D& pointFaces = surfaceEngine_.pointFaces();
     const edgeList& edges = surfaceEngine_.edges();
-    const VRWGraph& edgeFaces = surfaceEngine_.edgeFaces();
+    const labelListList2D& edgeFaces = surfaceEngine_.edgeFaces();
     const labelList& facePatch = surfaceEngine_.boundaryFacePatches();
     const vectorField& fCentres = surfaceEngine_.faceCentres();
 
@@ -81,10 +81,10 @@ void Foam::Module::meshSurfaceCheckEdgeTypes::classifyEdges()
         {
             edgeType_[edgeI] = NONE;
 
-            if (edgeFaces.sizeOfRow(edgeI) == 2)
+            if (edgeFaces[edgeI].size() == 2)
             {
-                const label f0 = edgeFaces(edgeI, 0);
-                const label f1 = edgeFaces(edgeI, 1);
+                const label f0 = edgeFaces[edgeI][0];
+                const label f1 = edgeFaces[edgeI][1];
 
                 if (facePatch[f0] == facePatch[f1])
                 {
@@ -165,7 +165,7 @@ Foam::Module::meshSurfaceCheckEdgeTypes::meshSurfaceCheckEdgeTypes
 
 void Foam::Module::meshSurfaceCheckEdgeTypes::convexEdges
 (
-    labelLongList& convexEdges
+    DynamicList<label>& convexEdges
 ) const
 {
     convexEdges.clear();
@@ -180,7 +180,7 @@ void Foam::Module::meshSurfaceCheckEdgeTypes::convexEdges
 
 void Foam::Module::meshSurfaceCheckEdgeTypes::concaveEdges
 (
-    labelLongList& concaveEdges
+    DynamicList<label>& concaveEdges
 ) const
 {
     concaveEdges.clear();

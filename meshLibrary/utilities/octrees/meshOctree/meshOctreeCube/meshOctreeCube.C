@@ -30,7 +30,6 @@ License
 
 #include "meshOctreeCube.H"
 #include "demandDrivenData.H"
-#include "VRWGraph.H"
 #include "Ostream.H"
 #include "meshOctreeSlot.H"
 
@@ -127,12 +126,12 @@ Foam::Module::meshOctreeCube::meshOctreeCube
     containedEdgesLabel_(-1)
 {
     slotPtr->containedTriangles_.setSize(1);
-    slotPtr->containedTriangles_.setRowSize(0, nElmts),
+    slotPtr->containedTriangles_[0].setSize(nElmts);
     slotPtr->containedEdges_.setSize(0);
 
     for (label i = 0; i < nElmts; ++i)
     {
-        slotPtr->containedTriangles_(0, i) = i;
+        slotPtr->containedTriangles_[0][i] = i;
     }
 }
 

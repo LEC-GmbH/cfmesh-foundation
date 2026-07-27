@@ -43,6 +43,7 @@ SourceFiles
 #define meshSurfaceCheckEdgeTypes_H
 
 #include "polyMeshGenModifier.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -115,10 +116,10 @@ public:
         }
 
         //- return indices of convex edges
-        void convexEdges(labelLongList& convexEdges) const;
+        void convexEdges(DynamicList<label>& convexEdges) const;
 
         //- return indices of concave edges
-        void concaveEdges(labelLongList& concaveEdges) const;
+        void concaveEdges(DynamicList<label>& concaveEdges) const;
 };
 
 

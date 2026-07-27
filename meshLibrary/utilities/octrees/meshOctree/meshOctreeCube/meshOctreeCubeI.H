@@ -56,6 +56,13 @@ inline Foam::Module::meshOctreeCube::meshOctreeCube(const meshOctreeCube& moc)
 {}
 
 
+inline Foam::autoPtr<Foam::Module::meshOctreeCube>
+Foam::Module::meshOctreeCube::clone() const
+{
+    return autoPtr<meshOctreeCube>(new meshOctreeCube(*this));
+}
+
+
 inline const Foam::Module::meshOctreeSlot*
 Foam::Module::meshOctreeCube::slotPtr() const
 {

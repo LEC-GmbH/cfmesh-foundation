@@ -29,6 +29,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "demandDrivenData.H"
+#include "DynamicList.H"
 #include "meshSurfaceEdgeExtractorFUN.H"
 #include "meshOctree.H"
 #include "triSurf.H"
@@ -55,9 +56,11 @@ void Foam::Module::meshSurfaceEdgeExtractorFUN::distributeBoundaryFaces()
     const label nPatches = surface.patches().size();
 
     wordList patchNames(nPatches);
-    VRWGraph newBoundaryFaces;
-    labelLongList newBoundaryOwners(bFaces.size());
-    labelLongList newBoundaryPatches(bFaces.size());
+    DynamicList<DynamicList<label>> newBoundaryFaces;
+    DynamicList<label> newBoundaryOwners;
+    newBoundaryOwners.setSize(bFaces.size());
+    DynamicList<label> newBoundaryPatches;
+    newBoundaryPatches.setSize(bFaces.size());
 
     // set patchNames
     forAll(surface.patches(), patchI)
@@ -66,7 +69,7 @@ void Foam::Module::meshSurfaceEdgeExtractorFUN::distributeBoundaryFaces()
     // append boundary faces
     forAll(bFaces, bfI)
     {
-        newBoundaryFaces.appendList(bFaces[bfI]);
+        appendList(newBoundaryFaces, bFaces[bfI]);
         newBoundaryOwners[bfI] = faceOwner[bfI];
     }
 
@@ -140,7 +143,7 @@ improveQualityOfFundamentalSheets()
     meshSurfaceCheckEdgeTypes edgeCheck(mse);
 
     label id = mesh_.addPointSubset("convexEdges");
-    labelLongList helper;
+    DynamicList<label> helper;
     edgeCheck.convexEdges(helper);
     forAll(helper, i)
     {

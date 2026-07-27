@@ -53,9 +53,9 @@ Foam::Module::triSurfaceDetectFeatureEdges::triSurfaceDetectFeatureEdges
 
 void Foam::Module::triSurfaceDetectFeatureEdges::detectFeatureEdges()
 {
-    const edgeLongList& edges = surf_.edges();
+    const DynamicList<edge>& edges = surf_.edges();
     triSurfModifier surfMod(surf_);
-    edgeLongList& featureEdges = surfMod.featureEdgesAccess();
+    DynamicList<edge>& featureEdges = surfMod.featureEdgesAccess();
     featureEdges.clear();
 
     forAll(featureEdges_, eI)

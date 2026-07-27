@@ -44,8 +44,8 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
     const meshSurfaceEngine& mse = surfacePartitioner_.surfaceEngine();
     const pointFieldPMG& points = mse.points();
     const labelList& bp = mse.bp();
-    const VRWGraph& pointFaces = mse.pointFaces();
-    const VRWGraph& pointInFaces = mse.pointInFaces();
+    const labelListList2D& pointFaces = mse.pointFaces();
+    const labelListList2D& pointInFaces = mse.pointInFaces();
     const faceList::subList& bFaces = mse.boundaryFaces();
     const vectorField& pNormals = mse.pointNormals();
     const vectorField& fCentres = mse.faceCentres();
@@ -67,7 +67,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
 
         forAllRow(pointFaces, bpI, pfI)
         {
-            const label bfI = pointFaces(bpI, pfI);
+            const label bfI = pointFaces[bpI][pfI];
             const label patchI = facePatch[bfI];
 
             if (patchNormal.find(patchI) == patchNormal.end())
@@ -90,7 +90,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
 
         forAllRow(pointFaces, bpI, pfI)
         {
-            const label bfI = pointFaces(bpI, pfI);
+            const label bfI = pointFaces[bpI][pfI];
             const label patchI = facePatch[bfI];
 
             if (patchNormal.find(patchI) == patchNormal.end())
@@ -127,8 +127,8 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
 
         forAllRow(pointFaces, bpI, pfI)
         {
-            const label pI = pointInFaces(bpI, pfI);
-            const label bfI = pointFaces(bpI, pfI);
+            const label pI = pointInFaces[bpI][pfI];
+            const label bfI = pointFaces[bpI][pfI];
 
             vector pNormal = pNormals[bpI];
 
@@ -253,7 +253,7 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
     {
         const face& bf = bFaces[bfI];
 
-        DynList<bool> OkPoints;
+        DynamicList<bool> OkPoints;
         if (!help::isFaceConvexAndOk(bf, points, OkPoints))
         {
             forAll(OkPoints, pI)

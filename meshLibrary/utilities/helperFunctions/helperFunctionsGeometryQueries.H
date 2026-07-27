@@ -40,7 +40,8 @@ SourceFiles
 #ifndef helperFunctionsGeometryQueries_H
 #define helperFunctionsGeometryQueries_H
 
-#include "DynList.H"
+#include "DynamicList.H"
+#include "FixedList.H"
 #include "plane.H"
 #include "face.H"
 #include "UIndirectList.H"
@@ -110,7 +111,7 @@ namespace help
     // cut by more than on boundary regions
     inline faceList mergePatchFaces
     (
-        const List<DynList<label>>& pfcs,
+        const List<DynamicList<label>>& pfcs,
         const pointField& polyPoints
     );
 
@@ -241,8 +242,8 @@ namespace help
     //- returns true if the minimizer exists
     inline bool findMinimizerPoint
     (
-        const DynList<point>& origins,
-        const DynList<vector>& normals,
+        const DynamicList<point>& origins,
+        const DynamicList<vector>& normals,
         point& pMin
     );
 
@@ -263,7 +264,7 @@ namespace help
     (
         const triangle<point, point>& tri0,
         const triangle<point, point>& tri1,
-        DynList<point>& overlappingPolygon,
+        DynamicList<point>& overlappingPolygon,
         const scalar distTol = -1.0,
         const scalar cosTol = Foam::cos(5.0*(M_PI/180.0)) // cosine tolerance
     );
@@ -280,7 +281,7 @@ namespace help
     (
         const triangle<point, point>& tri0,
         const triangle<point, point>& tri1,
-        DynList<point>& intersectionPoints,
+        DynamicList<point>& intersectionPoints,
         const scalar distTol = -1.0
     );
 
@@ -308,7 +309,7 @@ namespace help
     (
         const face& f,
         const pointField& fp,
-        DynList<bool>& OkPoints
+        DynamicList<bool>& OkPoints
     );
 
     //- calculate quality metric of a tetrahedron

@@ -155,7 +155,7 @@ void Foam::Module::triSurfaceImportSurfaceAsSubset::addSurfaceAsSubset
     meshOctreeCreator(otherSurfOctree).createOctreeWithRefinedBoundary(20, 15);
 
     // search for nearest facets in the import surface
-    DynList<label> containedTriangles;
+    DynamicList<label> containedTriangles;
     # pragma omp parallel for schedule(dynamic, 40) private(containedTriangles)
     forAll(surf_, triI)
     {

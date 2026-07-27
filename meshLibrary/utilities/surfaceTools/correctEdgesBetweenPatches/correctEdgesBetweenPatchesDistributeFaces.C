@@ -47,8 +47,8 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeConcaveFaces()
     const labelList& bPoints = mse.boundaryPoints();
     const labelList& bp = mse.bp();
     const edgeList& edges = mse.edges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
-    const VRWGraph& bpEdges = mse.boundaryPointEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
+    const labelListList2D& bpEdges = mse.boundaryPointEdges();
     const labelList& facePatch = mse.boundaryFacePatches();
 
     // classify edges at the surface
@@ -69,8 +69,8 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeConcaveFaces()
     {
         if (edgeType[eI] & meshSurfaceCheckEdgeTypes::PATCHEDGE)
         {
-            if (edgeFaces.sizeOfRow(eI))
-                edgeInPatch[eI] = facePatch[edgeFaces(eI, 0)];
+            if (edgeFaces[eI].size())
+                edgeInPatch[eI] = facePatch[edgeFaces[eI][0]];
 
             continue;
         }
@@ -101,7 +101,7 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeConcaveFaces()
 
         bool hasConcave(false);
         label nBndEdges(0);
-        DynList<label> bndEdgePatches;
+        DynamicList<label> bndEdgePatches;
 
         forAll(f, pI)
         {
@@ -119,13 +119,13 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeConcaveFaces()
 
             forAllRow(bpEdges, bpI, bpeI)
             {
-                const label beI = bpEdges(bpI, bpeI);
+                const label beI = bpEdges[bpI][bpeI];
                 const edge& ee = edges[beI];
 
                 if (e == ee)
                 {
                     ++nBndEdges;
-                    bndEdgePatches.appendUniq(edgeInPatch[beI]);
+                    appendUniq(bndEdgePatches, edgeInPatch[beI]);
                     break;
                 }
             }
@@ -167,8 +167,8 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
     meshSurfacePartitioner surfacePartitioner(mse);
 
     const labelList& bPoints = mse.boundaryPoints();
-    const VRWGraph& faceEdges = mse.faceEdges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
+    const labelListList2D& faceEdges = mse.faceEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
     const faceList::subList& bFaces = mse.boundaryFaces();
     const labelList& bp = mse.bp();
     const labelList& boundaryFaceOwners = mse.faceOwners();
@@ -197,10 +197,10 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
     # pragma omp parallel for schedule(guided)
     forAll(edgeFaces, eI)
     {
-        if (edgeFaces.sizeOfRow(eI) != 2)
+        if (edgeFaces[eI].size() != 2)
             continue;
 
-        if (facePatches[edgeFaces(eI, 0)] != facePatches[edgeFaces(eI, 1)])
+        if (facePatches[edgeFaces[eI][0]] != facePatches[edgeFaces[eI][1]])
             featureEdge[eI] = true;
     }
 
@@ -222,8 +222,8 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
             if
             (
                 (nodeType[bp[bf[i]]] == direction(2))
-             && featureEdge[faceEdges(bfI, i)]
-             && featureEdge[faceEdges(bfI, bf.rcIndex(i))]
+             && featureEdge[faceEdges[bfI][i]]
+             && featureEdge[faceEdges[bfI][bf.rcIndex(i)]]
             )
             {
                 if (bf.size() > 4)
@@ -244,7 +244,7 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
                         triF[0] = bf[j];
                         triF[1] = bf.nextLabel(j);
 
-                        newBoundaryFaces_.appendList(triF);
+                        appendList(newBoundaryFaces_, triF);
                         newBoundaryOwners_.append(boundaryFaceOwners[bfI]);
                         newBoundaryPatches_.append(facePatches[bfI]);
                     }
@@ -263,13 +263,13 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
 
                     triF[1] = bf.nextLabel(i);
                     triF[2] = bf[(i + 2)%4];
-                    newBoundaryFaces_.appendList(triF);
+                    appendList(newBoundaryFaces_, triF);
                     newBoundaryOwners_.append(boundaryFaceOwners[bfI]);
                     newBoundaryPatches_.append(facePatches[bfI]);
 
                     triF[1] = bf[(i + 2)%4];
                     triF[2] = bf.prevLabel(i);
-                    newBoundaryFaces_.appendList(triF);
+                    appendList(newBoundaryFaces_, triF);
                     newBoundaryOwners_.append(boundaryFaceOwners[bfI]);
                     newBoundaryPatches_.append(facePatches[bfI]);
 
@@ -281,7 +281,7 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
         if (store)
         {
             // face has not been altered
-            newBoundaryFaces_.appendList(bf);
+            appendList(newBoundaryFaces_, bf);
             newBoundaryOwners_.append(boundaryFaceOwners[bfI]);
             newBoundaryPatches_.append(facePatches[bfI]);
         }

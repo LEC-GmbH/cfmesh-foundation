@@ -59,7 +59,7 @@ const Foam::labelList& Foam::Module::triSurfacePartitioner::corners() const
 }
 
 
-const Foam::List<Foam::Module::DynList<Foam::label>>&
+const Foam::List<Foam::DynamicList<Foam::label>>&
 Foam::Module::triSurfacePartitioner::cornerPatches() const
 {
     return cornerPatches_;
@@ -91,7 +91,7 @@ void Foam::Module::triSurfacePartitioner::edgeGroupsSharedByPatches
 (
     const label patch1,
     const label patch2,
-    DynList<label>& edgeGroups
+    DynamicList<label>& edgeGroups
 ) const
 {
     edgeGroups.clear();
@@ -121,7 +121,7 @@ void Foam::Module::triSurfacePartitioner::cornersSharedByEdgeGroups
 (
     const label edgeGroup1,
     const label edgeGroup2,
-    DynList<label>& corners
+    DynamicList<label>& corners
 ) const
 {
     corners.clear();

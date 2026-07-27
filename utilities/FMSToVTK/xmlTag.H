@@ -39,7 +39,7 @@ Author
 
 #include "OStringStream.H"
 #include "HashTable.H"
-#include "LongList.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -172,10 +172,10 @@ public:
         friend xmlTag& operator<<(xmlTag&, const FixedList<T, Size>&);
 
         template<class T>
-        friend xmlTag& operator<<(xmlTag&, const Module::LongList<T>&);
+        friend xmlTag& operator<<(xmlTag&, const UList<T>&);
 
         template<class T>
-        friend xmlTag& operator<<(xmlTag&, const UList<T>&);
+        friend xmlTag& operator<<(xmlTag&, const DynamicList<T>&);
 };
 
 
@@ -239,7 +239,7 @@ xmlTag& operator<<(xmlTag& tag, const UList<T>& data)
 
 //- Append the supplied data to the tag text
 template<class T>
-xmlTag& operator<<(xmlTag& tag, const Module::LongList<T>& data)
+xmlTag& operator<<(xmlTag& tag, const DynamicList<T>& data)
 {
     forAll(data, i)
     {

@@ -32,11 +32,13 @@ License
 #include "meshSurfaceEngine.H"
 #include "helperFunctions.H"
 #include "demandDrivenData.H"
-#include "VRWGraphList.H"
+#include "DynamicList.H"
 
 #include "HashSet.H"
 
 #include <map>
+
+#include <omp.h>
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -45,20 +47,27 @@ void Foam::Module::boundaryLayers::createLayerCells
     const labelList& patchLabels
 )
 {
+    if (omp_in_parallel())
+    {
+        FatalErrorInFunction
+            << "Building cellsToAdd inside a parallel region."
+            << " This is not thread safe" << exit(FatalError);
+    }
+
     Info<< "Starting creating layer cells" << endl;
 
     const meshSurfaceEngine& mse = surfaceEngine();
     const faceList::subList& bFaces = mse.boundaryFaces();
     const edgeList& edges = mse.edges();
-    const VRWGraph& faceEdges = mse.faceEdges();
-    const VRWGraph& edgeFaces = mse.edgeFaces();
+    const labelListList2D& faceEdges = mse.faceEdges();
+    const labelListList2D& edgeFaces = mse.edgeFaces();
     const labelList& boundaryFacePatches = mse.boundaryFacePatches();
     const labelList& faceOwners = mse.faceOwners();
     const labelList& bp = mse.bp();
-    const VRWGraph& pointFaces = mse.pointFaces();
+    const labelListList2D& pointFaces = mse.pointFaces();
 
     const meshSurfacePartitioner& mPart = surfacePartitioner();
-    const VRWGraph& pointPatches = mPart.pointPatches();
+    const labelListList2D& pointPatches = mPart.pointPatches();
 
     // mark patches which will be extruded into layer cells
     boolList treatPatches(mesh_.boundaries().size(), false);
@@ -72,12 +81,12 @@ void Foam::Module::boundaryLayers::createLayerCells
     }
 
     // create lists for new boundary faces
-    VRWGraph newBoundaryFaces;
-    labelLongList newBoundaryOwners;
-    labelLongList newBoundaryPatches;
+    DynamicList<DynamicList<label>> newBoundaryFaces;
+    DynamicList<label> newBoundaryOwners;
+    DynamicList<label> newBoundaryPatches;
 
     // create storage for new cells
-    VRWGraphList cellsToAdd;
+    DynamicList<faceList> cellsToAdd;
 
     // create layer cells and store boundary faces
     const label nOldCells = mesh_.cells().size();
@@ -88,9 +97,9 @@ void Foam::Module::boundaryLayers::createLayerCells
             const face& f = bFaces[bfI];
             const label pKey = patchKey_[boundaryFacePatches[bfI]];
 
-            DynList<DynList<label>> cellFaces;
+            DynamicList<face> cellFaces;
 
-            DynList<label> newF;
+            DynamicList<label> newF;
 
             // store the current boundary face
             newF.clear();
@@ -99,7 +108,15 @@ void Foam::Module::boundaryLayers::createLayerCells
             {
                 newF.append(f[pI]);
             }
-            cellFaces.append(newF);
+
+            {
+                face nf(newF.size());
+                forAll(newF, i)
+                {
+                    nf[i] = newF[i];
+                }
+                cellFaces.append(nf);
+            }
 
             // create parallel face
             forAll(f, pI)
@@ -107,9 +124,16 @@ void Foam::Module::boundaryLayers::createLayerCells
                 newF[pI] = findNewNodeLabel(f[pI], pKey);
             }
 
-            cellFaces.append(newF);
+            {
+                face nf(newF.size());
+                forAll(newF, i)
+                {
+                    nf[i] = newF[i];
+                }
+                cellFaces.append(nf);
+            }
 
-            newBoundaryFaces.appendList(newF);
+            appendList(newBoundaryFaces,newF);
             newBoundaryOwners.append(cellsToAdd.size() + nOldCells);
             newBoundaryPatches.append(boundaryFacePatches[bfI]);
 
@@ -122,33 +146,40 @@ void Foam::Module::boundaryLayers::createLayerCells
                 newF[2] = findNewNodeLabel(newF[1], pKey);
                 newF[3] = findNewNodeLabel(f[pI], pKey);
 
-                cellFaces.append(newF);
+                {
+                    face nf(newF.size());
+                    forAll(newF, i)
+                    {
+                        nf[i] = newF[i];
+                    }
+                    cellFaces.append(nf);
+                }
 
                 // check if the face is at the boundary
                 // of the treated partitions
-                const label edgeI = faceEdges(bfI, pI);
-                if (edgeFaces.sizeOfRow(edgeI) == 2)
+                const label edgeI = faceEdges[bfI][pI];
+                if (edgeFaces[edgeI].size() == 2)
                 {
-                    label neiFace = edgeFaces(edgeI, 0);
+                    label neiFace = edgeFaces[edgeI][0];
                     if (neiFace == bfI)
                     {
-                        neiFace = edgeFaces(edgeI, 1);
+                        neiFace = edgeFaces[edgeI][1];
                     }
 
                     if (!treatPatches[boundaryFacePatches[neiFace]])
                     {
-                        newBoundaryFaces.appendList(newF);
+                        appendList(newBoundaryFaces,newF);
                         newBoundaryOwners.append(cellsToAdd.size() + nOldCells);
                         newBoundaryPatches.append(boundaryFacePatches[neiFace]);
                     }
                 }
             }
 
-            cellsToAdd.appendGraph(cellFaces);
+            cellsToAdd.append(cellFaces);
         }
         else
         {
-            newBoundaryFaces.appendList(bFaces[bfI]);
+            appendList(newBoundaryFaces,bFaces[bfI]);
             newBoundaryOwners.append(faceOwners[bfI]);
             newBoundaryPatches.append(boundaryFacePatches[bfI]);
         }
@@ -158,15 +189,15 @@ void Foam::Module::boundaryLayers::createLayerCells
     forAll(edgeFaces, edgeI)
     {
         // do not consider edges with no faces attached to it
-        if (edgeFaces.sizeOfRow(edgeI) == 0)
+        if (edgeFaces[edgeI].size() == 0)
         {
             continue;
         }
 
         // check if the edge is a feature edge
-        const label patchI = boundaryFacePatches[edgeFaces(edgeI, 0)];
+        const label patchI = boundaryFacePatches[edgeFaces[edgeI][0]];
 
-        const label patchJ = boundaryFacePatches[edgeFaces(edgeI, 1)];
+        const label patchJ = boundaryFacePatches[edgeFaces[edgeI][1]];
 
         if (patchI == patchJ)
         {
@@ -198,15 +229,15 @@ void Foam::Module::boundaryLayers::createLayerCells
         }
 
         // generate faces of the bnd layer cell
-        FixedList<FixedList<label, 4>, 6> cellFaces;
+        faceList cellFaces;
         createNewCellFromEdge(e, pKeyI, pKeyJ, cellFaces);
 
         // store boundary faces
-        newBoundaryFaces.appendList(cellFaces[1]);
+        appendList(newBoundaryFaces,cellFaces[1]);
         newBoundaryOwners.append(nOldCells + cellsToAdd.size());
         newBoundaryPatches.append(patchJ);
 
-        newBoundaryFaces.appendList(cellFaces[3]);
+        appendList(newBoundaryFaces,cellFaces[3]);
         newBoundaryOwners.append(nOldCells + cellsToAdd.size());
         newBoundaryPatches.append(patchI);
 
@@ -215,7 +246,7 @@ void Foam::Module::boundaryLayers::createLayerCells
         label unusedPatch(-1);
         forAllRow(pointPatches, bps, i)
         {
-            const label ptchI = pointPatches(bps, i);
+            const label ptchI = pointPatches[bps][i];
 
             if (ptchI == patchI)
             {
@@ -237,7 +268,7 @@ void Foam::Module::boundaryLayers::createLayerCells
         if (unusedPatch != -1 && treatedPatch_[unusedPatch])
         {
             // add a face in the empty patch in case of 2D layer generation
-            newBoundaryFaces.appendList(cellFaces[5]);
+            appendList(newBoundaryFaces,cellFaces[5]);
             newBoundaryOwners.append(nOldCells + cellsToAdd.size());
             newBoundaryPatches.append(unusedPatch);
         }
@@ -247,7 +278,7 @@ void Foam::Module::boundaryLayers::createLayerCells
         unusedPatch = -1;
         forAllRow(pointPatches, bpe, i)
         {
-            const label ptchI = pointPatches(bpe, i);
+            const label ptchI = pointPatches[bpe][i];
 
             if (ptchI == patchI)
             {
@@ -269,17 +300,17 @@ void Foam::Module::boundaryLayers::createLayerCells
         if (unusedPatch != -1 && treatedPatch_[unusedPatch])
         {
             // add a face in the empty patch in case of 2D layer generation
-            newBoundaryFaces.appendList(cellFaces[4]);
+            appendList(newBoundaryFaces,cellFaces[4]);
             newBoundaryOwners.append(nOldCells + cellsToAdd.size());
             newBoundaryPatches.append(unusedPatch);
         }
 
         // append cell to the queue
-        cellsToAdd.appendGraph(cellFaces);
+        cellsToAdd.append(cellFaces);
     }
 
     // create cells for corner nodes
-    typedef std::map<label, DynList<label, 3>> ppType;
+    typedef std::map<label, DynamicList<label>> ppType;
 
     ppType nodePatches;
 
@@ -293,10 +324,11 @@ void Foam::Module::boundaryLayers::createLayerCells
         const label bpI = bp[iter->first];
 
         // ensure correct orientation
-        DynList<label> pFaces(pointFaces.sizeOfRow(bpI));
+        DynamicList<label> pFaces;
+        pFaces.setSize(pointFaces[bpI].size());
         forAll(pFaces, fI)
         {
-            pFaces[fI] = pointFaces(bpI, fI);
+            pFaces[fI] = pointFaces[bpI][fI];
         }
 
         for (label i = 0; i < pFaces.size(); ++i)
@@ -321,10 +353,11 @@ void Foam::Module::boundaryLayers::createLayerCells
             }
         }
 
-        DynList<label, 3> patchIDs;
+        DynamicList<label> patchIDs;
+        patchIDs.reserve(3);
         forAll(pFaces, patchI)
         {
-            patchIDs.appendUniq(boundaryFacePatches[pFaces[patchI]]);
+            appendUniq(patchIDs, boundaryFacePatches[pFaces[patchI]]);
         }
 
         nodePatches.insert(std::make_pair(iter->first, patchIDs));
@@ -333,8 +366,9 @@ void Foam::Module::boundaryLayers::createLayerCells
     // create layer cells for corner nodes
     for (ppType::iterator iter = nodePatches.begin(); iter != nodePatches.end(); ++iter)
     {
-        const DynList<label, 3>& patchIDs = iter->second;
-        DynList<label, 3> pKeys;
+        const DynamicList<label>& patchIDs = iter->second;
+        DynamicList<label> pKeys;
+        pKeys.reserve(3);
         forAll(patchIDs, patchI)
         {
             const label pKey = patchKey_[patchIDs[patchI]];
@@ -344,7 +378,7 @@ void Foam::Module::boundaryLayers::createLayerCells
                 continue;
             }
 
-            pKeys.appendUniq(pKey);
+            appendUniq(pKeys, pKey);
         }
 
         if (pKeys.size() != 3)
@@ -352,24 +386,24 @@ void Foam::Module::boundaryLayers::createLayerCells
             continue;
         }
 
-        FixedList<FixedList<label, 4>, 6> cellFaces;
+        faceList cellFaces;
         createNewCellFromNode(iter->first, pKeys, cellFaces);
 
         // store boundary faces
-        newBoundaryFaces.appendList(cellFaces[1]);
+        appendList(newBoundaryFaces,cellFaces[1]);
         newBoundaryOwners.append(nOldCells + cellsToAdd.size());
         newBoundaryPatches.append(patchIDs[0]);
 
-        newBoundaryFaces.appendList(cellFaces[3]);
+        appendList(newBoundaryFaces,cellFaces[3]);
         newBoundaryOwners.append(nOldCells + cellsToAdd.size());
         newBoundaryPatches.append(patchIDs[1]);
 
-        newBoundaryFaces.appendList(cellFaces[5]);
+        appendList(newBoundaryFaces,cellFaces[5]);
         newBoundaryOwners.append(nOldCells + cellsToAdd.size());
         newBoundaryPatches.append(patchIDs[2]);
 
         // append cell to the queue
-        cellsToAdd.appendGraph(cellFaces);
+        cellsToAdd.append(cellFaces);
     }
 
     // create mesh modifier

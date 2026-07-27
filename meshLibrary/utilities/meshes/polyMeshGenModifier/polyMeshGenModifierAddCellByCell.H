@@ -43,6 +43,7 @@ SourceFiles
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #include "polyMeshGenModifier.H"
+#include "DynamicList.H"
 
 namespace Foam
 {
@@ -59,11 +60,11 @@ class polyMeshGenModifierAddCellByCell
 
         //- number of faces
         label nFaces_;
-        LongList<face> newFaces_;
+        DynamicList<face> newFaces_;
 
         //- number of cells
         label nCells_;
-        LongList<cell> newCells_;
+        DynamicList<cell> newCells_;
 
 
 public:

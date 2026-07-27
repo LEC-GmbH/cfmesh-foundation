@@ -42,7 +42,7 @@ SourceFiles
 #define simplexSmoother_H
 
 #include "point.H"
-#include "DynList.H"
+#include "DynamicList.H"
 #include "partTet.H"
 #include "boundBox.H"
 
@@ -67,10 +67,10 @@ protected:
     // Protected data
 
         //- mesh points
-        DynList<point, 128>& points_;
+        DynamicList<point>& points_;
 
         //- list tets around the given vertex
-        const DynList<partTet, 128>& tets_;
+        const DynamicList<partTet>& tets_;
 
         //- label of the point
         const label pointI_;

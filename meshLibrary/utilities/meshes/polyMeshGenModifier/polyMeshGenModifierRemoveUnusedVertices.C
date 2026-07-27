@@ -31,6 +31,7 @@ License
 #include "polyMeshGenModifier.H"
 #include "demandDrivenData.H"
 #include "labelList.H"
+#include "DynamicList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -50,7 +51,7 @@ void Foam::Module::polyMeshGenModifier::removeUnusedVertices()
         }
     }
 
-    labelLongList newLabel(points.size(), -1);
+    DynamicList<label> newLabel(points.size(), -1);
     label nPoints(0);
     forAll(points, pI)
     {

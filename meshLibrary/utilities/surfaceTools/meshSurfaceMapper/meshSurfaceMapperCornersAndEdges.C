@@ -43,12 +43,12 @@ License
 
 void Foam::Module::meshSurfaceMapper::findMappingDistance
 (
-    const labelLongList& nodesToMap,
+    const DynamicList<label>& nodesToMap,
     scalarList& mappingDistance
 ) const
 {
     const vectorField& faceCentres = surfaceEngine_.faceCentres();
-    const VRWGraph& pFaces = surfaceEngine_.pointFaces();
+    const labelListList2D& pFaces = surfaceEngine_.pointFaces();
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
     const pointFieldPMG& points = surfaceEngine_.points();
 
@@ -64,7 +64,7 @@ void Foam::Module::meshSurfaceMapper::findMappingDistance
         const point& p = points[bPoints[bpI]];
         forAllRow(pFaces, bpI, pfI)
         {
-            const scalar d = magSqr(faceCentres[pFaces(bpI, pfI)] - p);
+            const scalar d = magSqr(faceCentres[pFaces[bpI][pfI]] - p);
             mappingDistance[i] = Foam::max(mappingDistance[i], d);
         }
 
@@ -100,7 +100,8 @@ Foam::scalar Foam::Module::meshSurfaceMapper::faceMetricInPatch
         centre
     );
 
-    DynList<point> projPoints(bf.size());
+    DynamicList<point> projPoints;
+    projPoints.setSize(bf.size());
     forAll(bf, pI)
     {
         meshOctree_.findNearestSurfacePointInRegion
@@ -131,16 +132,16 @@ Foam::scalar Foam::Module::meshSurfaceMapper::faceMetricInPatch
 
 void Foam::Module::meshSurfaceMapper::mapCorners
 (
-    const labelLongList& nodesToMap
+    const DynamicList<label>& nodesToMap
 )
 {
     const triSurfacePartitioner& sPartitioner = surfacePartitioner();
     const labelList& surfCorners = sPartitioner.corners();
-    const List<DynList<label>>& cornerPatches = sPartitioner.cornerPatches();
+    const List<DynamicList<label>>& cornerPatches = sPartitioner.cornerPatches();
 
     const meshSurfacePartitioner& mPart = meshPartitioner();
     const labelHashSet& corners = mPart.corners();
-    const VRWGraph& pPatches = mPart.pointPatches();
+    const labelListList2D& pPatches = mPart.pointPatches();
 
     const pointFieldPMG& points = surfaceEngine_.points();
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
@@ -169,7 +170,7 @@ void Foam::Module::meshSurfaceMapper::mapCorners
         const scalar maxDist = mappingDistance[cornerI];
 
         // find the nearest position to the given point patches
-        const DynList<label> patches = pPatches[bpI];
+        const DynamicList<label> patches = pPatches[bpI];
 
         point mapPointApprox(p);
         scalar distSqApprox;
@@ -214,7 +215,7 @@ void Foam::Module::meshSurfaceMapper::mapCorners
             if (Foam::magSqr(sp - p) < distSq)
             {
                 bool store(true);
-                const DynList<label>& cPatches = cornerPatches[scI];
+                const DynamicList<label>& cPatches = cornerPatches[scI];
                 forAll(patches, i)
                 {
                     if (findIndex(cPatches, patches[i]) == -1)
@@ -247,14 +248,14 @@ void Foam::Module::meshSurfaceMapper::mapCorners
 
 void Foam::Module::meshSurfaceMapper::mapEdgeNodes
 (
-    const labelLongList& nodesToMap
+    const DynamicList<label>& nodesToMap
 )
 {
     const pointFieldPMG& points = surfaceEngine_.points();
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
 
     const meshSurfacePartitioner& mPart = meshPartitioner();
-    const VRWGraph& pPatches = mPart.pointPatches();
+    const labelListList2D& pPatches = mPart.pointPatches();
 
     //const triSurf& surf = meshOctree_.surface();
     //const pointField& sPoints = surf.points();
@@ -273,7 +274,7 @@ void Foam::Module::meshSurfaceMapper::mapEdgeNodes
         const point& p = points[bPoints[bpI]];
 
         // find patches at this edge point
-        const DynList<label> patches = pPatches[bpI];
+        const DynamicList<label> patches = pPatches[bpI];
 
         const scalar maxDist = mappingDistance[i];
 

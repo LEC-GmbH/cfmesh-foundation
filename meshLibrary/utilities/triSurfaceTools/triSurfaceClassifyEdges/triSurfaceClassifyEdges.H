@@ -42,7 +42,6 @@ SourceFiles
 #define triSurfaceClassifyEdges_H
 
 #include "triSurf.H"
-#include "VRWGraph.H"
 #include "boolList.H"
 #include "direction.H"
 

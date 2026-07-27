@@ -80,7 +80,7 @@ inline bool Foam::Module::meshOctree::hasContainedTriangles
 inline void Foam::Module::meshOctree::containedTriangles
 (
     const label leafI,
-    DynList<label>& triangles
+    DynamicList<label>& triangles
 ) const
 {
     triangles.clear();
@@ -91,9 +91,10 @@ inline void Foam::Module::meshOctree::containedTriangles
         return;
     }
 
-    const VRWGraph& containedTriangles =
+    const labelListList2D& containedTriangles =
         leaves_[leafI]->slotPtr()->containedTriangles_;
-    constRow elmts = containedTriangles[leaves_[leafI]->containedElements()];
+    const DynamicList<label>& elmts =
+        containedTriangles[leaves_[leafI]->containedElements()];
     forAll(elmts, elI)
         triangles.append(elmts[elI]);
 }
@@ -114,7 +115,7 @@ inline bool Foam::Module::meshOctree::hasContainedEdges
 inline void Foam::Module::meshOctree::containedEdges
 (
     const label leafI,
-    DynList<label>& edges
+    DynamicList<label>& edges
 ) const
 {
     edges.clear();
@@ -125,9 +126,10 @@ inline void Foam::Module::meshOctree::containedEdges
         return;
     }
 
-    const VRWGraph& containedEdges =
+    const labelListList2D& containedEdges =
         leaves_[leafI]->slotPtr()->containedEdges_;
-    constRow elmts = containedEdges[leaves_[leafI]->containedEdges()];
+    const DynamicList<label>& elmts =
+        containedEdges[leaves_[leafI]->containedEdges()];
     forAll(elmts, eI)
         edges.append(elmts[eI]);
 }
@@ -177,7 +179,7 @@ inline void Foam::Module::meshOctree::findNeighboursOverEdge
 (
     const label leafI,
     const label eI,
-    DynList<label>& neighbourLeaves
+    DynamicList<label>& neighbourLeaves
 ) const
 {
     findNeighboursOverEdge(leaves_[leafI]->coordinates(), eI, neighbourLeaves);
@@ -188,7 +190,7 @@ inline void Foam::Module::meshOctree::findNeighboursInDirection
 (
     const label leafI,
     const label dir,
-    DynList<label>& neiLeaves
+    DynamicList<label>& neiLeaves
 ) const
 {
     findNeighboursInDirection(leaves_[leafI]->coordinates(), dir, neiLeaves);
@@ -198,7 +200,7 @@ inline void Foam::Module::meshOctree::findNeighboursInDirection
 inline void Foam::Module::meshOctree::findNeighboursForLeaf
 (
     const label leafI,
-    DynList<label>& neighbourLeaves
+    DynamicList<label>& neighbourLeaves
 ) const
 {
     findNeighboursForLeaf(leaves_[leafI]->coordinates(), neighbourLeaves);
@@ -208,7 +210,7 @@ inline void Foam::Module::meshOctree::findNeighboursForLeaf
 inline void Foam::Module::meshOctree::findAllLeafNeighbours
 (
     const label leafI,
-    DynList<label>& neighbourLeaves
+    DynamicList<label>& neighbourLeaves
 ) const
 {
     findAllLeafNeighbours(leaves_[leafI]->coordinates(), neighbourLeaves);

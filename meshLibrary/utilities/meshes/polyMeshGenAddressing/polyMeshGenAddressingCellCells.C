@@ -29,7 +29,6 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "polyMeshGenAddressing.H"
-#include "VRWGraphSMPModifier.H"
 
 #include <omp.h>
 
@@ -51,8 +50,8 @@ void Foam::Module::polyMeshGenAddressing::calcCellCells() const
         const labelList& nei = mesh_.neighbour();
 
         // create the storage
-        ccPtr_ = new VRWGraph();
-        VRWGraph& cellCellAddr = *ccPtr_;
+        ccPtr_ = new labelListList2D();
+        labelListList2D& cellCellAddr = *ccPtr_;
 
         labelList nNei(cells.size());
 
@@ -71,7 +70,7 @@ void Foam::Module::polyMeshGenAddressing::calcCellCells() const
             {
                 const cell& c = cells[cellI];
 
-                DynList<label> neiCells;
+                DynamicList<label> neiCells;
 
                 forAll(c, fI)
                 {
@@ -83,7 +82,7 @@ void Foam::Module::polyMeshGenAddressing::calcCellCells() const
 
                     if (neiCell != cellI)
                     {
-                        neiCells.appendUniq(neiCell);
+                        appendUniq(neiCells, neiCell);
                     }
                 }
 
@@ -93,7 +92,7 @@ void Foam::Module::polyMeshGenAddressing::calcCellCells() const
             # pragma omp barrier
 
             # pragma omp master
-            VRWGraphSMPModifier(cellCellAddr).setSizeAndRowSize(nNei);
+            setSizeAndRowSize(cellCellAddr, nNei);
 
             # pragma omp barrier
 
@@ -103,7 +102,7 @@ void Foam::Module::polyMeshGenAddressing::calcCellCells() const
             {
                 const cell& c = cells[cellI];
 
-                DynList<label> neiCells;
+                DynamicList<label> neiCells;
 
                 forAll(c, fI)
                 {
@@ -115,11 +114,11 @@ void Foam::Module::polyMeshGenAddressing::calcCellCells() const
 
                     if (neiCell != cellI)
                     {
-                        neiCells.appendUniq(neiCell);
+                        appendUniq(neiCells, neiCell);
                     }
                 }
 
-                cellCellAddr.setRow(cellI, neiCells);
+                setRow(cellCellAddr, cellI, neiCells);
             }
         }
     }
@@ -128,7 +127,7 @@ void Foam::Module::polyMeshGenAddressing::calcCellCells() const
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-const Foam::Module::VRWGraph&
+const Foam::Module::labelListList2D&
 Foam::Module::polyMeshGenAddressing::cellCells() const
 {
     if (!ccPtr_)

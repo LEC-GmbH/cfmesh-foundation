@@ -41,7 +41,6 @@ SourceFiles
 #define helperFunctionsFrontalMarking_H
 
 #include "labelList.H"
-#include "LongList.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -56,7 +55,7 @@ namespace help
 //- labelListType contains indices of elements satisfying the filtering criteria
 //- startingIndex is the first element from where the search is started
 //- neiOp determines which neighbouring elements are available. It requires
-//- an operator neiOp(const label, DynList<label>&) to be defined
+//- an operator neiOp(const label, DynamicList<label>&) to be defined
 //- filterOp determines which neighbouring elements shall be stored
 //- in the result and used in the front. It requires an operator
 //- bool filterOp(const label) which return true if the element shall be part
@@ -76,7 +75,7 @@ void frontalMarking
 //- to a group and the ones failing the criteria are set to -1
 //- neiOp is the functionality for determining neighbours of the currently
 //- processed front element. This class requires an operator
-//- neiOp(const label, DynList<label>&)
+//- neiOp(const label, DynamicList<label>&)
 //- filterOp represents the user-defined criteria and shall have an operator
 //- bool filterOp(const label)
 template<class labelListType, class neiOp, class filterOp>

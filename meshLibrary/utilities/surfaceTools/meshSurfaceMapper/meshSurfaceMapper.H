@@ -42,7 +42,7 @@ SourceFiles
 
 #include "labelList.H"
 #include "pointField.H"
-#include "labelLongList.H"
+#include "DynamicList.H"
 
 #include <map>
 
@@ -110,12 +110,12 @@ class meshSurfaceMapper
     // Private member functions
 
         //- map corner nodes to the boundary
-        void mapCorners(const labelLongList& nodesToMap);
+        void mapCorners(const DynamicList<label>& nodesToMap);
 
         //- find mapping distance for selected points
         void findMappingDistance
         (
-            const labelLongList& nodesToMap,
+            const DynamicList<label>& nodesToMap,
             scalarList& mappingDistance
         ) const;
 
@@ -156,11 +156,11 @@ public:
 
         //- projects selected surface vertices to their nearest location
         //  on the surface mesh
-        void mapVerticesOntoSurface(const labelLongList& nodesToMap);
+        void mapVerticesOntoSurface(const DynamicList<label>& nodesToMap);
 
         //- projects selected edge vertices onto their nearest
         //  locations on the surface mesh
-        void mapEdgeNodes(const labelLongList& nodesToMap);
+        void mapEdgeNodes(const DynamicList<label>& nodesToMap);
 
         //- projects surface vertices onto the surface with respect
         //  to the surface patch they belong to. Edges and corner are respected
@@ -168,7 +168,7 @@ public:
 
         //- projects selected surface vertices onto the surface with respect
         //  to the surface patch they belong to. Edges and corner are respected
-        void mapVerticesOntoSurfacePatches(const labelLongList& nodesToMap);
+        void mapVerticesOntoSurfacePatches(const DynamicList<label>& nodesToMap);
 
         //- a combination of mapping and smoothing intended for better
         //  feature capturing

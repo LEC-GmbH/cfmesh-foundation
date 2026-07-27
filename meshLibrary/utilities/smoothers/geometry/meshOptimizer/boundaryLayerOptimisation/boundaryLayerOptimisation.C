@@ -145,14 +145,14 @@ void Foam::Module::boundaryLayerOptimisation::setFeatureSizeFactor
 }
 
 
-const Foam::Module::edgeLongList&
+const Foam::DynamicList<Foam::edge>&
 Foam::Module::boundaryLayerOptimisation::hairEdges() const
 {
     return hairEdges_;
 }
 
 
-const Foam::Module::VRWGraph&
+const Foam::Module::labelListList2D&
 Foam::Module::boundaryLayerOptimisation::hairEdgesAtBndPoint() const
 {
     return hairEdgesAtBndPoint_;

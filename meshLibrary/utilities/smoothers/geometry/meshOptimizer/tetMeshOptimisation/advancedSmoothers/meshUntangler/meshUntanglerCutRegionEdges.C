@@ -35,11 +35,11 @@ License
 
 void Foam::Module::meshUntangler::cutRegion::findNewEdges()
 {
-    cEdgesPtr_ = new DynList<edge, 128>();
-    DynList<edge, 128>& cEdges = *cEdgesPtr_;
+    cEdgesPtr_ = new DynamicList<edge>();
+    DynamicList<edge>& cEdges = *cEdgesPtr_;
 
-    const DynList<point, 64>& pts = *pointsPtr_;
-    const DynList<edge, 128>& edges = *edgesPtr_;
+    const DynamicList<point>& pts = *pointsPtr_;
+    const DynamicList<edge>& edges = *edgesPtr_;
 
     newEdgeLabel_.setSize(edges.size());
     newEdgeLabel_ = -1;
