@@ -82,13 +82,19 @@ checkAndFixIrregularConnections()
         finished = true;
 
         while (checkAndFixCellGroupsAtBndVertices(badVertices, true))
+        {
             finished = false;
+        }
 
         while (checkEdgeFaceConnections(badVertices, true))
+        {
             finished = false;
+        }
 
         if (checkFaceGroupsAtBndVertices(badVertices, true))
+        {
             finished = false;
+        }
     } while (!finished);
 
     polyMeshGenModifier(mesh_).removeUnusedVertices();
@@ -96,7 +102,9 @@ checkAndFixIrregularConnections()
     Info<< "Finished checking for irregular surface connections" << endl;
 
     if (badVertices.size() != 0 )
+    {
         return true;
+    }
 
     return false;
 }

@@ -84,16 +84,24 @@ Foam::label Foam::Module::meshSurfaceOptimizer::findInvertedVertices
     Info<< "Number of inverted boundary faces is " << nInvertedTria << endl;
 
     if (nInvertedTria == 0)
+    {
         return 0;
+    }
 
     // add additional layers around inverted points
     for (label i = 0; i < nAdditionalLayers; ++i)
     {
         boolList originallySelected = smoothVertex;
         forAll(smoothVertex, bpI)
+        {
             if (originallySelected[bpI])
+            {
                 forAllRow(pPoints, bpI, ppI)
+                {
                     smoothVertex[pPoints[bpI][ppI]] = true;
+                }
+            }
+        }
 
     }
 
@@ -121,7 +129,9 @@ void Foam::Module::meshSurfaceOptimizer::smoothEdgePoints
             const label bpI = edgePoints[i];
 
             if (vertexType_[bpI] & LOCKED)
+            {
                 continue;
+            }
 
             newPos.append(labelledPoint(bpI, newEdgePositionLaplacian(bpI)));
         }
@@ -133,11 +143,13 @@ void Foam::Module::meshSurfaceOptimizer::smoothEdgePoints
         const DynamicList<labelledPoint>& newPos = newPositions[threadI];
 
         forAll(newPos, i)
+        {
             surfaceModifier.moveBoundaryVertexNoUpdate
             (
                 newPos[i].pointLabel(),
                 newPos[i].coordinates()
             );
+        }
     }
 
     surfaceModifier.updateGeometry(edgePoints);
@@ -164,7 +176,9 @@ void Foam::Module::meshSurfaceOptimizer::smoothLaplacianFC
             const label bpI = selectedPoints[i];
 
             if (vertexType_[bpI] & LOCKED)
+            {
                 continue;
+            }
 
             newPos.append
             (
@@ -182,11 +196,13 @@ void Foam::Module::meshSurfaceOptimizer::smoothLaplacianFC
         const DynamicList<labelledPoint>& newPos = newPositions[threadI];
 
         forAll(newPos, i)
+        {
             surfaceModifier.moveBoundaryVertexNoUpdate
             (
                 newPos[i].pointLabel(),
                 newPos[i].coordinates()
             );
+        }
     }
 
     surfaceModifier.updateGeometry(selectedPoints);
@@ -253,7 +269,9 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
     forAll(selectedBoundaryPoints, i)
     {
         if (vertexType_[selectedBoundaryPoints[i]] & LOCKED)
+        {
             continue;
+        }
 
         smoothVertex[selectedBoundaryPoints[i]] = true;
     }
@@ -262,7 +280,9 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
 
     meshSurfaceMapper* mapperPtr = nullptr;
     if (octreePtr_)
+    {
         mapperPtr = new meshSurfaceMapper(*partitionerPtr_, *octreePtr_);
+    }
 
     bool remapVertex(true);
     label nInvertedTria;
@@ -297,8 +317,12 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
                     mesh.addPointSubset(badPointsSubsetName_);
 
                 forAll(smoothVertex, bpI)
+                {
                     if (smoothVertex[bpI])
+                    {
                         mesh.addPointToSubset(subsetId, bPoints[bpI]);
+                    }
+                }
 
                 WarningInFunction
                     << "Writing mesh with " << badPointsSubsetName_
@@ -323,7 +347,9 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
 
                 # pragma omp parallel for schedule(dynamic, 100)
                 forAll(bPoints, bpI)
+                {
                     minInvertedPoints[bpI] = points[bPoints[bpI]];
+                }
             }
 
             // count the number of iteration after the last minimum occurence
@@ -332,7 +358,9 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
             // update the stack
             nInvertedHistory.push(nInvertedTria);
             if (nInvertedHistory.size() > 2)
+            {
                 nInvertedHistory.pop();
+            }
 
             // check if the number of inverted points reduces
             bool minimumInStack(false);
@@ -347,7 +375,9 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
             // stop if the procedure does not minimise
             // the number of inverted points
             if (!minimumInStack || (nAfterRefresh > 2))
+            {
                 break;
+            }
 
             // find points which will be handled by the smoothers
             changed = true;
@@ -358,7 +388,9 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
             forAll(bPoints, bpI)
             {
                 if (!smoothVertex[bpI])
+                {
                     continue;
+                }
 
                 if (vertexType_[bpI] & PARTITION)
                 {
@@ -373,7 +405,9 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
             // smooth edge vertices
             smoothEdgePoints(movedEdgePoints);
             if (remapVertex && mapperPtr)
+            {
                 mapperPtr->mapEdgeNodes(movedEdgePoints);
+            }
             surfaceModifier.updateGeometry(movedEdgePoints);
 
             // use laplacian smoothing
@@ -384,7 +418,9 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
             smoothSurfaceOptimizer(movedPoints);
 
             if (remapVertex && mapperPtr)
+            {
                 mapperPtr->mapVerticesOntoSurface(movedPoints);
+            }
 
             // update normals and other geometric data
             surfaceModifier.updateGeometry(movedPoints);
@@ -396,7 +432,9 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
             // use the combination with the minimum number of inverted points
             meshSurfaceEngineModifier sMod(surfaceEngine_);
             forAll(minInvertedPoints, bpI)
+            {
                 sMod.moveBoundaryVertexNoUpdate(bpI, minInvertedPoints[bpI]);
+            }
 
             sMod.updateGeometry();
         }
@@ -407,21 +445,27 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
 
             movedPoints.clear();
             forAll(smoothVertex, bpI)
+            {
                 if (smoothVertex[bpI])
                 {
                     movedPoints.append(bpI);
                 }
+            }
 
             smoothLaplacianFC(movedPoints, false);
 
             if (remapVertex && mapperPtr)
+            {
                 mapperPtr->mapVerticesOntoSurface(movedPoints);
+            }
 
             // update normals and other geometric data
             surfaceModifier.updateGeometry(movedPoints);
 
             if (nGlobalIter > 5)
+            {
                 remapVertex = false;
+            }
         }
 
     } while (nInvertedTria && (++nGlobalIter < 10));
@@ -437,12 +481,18 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
 
         label subsetId = mesh.pointSubsetIndex(badPointsSubsetName_);
         if (subsetId >= 0)
+        {
             mesh.removePointSubset(subsetId);
+        }
         subsetId = mesh.addPointSubset(badPointsSubsetName_);
 
         forAll(smoothVertex, bpI)
+        {
             if (smoothVertex[bpI])
+            {
                 mesh.addPointToSubset(subsetId, bPoints[bpI]);
+            }
+        }
     }
 
     Info<< "Finished untangling the surface of the volume mesh" << endl;
@@ -459,7 +509,9 @@ bool Foam::Module::meshSurfaceOptimizer::untangleSurface
     DynamicList<label> selectedPts;
     selectedPts.setSize(surfaceEngine_.boundaryPoints().size());
     forAll(selectedPts, i)
+    {
         selectedPts[i] = i;
+    }
 
     return untangleSurface(selectedPts, nAdditionalLayers);
 }
@@ -483,13 +535,17 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface
 
     meshSurfaceMapper* mapperPtr = nullptr;
     if (octreePtr_)
+    {
         mapperPtr = new meshSurfaceMapper(*partitionerPtr_, *octreePtr_);
+    }
 
     DynamicList<label> edgePoints, partitionPoints;
     forAll(bPoints, bpI)
     {
         if (vertexType_[bpI] & LOCKED)
+        {
             continue;
+        }
 
         if (vertexType_[bpI] & EDGE)
         {
@@ -513,7 +569,9 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface
 
         // project vertices back onto the boundary
         if (mapperPtr)
+        {
             mapperPtr->mapEdgeNodes(edgePoints);
+        }
 
         // update the geometry information
         bMod.updateGeometry(edgePoints);
@@ -572,7 +630,9 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface2D
         {
             label bpI = bp[e.start()];
             if (!zMinPoint[e.start()])
+            {
                 bpI = bp[e.end()];
+            }
 
             if (vertexType_[bpI] & EDGE)
             {
@@ -588,7 +648,9 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface2D
 
     meshSurfaceMapper2D* mapperPtr = nullptr;
     if (octreePtr_)
+    {
         mapperPtr = new meshSurfaceMapper2D(surfaceEngine_, *octreePtr_);
+    }
 
     // optimize edge vertices
     meshSurfaceEngineModifier bMod(surfaceEngine_);
@@ -614,10 +676,12 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface2D
     // optimize Pts of surface vertices which are not on surface edges
     movedPoints.clear();
     forAll(bPoints, bpI)
+    {
         if (zMinPoint[bPoints[bpI]] && (vertexType_[bpI] & PARTITION))
         {
             movedPoints.append(bpI);
         }
+    }
     Info<< "Optimizing surface vertices. Iteration:";
     for (label i = 0; i < nIterations; ++i)
     {
@@ -679,7 +743,9 @@ void Foam::Module::meshSurfaceOptimizer::untangleSurface2D()
              << ". Number of bad faces " << nBadFaces << endl;
 
         if (nBadFaces == 0)
+        {
             break;
+        }
 
         // update active points and faces affected by the movement
         // of active points
@@ -696,7 +762,9 @@ void Foam::Module::meshSurfaceOptimizer::untangleSurface2D()
                     activeBoundaryPoint[bp[f[pI]]] = true;
 
                     forAllRow(pointFaces, f[pI], pfI)
+                    {
                         changedFace[pointFaces[f[pI]][pfI]] = true;
+                    }
                 }
             }
         }
@@ -708,7 +776,9 @@ void Foam::Module::meshSurfaceOptimizer::untangleSurface2D()
         forAll(bPoints, bpI)
         {
             if (!activeBoundaryPoint[bpI])
+            {
                 continue;
+            }
 
             if (vertexType_[bpI] & EDGE)
             {

@@ -65,6 +65,7 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
         labelList materialForCell(pointCells[pointI].size(), 0);
 
         forAllRow(pointCells, pointI, cI)
+        {
         if (!materialForCell[cI])
         {
             materialForCell[cI] = material;
@@ -86,7 +87,9 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
                         forAllRow(pointCells, pointI, pcI)
                         {
                             if (materialForCell[pcI])
+                            {
                                 continue;
+                            }
 
                             if (
                                 cellCells[pointCellI][nI] ==
@@ -107,6 +110,7 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
 
             ++material;
         }
+        }
 
         if (material > 2)
         {
@@ -121,7 +125,9 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
             forAllRow(pointCells, pointI, pcI)
             {
                 if (materialForCell[pcI] == 1)
+                {
                     continue;
+                }
 
                 const cell& c = cells[pointCells[pointI][pcI]];
 
@@ -130,8 +136,12 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
                     face& f = faces[c[fI]];
 
                     forAll(f, pI)
+                    {
                         if (f[pI] == pointI)
+                        {
                             f[pI] = nPoints + materialForCell[pcI] - 1;
+                        }
+                    }
                 }
             }
 
@@ -150,7 +160,9 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesCells
     mesh_.clearAddressingData();
 
     if (nInvalidConnections != 0)
+    {
         meshModifier.removeUnusedVertices();
+    }
 }
 
 
@@ -169,13 +181,17 @@ void Foam::Module::topologicalCleaner::checkInvalidConnectionsForVerticesFaces
 
     # pragma omp parallel for schedule(static, 1)
     forAll(edgeFaces, edgeI)
+    {
         if (edgeFaces[edgeI].size() > 2)
         {
             forAllRow(edgeFaces, edgeI, fI)
+            {
                 removeCell[faceOwner[edgeFaces[edgeI][fI]]] = true;
+            }
 
             changed = true;
         }
+    }
 
     if (changed)
     {

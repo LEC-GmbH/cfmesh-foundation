@@ -156,7 +156,9 @@ void Foam::Module::meshSurfaceMapper2D::preMapVertices(const label nIterations)
             labelledPoint& lp = newPositions[bpI];
 
             if (lp.pointLabel() == 0)
+            {
                 continue;
+            }
 
             surfaceModifier.moveBoundaryVertexNoUpdate
             (

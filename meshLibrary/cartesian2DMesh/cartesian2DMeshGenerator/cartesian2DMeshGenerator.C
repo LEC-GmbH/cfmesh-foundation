@@ -90,13 +90,19 @@ void Foam::Module::cartesian2DMeshGenerator::surfacePreparation()
 
         checkIrregularSurfaceConnections checkConnections(mesh_);
         if (checkConnections.checkAndFixIrregularConnections())
+        {
             changed = true;
+        }
 
         if (checkNonMappableCellConnections(mesh_).removeCells())
+        {
             changed = true;
+        }
 
         if (checkCellConnectionsOverFaces(mesh_).checkCellGroups())
+        {
             changed = true;
+        }
     } while (changed);
 
     checkBoundaryFacesSharingTwoEdges(mesh_).improveTopology();

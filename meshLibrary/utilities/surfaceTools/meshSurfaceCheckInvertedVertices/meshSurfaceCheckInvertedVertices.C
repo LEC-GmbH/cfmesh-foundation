@@ -60,7 +60,9 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
     for (const label bpI : corners.toc())
     {
         if (activePointsPtr_ && !activePointsPtr_->operator[](bpI))
+        {
             continue;
+        }
 
         ltvMap& patchNormal = pointPatchNormal(bpI);
 
@@ -83,7 +85,9 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
     for (const label bpI : edgePoints.toc())
     {
         if (activePointsPtr_ && !activePointsPtr_->operator[](bpI))
+        {
             continue;
+        }
 
         ltvMap& patchNormal = pointPatchNormal(bpI);
 
@@ -122,7 +126,9 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
     forAll(pointFaces, bpI)
     {
         if (activePointsPtr_ && !activePointsPtr_->operator[](bpI))
+        {
             continue;
+        }
 
         forAllRow(pointFaces, bpI, pfI)
         {
@@ -132,7 +138,9 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
             vector pNormal = pNormals[bpI];
 
             if (pointPatchNormal.found(bpI))
+            {
                 pNormal = pointPatchNormal[bpI][facePatch[bfI]];
+            }
 
             const face& bf = bFaces[bfI];
 
@@ -258,7 +266,9 @@ void Foam::Module::meshSurfaceCheckInvertedVertices::checkVertices()
             forAll(OkPoints, pI)
             {
                 if (activePointsPtr_ && !(*activePointsPtr_)[bp[bf[pI]]])
+                {
                     continue;
+                }
 
                 if (!OkPoints[pI])
                 {

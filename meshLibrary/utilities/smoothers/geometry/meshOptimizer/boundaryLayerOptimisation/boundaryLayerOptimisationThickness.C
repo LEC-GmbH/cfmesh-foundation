@@ -92,17 +92,23 @@ void Foam::Module::boundaryLayerOptimisation::hairEdgesAtBndFace
         const label prevEdge = faceEdges[baseFace][bf.rcIndex(pI)];
 
         if (edgeFaces[nextEdge].size() != 2 || edgeFaces[prevEdge].size() != 2)
+        {
             break;
+        }
 
         // find the face attached to the edge after the current point
         label otherNextFace = edgeFaces[nextEdge][0];
         if (otherNextFace == baseFace)
+        {
             otherNextFace = edgeFaces[nextEdge][1];
+        }
 
         // find the face attached to the edge before the current point
         label otherPrevFace = edgeFaces[prevEdge][0];
         if (otherPrevFace == baseFace)
+        {
             otherPrevFace = edgeFaces[prevEdge][1];
+        }
 
         label commonEdge;
         for (commonEdge = 0; commonEdge < edges.size(); ++commonEdge)
@@ -118,7 +124,9 @@ void Foam::Module::boundaryLayerOptimisation::hairEdgesAtBndFace
         }
 
         if (commonEdge == edges.size())
+        {
             break;
+        }
 
         // there exists a common edge which shall be used as a hair
         if (edges[commonEdge].start() == bf[pI])
@@ -257,13 +265,19 @@ Foam::scalar Foam::Module::boundaryLayerOptimisation::calculateThicknessOverCell
     // the base face must not contain the hair edge
     // this is the case at exitting layers
     forAll(bf, eI)
+    {
         if (bf.faceEdge(eI) == he)
+        {
             return maxThickness;
+        }
+    }
 
     forAll(c, fI)
     {
         if (c[fI] == baseFaceI)
+        {
             continue;
+        }
 
         const face& f = faces[c[fI]];
 
@@ -272,7 +286,9 @@ Foam::scalar Foam::Module::boundaryLayerOptimisation::calculateThicknessOverCell
             point intersection;
 
             if (!help::lineFaceIntersection(sp, ep, f, points, intersection))
+            {
                 continue;
+            }
 
             const scalar maxDist = featureSizeFactor_*mag(intersection - sp);
 
@@ -352,7 +368,9 @@ void Foam::Module::boundaryLayerOptimisation::optimiseThicknessVariation
 
                     const face& bf = bFaces[bfI];
                     if (bf.which(he.end()) >= 0)
+                    {
                         continue;
+                    }
 
                     const label baseFaceI = start + bfI;
                     const label cOwn = faceOwner[bfI];
@@ -385,7 +403,9 @@ void Foam::Module::boundaryLayerOptimisation::optimiseThicknessVariation
                             const label heJ = hairEdgesAtBndPoint_[bpJ][peJ];
 
                             if (hairEdgeI == heJ)
+                            {
                                 continue;
+                            }
 
                             if (nhe == hairEdges_[heJ])
                             {
@@ -411,13 +431,17 @@ void Foam::Module::boundaryLayerOptimisation::optimiseThicknessVariation
                     thinnedHairEdge_[hairEdgeI] = true;
 
                     forAll(influencers, i)
+                    {
                         influencedEdges[influencers[i]] = true;
+                    }
                 }
             }
         }
 
         if (!changed)
+        {
             break;
+        }
 
         // move boundary vertices to the new positions
         # pragma omp parallel for schedule(dynamic, 100)

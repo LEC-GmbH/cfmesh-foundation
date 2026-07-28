@@ -84,7 +84,9 @@ void Foam::Module::cartesianMeshExtractor::createPolyMesh()
         const label ownLabel = leafCellLabel[own];
         label neiLabel(-1);
         if (nei != -1)
+        {
             neiLabel = leafCellLabel[nei];
+        }
 
         if ((ownLabel != -1) && (neiLabel != -1))
         {
@@ -106,7 +108,9 @@ void Foam::Module::cartesianMeshExtractor::createPolyMesh()
 
     faces.setSize(nFaces);
     forAll(cells, cI)
+    {
         cells[cI].setSize(nFacesInCell[cI]);
+    }
     nFacesInCell = 0;
 
     nFaces = 0;
@@ -119,14 +123,18 @@ void Foam::Module::cartesianMeshExtractor::createPolyMesh()
         const label ownLabel = leafCellLabel[own];
         label neiLabel(-1);
         if (nei != -1)
+        {
             neiLabel = leafCellLabel[nei];
+        }
 
         if ((ownLabel != -1) && (neiLabel != -1))
         {
             // internal face
             faces[nFaces].setSize(octreeFaces[faceI].size());
             forAllRow(octreeFaces, faceI, pI)
+            {
                 faces[nFaces][pI] = octreeFaces[faceI][pI];
+            }
 
             cells[ownLabel][nFacesInCell[ownLabel]++] = nFaces;
             cells[neiLabel][nFacesInCell[neiLabel]++] = nFaces;
@@ -137,7 +145,9 @@ void Foam::Module::cartesianMeshExtractor::createPolyMesh()
             // boundary face
             faces[nFaces].setSize(octreeFaces[faceI].size());
             forAllRow(octreeFaces, faceI, pI)
+            {
                 faces[nFaces][pI] = octreeFaces[faceI][pI];
+            }
 
             cells[ownLabel][nFacesInCell[ownLabel]++] = nFaces;
             ++nFaces;
@@ -148,8 +158,10 @@ void Foam::Module::cartesianMeshExtractor::createPolyMesh()
             faces[nFaces].setSize(octreeFaces[faceI].size());
             faces[nFaces][0] = octreeFaces[faceI][0];
             for (label pI = octreeFaces[faceI].size()-1; pI > 0; --pI)
+            {
                 faces[nFaces][octreeFaces[faceI].size()-pI] =
                     octreeFaces[faceI][pI];
+            }
 
             cells[neiLabel][nFacesInCell[neiLabel]++] = nFaces;
             ++nFaces;

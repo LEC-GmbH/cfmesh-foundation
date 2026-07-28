@@ -55,7 +55,9 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
 
     DynamicList<edge> faceEdges;
     forAll(f, eI)
+    {
         faceEdges.append(edges[f[eI]]);
+    }
 
     const DynamicList<DynamicList<label>> fvertices =
         sortEdgesIntoChains(faceEdges).sortedChains();
@@ -74,6 +76,7 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
 
     label region(1);
     forAll(fv, vI)
+    {
         if (!vertexTypes_[fv[vI]] && !vertexRegion[vI])
         {
             vertexRegion[vI] = region;
@@ -101,6 +104,7 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
 
             ++region;
         }
+    }
 
     if (region > 2)
     {
@@ -111,21 +115,26 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
         scalar minDist(VGREAT);
         label minRegion(-1);
         forAll(fv, vI)
+        {
             if (vertexRegion[vI] && (vertexDistance_[fv[vI]] < minDist))
             {
                 minDist = vertexDistance_[fv[vI]];
                 minRegion = vertexRegion[vI];
             }
+        }
 
         forAll(vertexRegion, vI)
+        {
             if (vertexRegion[vI] && (vertexRegion[vI] != minRegion))
             {
                 vertexTypes_[fv[vI]] |= INPLANE;
             }
+        }
     }
     else
     {
         forAll(fv, vI)
+        {
             if (
                 (vertexTypes_[fv[vI]] & INPLANE) &&
                 !vertexRegion[fv.rcIndex(vI)] &&
@@ -133,6 +142,7 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
             )
             {
                 vertexTypes_[fv[vI]] ^= INPLANE;
+        }
                 vertexTypes_[fv[vI]] |= KEEP;
             }
     }
@@ -143,11 +153,13 @@ void Foam::Module::meshUntangler::cutRegion::tieBreak
     newVertexLabel_ = -1;
     origNumVertices_ = 0;
     forAll(points, pI)
+    {
         if (vertexTypes_[pI])
         {
             cPtsPtr_->append(points[pI]);
             newVertexLabel_[pI] = origNumVertices_++;
         }
+    }
 
     // find new edges and continue creating faces
     findNewEdges();

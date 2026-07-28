@@ -78,7 +78,9 @@ public:
         {
             ng.setSize(neiGroups_[groupI].size());
             forAllRow(neiGroups_, groupI, i)
+            {
                 ng[i] = neiGroups_[groupI][i];
+            }
         }
 };
 
@@ -108,7 +110,9 @@ public:
         inline bool operator()(const label groupI) const
         {
             if ((groupI < 0) || (groupI >= neiGroups_.size()))
+            {
                 return false;
+            }
 
             return true;
         }

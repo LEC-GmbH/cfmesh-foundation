@@ -61,7 +61,9 @@ void Foam::Module::triSurfacePartitioner::calculateCornersAndAddressing()
     forAll(edgeFaces, eI)
     {
         if (edgeFaces[eI].size() != 2)
+        {
             continue;
+        }
 
         const label sPatch = surface_[edgeFaces[eI][0]].region();
         const label ePatch = surface_[edgeFaces[eI][1]].region();
@@ -80,7 +82,9 @@ void Foam::Module::triSurfacePartitioner::calculateCornersAndAddressing()
     forAll(nEdgesAtNode, pI)
     {
         if (nEdgesAtNode[pI] < 3)
+        {
             continue;
+        }
 
         ++nCorners;
     }
@@ -94,11 +98,15 @@ void Foam::Module::triSurfacePartitioner::calculateCornersAndAddressing()
     forAll(pointFaces, pointI)
     {
         if (nEdgesAtNode[pointI] < 3)
+        {
             continue;
+        }
 
         patches.clear();
         forAllRow(pointFaces, pointI, pfI)
+        {
             appendUniq(patches, surface_[pointFaces[pointI][pfI]].region());
+        }
 
         corners_[nCorners] = pointI;
         cornerPatches_[nCorners] = patches;
@@ -114,7 +122,9 @@ void Foam::Module::triSurfacePartitioner::calculatePatchPatches()
     forAll(edgeFaces, eI)
     {
         if (edgeFaces[eI].size() != 2)
+        {
             continue;
+        }
 
         const label sPatch = surface_[edgeFaces[eI][0]].region();
         const label ePatch = surface_[edgeFaces[eI][1]].region();
@@ -143,16 +153,22 @@ void Foam::Module::triSurfacePartitioner::calculateEdgeGroups()
     {
         DynamicList<label> patches;
         forAllRow(edgeFaces, eI, efI)
+        {
             appendUniq(patches, surface_[edgeFaces[eI][efI]].region());
+        }
 
         if (patches.size() > 1)
+        {
             featureEdge[eI] = true;
+        }
     }
 
     // create a set containing corners for fast searching
     labelHashSet corners;
     forAll(corners_, i)
+    {
         corners.insert(corners_[i]);
+    }
 
     edgeGroups_.setSize(edgeFaces.size());
     edgeGroups_ = -1;
@@ -161,9 +177,13 @@ void Foam::Module::triSurfacePartitioner::calculateEdgeGroups()
     forAll(featureEdge, eI)
     {
         if (!featureEdge[eI])
+        {
             continue;
+        }
         if (edgeGroups_[eI] != -1)
+        {
             continue;
+        }
 
         DynamicList<label> front;
         front.append(eI);
@@ -180,7 +200,9 @@ void Foam::Module::triSurfacePartitioner::calculateEdgeGroups()
                 const label pointI = e[pI];
 
                 if (corners.found(pointI))
+                {
                     continue;
+                }
 
                 forAllRow(pointEdges, pointI, peI)
                 {
@@ -213,11 +235,15 @@ void Foam::Module::triSurfacePartitioner::calculatePatchToEdgeGroups()
     forAll(edgeFaces, eI)
     {
         if (edgeGroups_[eI] < 0)
+        {
             continue;
+        }
 
         DynamicList<label> patches;
         forAllRow(edgeFaces, eI, efI)
+        {
             appendUniq(patches, surface_[edgeFaces[eI][efI]].region());
+        }
 
         forAll(patches, i)
         {
@@ -250,22 +276,28 @@ void Foam::Module::triSurfacePartitioner::calculateEdgeGroupsToCorners()
         const label pointI = corners_[cornerI];
 
         forAllRow(pointEdges, pointI, peI)
+        {
             appendUniq
             (
                 edgeGroupsAtCorner,
                 edgeGroups_[pointEdges[pointI][peI]]
             );
+        }
 
         forAll(edgeGroupsAtCorner, i)
         {
             const label epI = edgeGroupsAtCorner[i];
             if (epI < 0)
+            {
                 continue;
+            }
             for (label j = i + 1; j < edgeGroupsAtCorner.size(); ++j)
             {
                 const label epJ = edgeGroupsAtCorner[j];
                 if (epJ < 0)
+                {
                     continue;
+                }
 
                 edge ep
                 (

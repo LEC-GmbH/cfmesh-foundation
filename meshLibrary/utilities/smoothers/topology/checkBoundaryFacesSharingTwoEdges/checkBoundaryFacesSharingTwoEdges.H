@@ -86,7 +86,9 @@ class checkBoundaryFacesSharingTwoEdges
         inline const meshSurfaceEngine& meshSurface() const
         {
             if (!meshSurfacePtr_)
+            {
                 createMeshSurface();
+            }
 
             return *meshSurfacePtr_;
         }

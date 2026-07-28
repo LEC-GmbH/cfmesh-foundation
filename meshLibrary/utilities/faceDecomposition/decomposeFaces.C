@@ -191,13 +191,17 @@ void Foam::Module::decomposeFaces::decomposeMeshFaces
         {
             const label faceI = c[fJ];
             forAllRow(newFacesForFace_, faceI, nfI)
+            {
             newC.append(newFacesForFace_[faceI][nfI]);
+            }
         }
 
 
         c.setSize(newC.size());
         forAll(newC, fJ)
+        {
         c[fJ] = newC[fJ];
+        }
     }
 
     meshModifier.clearAll();
@@ -216,7 +220,9 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
 
     newFacesForFace_.setSize(mesh_.faces().size());
     forAll(newFacesForFace_, fI)
+    {
         newFacesForFace_[fI].setSize(0);
+    }
 
     const label nIntFaces = mesh_.nInternalFaces();
 
@@ -336,7 +342,9 @@ void Foam::Module::decomposeFaces::decomposeConcaveInternalFaces
         {
             const label faceI = c[fJ];
             forAllRow(newFacesForFace_, faceI, nfI)
+            {
             newC.append(newFacesForFace_[faceI][nfI]);
+            }
         }
 
 

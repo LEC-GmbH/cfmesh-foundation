@@ -104,7 +104,9 @@ bool Foam::Module::boxRefinement::intersectsObject(const boundBox& bb) const
     boundBox box(centre_ - v, centre_ + v);
 
     if (box.overlaps(bb))
+    {
         return true;
+    }
 
     return false;
 }

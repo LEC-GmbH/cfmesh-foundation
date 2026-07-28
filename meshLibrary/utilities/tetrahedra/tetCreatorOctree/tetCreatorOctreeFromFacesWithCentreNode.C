@@ -44,7 +44,9 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
     const List<FixedList<label, 8>>& pointLeaves = octreeCheck_.nodeLeaves();
 
     if (!faceCentreLabelPtr_)
+    {
         faceCentreLabelPtr_ = new labelListList2D(cubeLabel.size());
+    }
     labelListList2D& faceCentreLabel = *faceCentreLabelPtr_;
 
     // start creating tets
@@ -64,7 +66,9 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
         }
 
         if (!create)
+        {
             continue;
+        }
 
         // create 6 tets for each possible combination
         // there are 12 possible combinations
@@ -86,11 +90,17 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
                 const label ep = eEdge[0];
 
                 if (pl[sp] == pl[ep])
+                {
                     continue;
+                }
                 if (pl[sp] != pl[sEdge[1]])
+                {
                     continue;
+                }
                 if (pl[ep] != pl[eEdge[1]])
+                {
                     continue;
+                }
 
 
                 // allocate face centre labels
@@ -98,24 +108,32 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
                 {
                     faceCentreLabel[pl[sp]].setSize(6);
                     forAllRow(faceCentreLabel, pl[sp], k)
+                    {
                         faceCentreLabel[pl[sp]][k] = -1;
+                    }
                 }
                 if (faceCentreLabel[pl[ep]].size() == 0)
                 {
                     faceCentreLabel[pl[ep]].setSize(6);
                     forAllRow(faceCentreLabel, pl[ep], k)
+                    {
                         faceCentreLabel[pl[ep]][k] = -1;
+                    }
                 }
                 // create centre labels
                 label fs, fe;
 
                 fs = meshOctreeCubeCoordinates::edgeFaces_[fEdges[feJ]][0];
                 if (fs == fI)
+                {
                     fs = meshOctreeCubeCoordinates::edgeFaces_[fEdges[feJ]][1];
+                }
 
                 fe = meshOctreeCubeCoordinates::edgeFaces_[fEdges[feI]][0];
                 if (fe == fI)
+                {
                     fe = meshOctreeCubeCoordinates::edgeFaces_[fEdges[feI]][1];
+                }
 
 
                 // create face centre point
@@ -126,7 +144,9 @@ void Foam::Module::tetCreatorOctree::createTetsFromFacesWithCentreNode()
                     point p(vector::zero);
                     const label* fn = meshOctreeCubeCoordinates::faceNodes_[fe];
                     for (label i = 0; i < 4; ++i)
+                    {
                         p += tetPoints_[nodeLabels[pl[ep]][fn[i]]];
+                    }
                     p /= 4;
                     tetPoints_.append(p);
                 }

@@ -70,7 +70,9 @@ void Foam::Module::edgeExtractor::faceEvaluator::neiFacesOverEdges
         {
             neiFaces[feI] = edgeFaces[beI][0];
             if (neiFaces[feI] == bfI)
+            {
                 neiFaces[feI] = edgeFaces[beI][1];
+            }
         }
         else
         {
@@ -102,7 +104,9 @@ void Foam::Module::edgeExtractor::faceEvaluator::neiPatchesOverEdges
         {
             label nei = edgeFaces[beI][0];
             if (nei == bfI)
+            {
                 nei = edgeFaces[beI][1];
+            }
 
             neiPatches[feI] = fPatches[nei];
         }
@@ -119,17 +123,25 @@ Foam::label Foam::Module::edgeExtractor::faceEvaluator::bestPatchTopological
     // find indices of all neighbour patches
     DynamicList<label> allNeiPatches;
     forAll(neiPatches, i)
+    {
         appendUniq(allNeiPatches, neiPatches[i]);
+    }
 
     if ((allNeiPatches.size() == 1) && (allNeiPatches[0] == currentPatch))
+    {
         return currentPatch;
+    }
 
     // counter the number of neighbours in a patch
     Map<label> nNeiInPatch(allNeiPatches.size());
     forAll(allNeiPatches, i)
+    {
         nNeiInPatch.insert(allNeiPatches[i], 0);
+    }
     forAll(neiPatches, eI)
+    {
         ++nNeiInPatch[neiPatches[eI]];
+    }
 
     label newPatch = -1;
     label nNeiEdges(0);
@@ -152,11 +164,15 @@ Foam::label Foam::Module::edgeExtractor::faceEvaluator::bestPatchTopological
     // do not swap if the situation allows for more than one edge
     // shared with faces in other patches than the dominant one
     if (nNeiEdges < (neiPatches.size() - 1))
+    {
         return currentPatch;
+    }
 
     // do not swap if the best face is in the current patch
     if ((newPatch < 0) || (newPatch == currentPatch))
+    {
         return currentPatch;
+    }
 
     // check whether the edges shared ith the neighbour patch form
     // a singly linked chain
@@ -165,11 +181,17 @@ Foam::label Foam::Module::edgeExtractor::faceEvaluator::bestPatchTopological
     sharedEdge = false;
 
     forAll(neiPatches, eI)
+    {
         if (neiPatches[eI] == newPatch)
+        {
             sharedEdge[eI] = true;
+        }
+    }
 
     if (help::areElementsInChain(sharedEdge))
+    {
         return newPatch;
+    }
 
     return currentPatch;
 }
@@ -273,7 +295,9 @@ Foam::Module::edgeExtractor::faceEvaluator::bestPatchAfterModification
             if (neiFaces[eI] > bfI)
             {
                 if (newPatchI != origPatchI)
+                {
                     newNeiPatches[eI] = origPatchI;
+                }
             }
         }
 
@@ -466,7 +490,9 @@ void Foam::Module::edgeExtractor::cornerEvaluator::improveCorners
             if (allPatchesRemain)
             {
                 forAll(pFaces, i)
+                {
                     newBoundaryPatches[pFaces[i]] = newFacePatches[i];
+                }
             }
         }
     }

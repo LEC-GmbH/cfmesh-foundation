@@ -64,7 +64,9 @@ void Foam::Module::meshSurfaceEdgeExtractorFUN::distributeBoundaryFaces()
 
     // set patchNames
     forAll(surface.patches(), patchI)
+    {
         patchNames[patchI] = surface.patches()[patchI].name();
+    }
 
     // append boundary faces
     forAll(bFaces, bfI)

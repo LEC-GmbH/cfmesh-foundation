@@ -42,7 +42,9 @@ const Foam::Module::meshSurfaceEngine&
 Foam::Module::meshOptimizer::meshSurface() const
 {
     if (!msePtr_)
+    {
         msePtr_ = new meshSurfaceEngine(mesh_);
+    }
 
     return *msePtr_;
 }
@@ -144,7 +146,9 @@ void Foam::Module::meshOptimizer::calculatePointLocations()
 
     // mark boundary vertices
     forAll(bPoints, bpI)
+    {
         vertexLocation_[bPoints[bpI]] = BOUNDARY;
+    }
 
     // mark edge vertices
     meshSurfacePartitioner mPart(mse);
@@ -222,7 +226,9 @@ void Foam::Module::meshOptimizer::removeUserConstraints()
     forAll(vertexLocation_, i)
     {
         if (vertexLocation_[i] & LOCKED)
+        {
             vertexLocation_[i] ^= LOCKED;
+        }
     }
 }
 

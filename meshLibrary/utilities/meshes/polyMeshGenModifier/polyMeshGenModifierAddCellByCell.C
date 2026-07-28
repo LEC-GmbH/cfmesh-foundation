@@ -50,11 +50,15 @@ Foam::Module::polyMeshGenModifierAddCellByCell::polyMeshGenModifierAddCellByCell
     this->pointFaces();
     faceListPMG& faces = this->facesAccess();
     forAll(faces, faceI)
+    {
         newFaces_[faceI].transfer(faces[faceI]);
+    }
 
     cellListPMG& cells = this->cellsAccess();
     forAll(cells, cellI)
+    {
         newCells_[cellI].transfer(cells[cellI]);
+    }
 };
 
 
@@ -64,12 +68,16 @@ Foam::Module::polyMeshGenModifierAddCellByCell::
     faceListPMG& faces = this->facesAccess();
     faces.setSize(nFaces_);
     forAll(faces, faceI)
+    {
         faces[faceI].transfer(newFaces_[faceI]);
+    }
 
     cellListPMG& cells = this->cellsAccess();
     cells.setSize(newCells_.size());
     forAll(cells, cellI)
+    {
         cells[cellI].transfer(newCells_[cellI]);
+    }
 }
 
 

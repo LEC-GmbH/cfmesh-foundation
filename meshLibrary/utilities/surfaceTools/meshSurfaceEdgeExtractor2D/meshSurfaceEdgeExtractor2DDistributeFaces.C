@@ -144,7 +144,9 @@ void Foam::Module::meshSurfaceEdgeExtractor2D::distributeBoundaryFaces()
     // set correct patch types
     PtrList<boundaryPatch>& modBnd = meshModifier.boundariesAccess();
     forAll(patchTypes, patchI)
+    {
         modBnd[patchI].patchType() = patchTypes[patchI];
+    }
 }
 
 

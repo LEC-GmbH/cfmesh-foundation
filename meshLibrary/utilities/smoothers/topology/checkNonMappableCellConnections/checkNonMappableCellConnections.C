@@ -52,7 +52,9 @@ void Foam::Module::checkNonMappableCellConnections::findCellTypes()
         const label end = start + boundaries[patchI].patchSize();
 
         for (label faceI = start; faceI < end; ++faceI)
+        {
             cellType_[owner[faceI]] = BNDCELL;
+        }
     }
 
     // find boundary cells with all vertices at the boundary
@@ -63,7 +65,9 @@ void Foam::Module::checkNonMappableCellConnections::findCellTypes()
     for (label cellI = cells.size()-1; cellI>=0; --cellI)
     {
         if (cellType_[cellI] & INTERNALCELL)
+        {
             continue;
+        }
 
         const cell& c = cells[cellI];
 
@@ -104,7 +108,9 @@ void Foam::Module::checkNonMappableCellConnections::findCellTypes()
         forAll(internalFaces, i)
         {
             if (faceGroup.found(internalFaces[i]))
+            {
                 continue;
+            }
 
             DynamicList<label> front;
             front.append(internalFaces[i]);
@@ -118,7 +124,9 @@ void Foam::Module::checkNonMappableCellConnections::findCellTypes()
                 {
                     const label nei = internalFaces[j];
                     if (faceGroup.found(nei))
+                    {
                         continue;
+                    }
 
                     if (help::shareAnEdge(faces[fLabel], faces[nei]))
                     {
@@ -132,7 +140,9 @@ void Foam::Module::checkNonMappableCellConnections::findCellTypes()
         }
 
         if (nGroup > 1)
+        {
             cellType_[cellI] |= INTERNALFACEGROUP;
+        }
     }
 }
 
@@ -196,7 +206,9 @@ void Foam::Module::checkNonMappableCellConnections::findCells
 
                     label nei = neighbour[c[fI]];
                     if (nei == cellI)
+                    {
                         nei = owner[c[fI]];
+                    }
 
                     if (cellType_[nei] & INTERNALCELL)
                     {

@@ -110,7 +110,9 @@ bool Foam::Module::symmetryPlaneOptimisation::pointInPlanes
                 const point c = help::stableFaceCentre(f, points);
                 scalar maxDist(0.0);
                 forAll(f, pI)
+                {
                     maxDist = max(maxDist, mag(points[f[pI]] - c));
+                }
 
                 forAll(f, pI)
                 {
@@ -121,7 +123,9 @@ bool Foam::Module::symmetryPlaneOptimisation::pointInPlanes
                         const scalar d = it().distance(points[f[pI]]);
 
                         if (d > 0.5*maxDist)
+                        {
                             foundProblematic = true;
+                        }
                     }
 
                     appendUniq(pointInPlanes[f[pI]], patchI);

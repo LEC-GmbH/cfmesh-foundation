@@ -73,7 +73,9 @@ Foam::Module::triSurfaceDetectFeatureEdges::detectFeatureEdgesAngleCriterion()
             forAll(tri1, j)
             {
                 if (tri0[i] == tri1[j])
+                {
                     sharedIndices.append(labelPair(i, j));
+                }
             }
         }
 
@@ -84,17 +86,23 @@ Foam::Module::triSurfaceDetectFeatureEdges::detectFeatureEdgesAngleCriterion()
             if (((pair0.first() + 1) % 3) == pair1.first())
             {
                 if ((pair0.second() + 1) % 3 == pair1.second())
+                {
                     cosAngle *= -1.0;
+                }
             }
             else
             {
                 if ((pair1.second() + 1) % 3 == pair0.second())
+                {
                     cosAngle *= -1.0;
+                }
             }
         }
 
         if (cosAngle < tol)
+        {
             featureEdges_[edgeI] |= 1;
+        }
     }
 }
 

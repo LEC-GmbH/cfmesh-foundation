@@ -47,7 +47,9 @@ void Foam::Module::cartesianMeshExtractor::createPointsAndAddressing()
     const pointField& octreePoints = octreeCheck_.octreePoints();
 
     forAll(points, pointI)
+    {
         points[pointI] = octreePoints[pointI];
+    }
 
     Info<< "Finished creating octree vertices" << endl;
 }

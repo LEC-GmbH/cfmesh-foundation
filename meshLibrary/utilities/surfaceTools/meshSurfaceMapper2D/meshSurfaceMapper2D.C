@@ -62,7 +62,9 @@ void Foam::Module::meshSurfaceMapper2D::findActiveBoundaryEdges()
             const bool active1 = activeFace[startFace + edgeFaces[edgeI][1]];
 
             if (active0 && active1)
+            {
                 activeBoundaryEdges_.append(edgeI);
+            }
         }
     }
 }

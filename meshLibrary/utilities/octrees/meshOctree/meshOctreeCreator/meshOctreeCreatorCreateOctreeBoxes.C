@@ -694,7 +694,9 @@ void Foam::Module::meshOctreeCreator::createOctreeWithRefinedBoundary
             forAll(leaves, leafI)
             {
                 if (toRefine[leafI])
+                {
                     leaves[leafI]->refineCube(surface, rootBox, slotPtr);
+                }
             }
         }
 

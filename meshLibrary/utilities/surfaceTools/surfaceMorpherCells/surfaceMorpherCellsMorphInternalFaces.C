@@ -76,7 +76,9 @@ void Foam::Module::surfaceMorpherCells::findBoundaryCells()
         const label end = start + boundaries[patchI].patchSize();
 
         for (label faceI = start; faceI < end; ++faceI)
+        {
             cellFlags_[owner[faceI]] = BOUNDARY;
+        }
     }
 }
 
@@ -123,6 +125,7 @@ bool Foam::Module::surfaceMorpherCells::morphInternalFaces()
         label i(0);
 
         forAll(f, pI)
+        {
             if (
                 boundaryVertex_[f.prevLabel(pI)] &&
                 boundaryVertex_[f[pI]] &&
@@ -135,6 +138,7 @@ bool Foam::Module::surfaceMorpherCells::morphInternalFaces()
             {
                 newF[i++] = f[pI];
             }
+        }
 
         if (i < f.size())
         {
@@ -148,6 +152,7 @@ bool Foam::Module::surfaceMorpherCells::morphInternalFaces()
             DynamicList<direction> nodeMaterial(f.size(), direction(0));
             DynamicList<DynamicList<edge>> edgeMats;
             forAll(nodeMaterial, nI)
+            {
                 if (!nodeMaterial[nI] && removeFaceVertex[nI])
                 {
                     edgeMats.append(DynamicList<edge>());
@@ -161,21 +166,31 @@ bool Foam::Module::surfaceMorpherCells::morphInternalFaces()
                         {
                             const label fLabel = front[pI];
                             if (nodeMaterial[fLabel])
+                            {
                                 continue;
+                            }
                             nodeMaterial[fLabel] = mat;
 
                             const edge& e0 = f.faceEdge(fLabel);
                             if (findIndex(edgeMats[mat - 1], e0) == -1)
+                            {
                                 edgeMats[mat - 1].append(e0);
+                            }
 
                             const edge& e1 = f.faceEdge(f.rcIndex(fLabel));
                             if (findIndex(edgeMats[mat - 1], e1) == -1)
+                            {
                                 edgeMats[mat - 1].append(e1);
+                            }
 
                             if (removeFaceVertex[f.rcIndex(fLabel)])
+                            {
                                 newFront.append(f.rcIndex(fLabel));
+                            }
                             if (removeFaceVertex[f.fcIndex(fLabel)])
+                            {
                                 newFront.append(f.fcIndex(fLabel));
+                            }
                         }
                         front = newFront;
                     }
@@ -183,6 +198,7 @@ bool Foam::Module::surfaceMorpherCells::morphInternalFaces()
 
                     ++mat;
                 }
+            }
 
             forAll(edgeMats, matI)
             {
@@ -215,14 +231,18 @@ bool Foam::Module::surfaceMorpherCells::morphInternalFaces()
         bool removeFaces(false);
 
         for (label faceI = 0; faceI < nIntFaces; ++faceI)
+        {
             if (faces[faceI].size() < 3)
             {
                 removeFace[faceI] = true;
                 removeFaces = true;
             }
+        }
 
         if (removeFaces)
+        {
             meshModifier.removeFaces(removeFace);
+        }
     }
 
     Info<< "Finished morphing internal faces" << endl;

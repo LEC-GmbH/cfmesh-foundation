@@ -184,7 +184,9 @@ void Foam::Module::tetMeshGenerator::optimiseFinalMesh()
 void Foam::Module::tetMeshGenerator::projectSurfaceAfterBackScaling()
 {
     if (!meshDict_.found("anisotropicSources"))
+    {
         return;
+    }
 
     deleteDemandDrivenData(octreePtr_);
     octreePtr_ = new meshOctree(*surfacePtr_);

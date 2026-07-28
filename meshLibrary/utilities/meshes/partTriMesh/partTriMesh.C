@@ -111,7 +111,9 @@ Foam::Module::partTriMesh::partTriMesh
                         const label fLabel = pointFaces[bpI][pfI];
 
                         if (!useFace[fLabel])
+                        {
                             useFace[fLabel] = layerI + 1;
+                        }
                     }
                 }
             }

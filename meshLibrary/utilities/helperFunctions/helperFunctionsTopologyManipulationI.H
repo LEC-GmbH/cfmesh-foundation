@@ -42,7 +42,9 @@ bool Foam::Module::help::areFacesEqual(const faceType1& f1, const faceType2& f2)
 {
     //- their size mut be equal
     if (f1.size() != f2.size())
+    {
         return false;
+    }
 
     //- find the starting point the the second face
     label start(-1);

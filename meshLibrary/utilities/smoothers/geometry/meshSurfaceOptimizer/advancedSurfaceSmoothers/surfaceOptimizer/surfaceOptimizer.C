@@ -248,7 +248,9 @@ Foam::scalar Foam::Module::surfaceOptimizer::optimiseDivideAndConquer
         const scalar t = mag(funcAfter - funcBefore) / funcAfter;
 
         if (t < tol)
+        {
             break;
+        }
     } while (++iter < 100);
 
     return funcAfter;
@@ -318,7 +320,9 @@ Foam::scalar Foam::Module::surfaceOptimizer::optimiseSteepestDescent
         funcAfter = evaluateFunc(K);
 
         if (mag(funcAfter - funcBefore) / funcBefore < tol)
+        {
             break;
+        }
 
     } while (++nIterations < 100);
 
@@ -361,7 +365,9 @@ Foam::point Foam::Module::surfaceOptimizer::optimizePoint(const scalar tol)
 {
     const scalar scale = mag(pMax_ - pMin_);
     forAll(pts_, i)
+    {
         pts_[i] /= scale;
+    }
     pMin_ /= scale;
     pMax_ /= scale;
 
@@ -373,10 +379,14 @@ Foam::point Foam::Module::surfaceOptimizer::optimizePoint(const scalar tol)
     const scalar funcSteepest = optimiseSteepestDescent(tol);
 
     if (funcSteepest > funcDivide)
+    {
         pOpt = newPoint;
+    }
 
     forAll(pts_, i)
+    {
         pts_[i] *= scale;
+    }
     pMin_ *= scale;
     pMax_ *= scale;
 

@@ -39,7 +39,9 @@ Foam::scalar Foam::Module::quadricMetric::evaluateMetric() const
     scalar val(0.0);
 
     forAll(normals_, nI)
+    {
         val += Foam::sqr(normals_[nI] & (p_ - centres_[nI]));
+    }
 
     return val;
 }
@@ -104,7 +106,9 @@ void Foam::Module::quadricMetric::optimizeNodePosition
 {
     // Implementation of knupp metric untangling
     if (!bb_.contains(p_))
+    {
         p_ = 0.5*(bb_.min() + bb_.max());
+    }
 
     const scalar tol = Foam::sqr(2.0*SMALL)*magSqr(bb_.min() - bb_.max());
 
@@ -161,7 +165,9 @@ void Foam::Module::quadricMetric::optimizeNodePosition
                     func = evaluateMetric();
 
                     if (func < lastFunc)
+                    {
                         continue;
+                    }
 
                     // it seems that this direction is wrong
                     if (++nLoops == 5)
@@ -181,7 +187,9 @@ void Foam::Module::quadricMetric::optimizeNodePosition
         } while ((magSqr(disp) > tol) && (++iterI < 10));
 
         if (lastFunc < VSMALL)
+        {
             finished = false;
+        }
     } while (!finished && (++outerIter < 5));
 
 }

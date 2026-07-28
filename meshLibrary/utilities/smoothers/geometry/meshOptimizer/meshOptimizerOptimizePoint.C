@@ -51,17 +51,23 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacian
             const label pointI = smoothPoints[i];
 
             if (vertexLocation_[pointI] & LOCKED)
+            {
                 continue;
+            }
 
             vector newP(vector::zero);
 
             const label nPointPoints = pPoints[pointI].size();
 
             if (nPointPoints == 0)
+            {
                 return;
+            }
 
             for (label pI = 0; pI < nPointPoints; ++pI)
+            {
                 newP += points[pPoints[pointI][pI]];
+            }
 
             newP /= pPoints[pointI].size();
             points[pointI] = newP;
@@ -88,7 +94,9 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianSurface
             const label pointI = smoothPoints[i];
 
             if (vertexLocation_[pointI] & LOCKED)
+            {
                 continue;
+            }
 
             vector newP(vector::zero);
 
@@ -97,7 +105,9 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianSurface
             {
                 const label pLabel = pPoints[pointI][pI];
                 if (vertexLocation_[pLabel] & INSIDE)
+                {
                     continue;
+                }
 
                 newP += points[pLabel];
                 ++counter;
@@ -133,14 +143,20 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianPC
             const label pointI = smoothPoints[i];
 
             if (vertexLocation_[pointI] & LOCKED)
+            {
                 continue;
+            }
 
             if (pointCells[pointI].size() == 0)
+            {
                 continue;
+            }
 
             point newP(vector::zero);
             forAllRow(pointCells, pointI, pcI)
+            {
                 newP += centres[pointCells[pointI][pcI]];
+            }
 
             newP /= pointCells[pointI].size();
 
@@ -172,10 +188,14 @@ void Foam::Module::meshOptimizer::laplaceSmoother::laplacianWPC
             const label pointI = smoothPoints[i];
 
             if (vertexLocation_[pointI] & LOCKED)
+            {
                 continue;
+            }
 
             if (pointCells[pointI].size() == 0)
+            {
                 continue;
+            }
 
             point newP(vector::zero);
             scalar sumWeights(0.0);
@@ -213,14 +233,18 @@ void Foam::Module::meshOptimizer::laplaceSmoother::updateMeshGeometry
         const label pointI = smoothPoints[i];
 
         if (vertexLocation_[pointI] & LOCKED)
+        {
             continue;
+        }
 
         forAllRow(pointCells, pointI, pcI)
         {
             const cell& c = cells[pointCells[pointI][pcI]];
 
             forAll(c, fI)
+            {
                 chF[c[fI]] = true;
+            }
         }
     }
 
@@ -257,7 +281,9 @@ void Foam::Module::meshOptimizer::laplaceSmoother::optimizeLaplacian
     forAll(vertexLocation_, pointI)
     {
         if (vertexLocation_[pointI] & INSIDE)
+        {
             smoothPoints.append(pointI);
+        }
     }
 
     laplacian(smoothPoints, nIterations);
@@ -294,7 +320,9 @@ void Foam::Module::meshOptimizer::laplaceSmoother::optimizeLaplacianPC
     forAll(vertexLocation_, pointI)
     {
         if (vertexLocation_[pointI] & INSIDE)
+        {
             smoothPoints.append(pointI);
+        }
     }
 
     laplacianPC(smoothPoints, nIterations);
@@ -321,7 +349,9 @@ void Foam::Module::meshOptimizer::laplaceSmoother::optimizeLaplacianWPC
     forAll(vertexLocation_, pointI)
     {
         if (vertexLocation_[pointI] & INSIDE)
+        {
             smoothPoints.append(pointI);
+        }
     }
 
     laplacianWPC(smoothPoints, nIterations);

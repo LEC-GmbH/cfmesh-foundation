@@ -70,7 +70,9 @@ void Foam::Module::meshSurfaceCheckEdgeTypes::classifyEdges()
 
     label nThreads = 3*omp_get_num_procs();
     if (edges.size() < 1000)
+    {
         nThreads = 1;
+    }
 
     # pragma omp parallel num_threads(nThreads)
     {
@@ -173,7 +175,9 @@ void Foam::Module::meshSurfaceCheckEdgeTypes::convexEdges
     forAll(edgeType_, eI)
     {
         if (edgeType_[eI] & CONVEXEDGE)
+        {
             convexEdges.append(eI);
+        }
     }
 }
 
@@ -188,7 +192,9 @@ void Foam::Module::meshSurfaceCheckEdgeTypes::concaveEdges
     forAll(edgeType_, eI)
     {
         if (edgeType_[eI] & CONCAVEEDGE)
+        {
             concaveEdges.append(eI);
+        }
     }
 }
 

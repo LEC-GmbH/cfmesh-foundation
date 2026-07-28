@@ -224,7 +224,9 @@ void Foam::Module::voronoiMeshGenerator::optimiseFinalMesh()
 void Foam::Module::voronoiMeshGenerator::projectSurfaceAfterBackScaling()
 {
     if (!meshDict_.found("anisotropicSources"))
+    {
         return;
+    }
 
     deleteDemandDrivenData(octreePtr_);
     octreePtr_ = new meshOctree(*surfacePtr_);
@@ -340,7 +342,9 @@ Foam::Module::voronoiMeshGenerator::voronoiMeshGenerator(const Time& time)
     try
     {
         if (true)
+        {
             checkMeshDict cmd(meshDict_);
+        }
 
         const fileName surfaceFile(meshDict_.lookup("surfaceFile"));
 

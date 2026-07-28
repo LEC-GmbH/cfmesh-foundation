@@ -158,8 +158,10 @@ public:
         const DynamicList<point>& tetPoints() const
         {
             if (!created_)
+            {
                 FatalErrorInFunction
                     << "Tets are not created!" << exit(FatalError);
+            }
 
             return tetPoints_;
         }
@@ -167,8 +169,10 @@ public:
         const DynamicList<partTet>& tets() const
         {
             if (!created_)
+            {
                 FatalErrorInFunction
                     << "Tets are not created!" << exit(FatalError);
+            }
 
             return tets_;
         }

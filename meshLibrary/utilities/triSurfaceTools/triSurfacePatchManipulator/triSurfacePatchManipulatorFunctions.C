@@ -54,7 +54,9 @@ void Foam::Module::triSurfacePatchManipulator::allocateFeatureEdges()
             const label eI = pEdges[e.start()][peI];
 
             if (edges[eI] == e)
+            {
                 featureEdges_[eI] |= 1;
+            }
         }
     }
 }
@@ -72,7 +74,9 @@ void Foam::Module::triSurfacePatchManipulator::createPatches()
     forAll(facetInPatch_, triI)
     {
         if (facetInPatch_[triI] != -1)
+        {
             continue;
+        }
 
         DynamicList<label> front;
         front.append(triI);
@@ -90,23 +94,33 @@ void Foam::Module::triSurfacePatchManipulator::createPatches()
 
                 // check if th edges is marked as a feature edge
                 if (featureEdges_[edgeI])
+                {
                     continue;
+                }
 
                 const DynamicList<label>& eFaces = edgeFaces[edgeI];
 
                 // stop at non-manifold edges
                 if (eFaces.size() != 2)
+                {
                     continue;
+                }
 
                 label neiTri = eFaces[0];
                 if (neiTri == fLabel)
+                {
                     neiTri = eFaces[1];
+                }
 
                 // do not overwrite existing patch information
                 if (surf_[fLabel].region() != surf_[neiTri].region())
+                {
                     continue;
+                }
                 if (facetInPatch_[neiTri] != -1)
+                {
                     continue;
+                }
 
                 facetInPatch_[neiTri] = nPatches_;
                 front.append(neiTri);

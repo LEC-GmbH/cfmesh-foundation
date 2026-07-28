@@ -39,7 +39,9 @@ const Foam::Module::meshSurfaceEngine&
 Foam::Module::correctEdgesBetweenPatches::meshSurface() const
 {
     if (!msePtr_)
+    {
         msePtr_ = new meshSurfaceEngine(mesh_);
+    }
 
     return *msePtr_;
 }

@@ -57,7 +57,9 @@ void Foam::Module::polyMeshGenAddressing::calcPointPoints() const
         {
             # pragma omp for schedule(static)
             forAll(nPoints, i)
+            {
                 nPoints[i] = 0;
+            }
 
             # pragma omp for schedule(static)
             forAll(pointFaces, pointI)

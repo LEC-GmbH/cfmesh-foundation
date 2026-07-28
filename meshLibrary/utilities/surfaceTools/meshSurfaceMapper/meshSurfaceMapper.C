@@ -53,7 +53,9 @@ void Foam::Module::meshSurfaceMapper::createTriSurfacePartitioner() const
 void Foam::Module::meshSurfaceMapper::clearOut()
 {
     if (deletePartitioner_)
+    {
         deleteDemandDrivenData(surfaceEnginePartitionerPtr_);
+    }
     deleteDemandDrivenData(surfPartitionerPtr_);
 }
 

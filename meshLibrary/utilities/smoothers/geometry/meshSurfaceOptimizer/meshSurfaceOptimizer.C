@@ -145,7 +145,9 @@ Foam::Module::meshSurfaceOptimizer::~meshSurfaceOptimizer()
     deleteDemandDrivenData(triMeshPtr_);
 
     if (deletePartitioner_)
+    {
         deleteDemandDrivenData(partitionerPtr_);
+    }
 }
 
 
@@ -155,8 +157,12 @@ void Foam::Module::meshSurfaceOptimizer::removeUserConstraints()
 {
     # pragma omp parallel for schedule(dynamic, 100)
     forAll(vertexType_, bpI)
+    {
         if (vertexType_[bpI] & LOCKED)
+        {
             vertexType_[bpI] ^= LOCKED;
+        }
+    }
 }
 
 

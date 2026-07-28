@@ -124,7 +124,9 @@ void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurface()
     DynamicList<label> edgesToMap;
 
     forAll(activeBoundaryEdges_, beI)
+    {
         edgesToMap.append(activeBoundaryEdges_[beI]);
+    }
 
     mapVerticesOntoSurface(edgesToMap);
 }
@@ -194,7 +196,9 @@ void Foam::Module::meshSurfaceMapper2D::mapCorners()
         const edge& e = edges[activeBoundaryEdges_[eI]];
 
         if (cornerPoints.found(e.start()) || cornerPoints.found(e.end()))
+        {
             selectedEdges.append(activeBoundaryEdges_[eI]);
+        }
     }
 
     mapCorners(selectedEdges);
@@ -234,13 +238,17 @@ void Foam::Module::meshSurfaceMapper2D::mapCorners
         forAllRow(pPatches, bps, i)
         {
             if (found(pPatches, bpe, pPatches[bps][i]))
+            {
                 ePatches.append(pPatches[bps][i]);
+            }
         }
 
         if (!corners.found(bps) || !corners.found(bpe))
+        {
             FatalErrorInFunction
                 << "Trying to map a point that is not a corner"
                 << abort(FatalError);
+        }
 
         const point& p = points[be.start()];
         const scalar maxDist = mappingDistance[beI];
@@ -271,7 +279,9 @@ void Foam::Module::meshSurfaceMapper2D::mapCorners
 
             newP /= ePatches.size();
             if (magSqr(newP - mapPointApprox) < 1e-8*maxDist)
+            {
                 break;
+            }
 
             mapPointApprox = newP;
         }
@@ -323,7 +333,9 @@ void Foam::Module::meshSurfaceMapper2D::mapVerticesOntoSurfacePatches()
     DynamicList<label> edgesToMap;
 
     forAll(activeBoundaryEdges_, beI)
+    {
         edgesToMap.append(activeBoundaryEdges_[beI]);
+    }
 
     mapVerticesOntoSurfacePatches(edgesToMap);
 }

@@ -37,6 +37,7 @@ void Foam::Module::coordinateModifier::checkForValidInverse() const
     {
         // the if the modifiers allow combinations
         forAll(modifiers_, modI)
+        {
             if (!modifiers_[modI].combiningPossible())
             {
                 FatalErrorInFunction
@@ -44,6 +45,7 @@ void Foam::Module::coordinateModifier::checkForValidInverse() const
                     << " other anisotropic sources. The operation"
                     << " cannot be reverted!" << exit(FatalError);
             }
+        }
 
         // check if the modifications overlap
         forAll(modifiers_, modI)

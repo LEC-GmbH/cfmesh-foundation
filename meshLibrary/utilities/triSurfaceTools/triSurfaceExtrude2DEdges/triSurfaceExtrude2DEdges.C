@@ -64,9 +64,11 @@ void Foam::Module::triSurfaceExtrude2DEdges::extrudeSurface
     const boundBox bb(sPoints);
 
     if (Foam::mag(bb.max().z() - bb.min().z()) > SMALL)
+    {
         FatalErrorInFunction
             << "Cannot extrude edges which are not in the x - y plane!"
             << exit(FatalError);
+    }
 
     // copy points
     pointField& pts = sMod.pointsAccess();

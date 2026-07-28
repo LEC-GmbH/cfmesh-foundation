@@ -57,7 +57,9 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
             const label leafI = pLeaves[nodeI][plI];
 
             if (leafI < 0)
+            {
                 continue;
+            }
 
             level = Foam::max(level, octree.returnLeaf(leafI).level());
         }
@@ -80,7 +82,9 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
             const label curLabel = curLevelLeaves[leafI];
 
             if (cubeLabel[curLabel] == -1)
+            {
                 continue;
+            }
 
             // start checking edges
             for (label eI = 0; eI < 12; ++eI)
@@ -97,7 +101,9 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
                     ];
 
                 if ((nodeLevel[start] == level) && (nodeLevel[end] == level))
+                {
                     continue;
+                }
 
                 // the edge has at least one vertex at different ref level
                 bool create(true);
@@ -111,7 +117,9 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
                 // store octree leaves at this edge
                 // they are all adjacent to the start point
                 for (label i = 0; i < 4; ++i)
+                {
                     edgeCubes[i] = pLeaves[start][fNodes[i]];
+                }
 
                 forAll(edgeCubes, i)
                 {
@@ -175,7 +183,9 @@ void Foam::Module::tetCreatorOctree::createTetsAroundSplitEdges()
                 }
 
                 if (!create)
+                {
                     continue;
+                }
 
                 if (nodeLevel[start] > level)
                 {

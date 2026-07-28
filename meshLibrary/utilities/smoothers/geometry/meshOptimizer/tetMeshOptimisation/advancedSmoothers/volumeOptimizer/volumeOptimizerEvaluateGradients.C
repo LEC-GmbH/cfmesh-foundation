@@ -101,7 +101,9 @@ Foam::scalar Foam::Module::volumeOptimizer::evaluateStabilisationFactor() const
     }
 
     if (Vmin < SMALL*LSqMax)
+    {
         K = SMALL*LSqMax;
+    }
 
     return K;
 }
@@ -270,7 +272,9 @@ Foam::scalar Foam::Module::volumeOptimizer::optimiseDivideAndConquer
         const scalar t = mag(funcAfter - funcBefore) / funcAfter;
 
         if (t < tol)
+        {
             break;
+        }
     } while (++iter < 100);
 
     return funcAfter;
@@ -321,7 +325,9 @@ Foam::scalar Foam::Module::volumeOptimizer::optimiseSteepestDescent
                 funcAfter = evaluateFunc();
 
                 if (funcAfter < funcBefore)
+                {
                     continue;
+                }
 
                 if (++nLoops == 5)
                 {
@@ -334,7 +340,9 @@ Foam::scalar Foam::Module::volumeOptimizer::optimiseSteepestDescent
             }
 
             if (mag(funcBefore-funcAfter) / funcBefore < tol)
+            {
                 finished = true;
+            }
         }
         else
         {
@@ -359,7 +367,9 @@ Foam::scalar Foam::Module::volumeOptimizer::optimiseSteepestDescent
                     const scalar d = mag(n);
 
                     if (d > VSMALL)
+                    {
                         disp += 0.01*(n/d);
+                    }
                 }
             }
 

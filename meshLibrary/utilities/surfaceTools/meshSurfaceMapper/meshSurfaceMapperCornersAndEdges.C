@@ -162,9 +162,11 @@ void Foam::Module::meshSurfaceMapper::mapCorners
     {
         const label bpI = nodesToMap[cornerI];
         if (!corners.found(bpI))
+        {
             FatalErrorInFunction
                 << "Trying to map a point that is not a corner"
                 << abort(FatalError);
+        }
 
         const point& p = points[bPoints[bpI]];
         const scalar maxDist = mappingDistance[cornerI];
@@ -198,7 +200,9 @@ void Foam::Module::meshSurfaceMapper::mapCorners
             newP /= patches.size();
 
             if (magSqr(newP - mapPointApprox) < 1e-8*maxDist)
+            {
                 break;
+            }
 
             mapPointApprox = newP;
         }
@@ -305,7 +309,9 @@ void Foam::Module::meshSurfaceMapper::mapEdgeNodes
             newP /= patches.size();
 
             if (magSqr(newP - mapPointApprox) < 1e-8*maxDist)
+            {
                 break;
+            }
 
             mapPointApprox = newP;
         }

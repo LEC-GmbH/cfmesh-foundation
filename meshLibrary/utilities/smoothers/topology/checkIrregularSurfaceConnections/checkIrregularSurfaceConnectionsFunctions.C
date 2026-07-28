@@ -75,7 +75,9 @@ checkAndFixCellGroupsAtBndVertices
             const label cellI = pointCells[pointI][cI];
 
             if (cellGroup.found(cellI))
+            {
                 continue;
+            }
 
             cellGroup.insert(cellI, nGroup);
             frontCells.clear();
@@ -90,7 +92,9 @@ checkAndFixCellGroupsAtBndVertices
                     const label neiCell = cellCells[cLabel][nI];
 
                     if (cellGroup.found(neiCell))
+                    {
                         continue;
+                    }
 
                     if (found(pointCells, pointI, neiCell))
                     {
@@ -129,7 +133,9 @@ checkAndFixCellGroupsAtBndVertices
                                 const label pos = f.which(pointI);
 
                                 if (pos > -1)
+                                {
                                     f[pos] = nPoints + cellGroup[cellI] - 1;
+                                }
                             }
                         }
                     }
@@ -218,7 +224,9 @@ bool Foam::Module::checkIrregularSurfaceConnections::checkEdgeFaceConnections
                         {
                             removeCell[owner[faceI]] = true;
                             if (neighbour[faceI] < 0)
+                            {
                                 continue;
+                            }
                             removeCell[neighbour[faceI]] = true;
                         }
                     }
@@ -267,7 +275,9 @@ checkFaceGroupsAtBndVertices
             const label fI = pointFaces[bpI][pfI];
 
             if (faceGroup.found(fI))
+            {
                 continue;
+            }
 
             front.clear();
             front.append(fI);
@@ -282,7 +292,9 @@ checkFaceGroupsAtBndVertices
                     const label neiFace = faceFaces[fLabel][ffI];
 
                     if (faceGroup.found(neiFace))
+                    {
                         continue;
+                    }
 
                     if (Foam::Module::found(pointFaces, bpI, neiFace))
                     {

@@ -71,7 +71,9 @@ void Foam::Module::meshUntangler::optimizeNodePosition(const scalar /*tol*/)
 
         const DynamicList<point>& pts = cr.points();
         forAll(pts, pI)
+        {
             p += pts[pI];
+        }
 
         p /= pts.size();
 
@@ -79,7 +81,9 @@ void Foam::Module::meshUntangler::optimizeNodePosition(const scalar /*tol*/)
         {
             const scalar val = p[i];
             if ((val != val) || ((val - val) != (val - val)))
+            {
                 return;
+            }
         }
 
         points_[pointI_] = p;

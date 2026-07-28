@@ -51,9 +51,13 @@ void Foam::Module::tetCreatorOctree::createTetsFromSplitFaces()
             const label cLabel = pLeaves[pointI][fNodes[0]];
 
             if (cLabel < 0)
+            {
                 continue;
+            }
             if (cubeLabel[cLabel] < 0)
+            {
                 continue;
+            }
 
             if
             (

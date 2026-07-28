@@ -66,7 +66,9 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectors
     forAll(hairEdges_, hairEdgeI)
     {
         if (!(hairEdgeType_[hairEdgeI] & eType))
+        {
             continue;
+        }
 
         const label bpI = bp[hairEdges_[hairEdgeI][0]];
 
@@ -141,7 +143,9 @@ void Foam::Module::boundaryLayerOptimisation::calculateNormalVectorsSmother
     forAll(hairEdgeType_, heI)
     {
         if (!(hairEdgeType_[heI] & eType))
+        {
             continue;
+        }
 
         const edge& he = hairEdges_[heI];
         const label bpI = bp[he.start()];
@@ -292,9 +296,11 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairVectorsAtTheBoundary
                 }
 
                 if (beI < 0)
+                {
                     FatalErrorInFunction
                         << "Cannot find hair edge "
                         << hairEdgeI << abort(FatalError);
+                }
 
                 // find the vector at the same angle from both feature edges
                 forAllRow(edgeFaces, beI, befI)
@@ -305,10 +311,12 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairVectorsAtTheBoundary
                     const label pos = bf.which(he.start());
 
                     if (pos < 0)
+                    {
                         FatalErrorInFunction
                             << "Cannot find hair edge "
                             << hairEdgeI << " in face " << bf
                             << abort(FatalError);
+                    }
 
                     if (he.end() == bf.prevLabel(pos))
                     {
@@ -346,7 +354,9 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairVectorsAtTheBoundary
     forAll(hairVecs, hairEdgeI)
     {
         if (hairEdgeType_[hairEdgeI] & BOUNDARY)
+        {
             hairVecs[hairEdgeI] /= Foam::max(mag(hairVecs[hairEdgeI]), VSMALL);
+        }
     }
 }
 
@@ -373,12 +383,16 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsAtTheBoundary()
     else
     {
         if (nSmoothNormals_ == 0)
+        {
             return;
+        }
 
         // keep existing hair vectors
         # pragma omp parallel for schedule(dynamic, 50)
         forAll(hairEdges_, heI)
+        {
             hairVecs[heI] = hairEdges_[heI].vec(points);
+        }
     }
 
     Info<< "Smoothing boundary hair vectors" << endl;
@@ -451,7 +465,9 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsAtTheBoundary()
                         }
 
                         if (useNeighbour)
+                        {
                             newNormal += hairVecs[hairEdgeJ];
+                        }
                     }
                 }
                 else
@@ -558,7 +574,9 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsInside()
     else
     {
         if (nSmoothNormals_ == 0)
+        {
             return;
+        }
 
         Info<< "Using existing hair vectors" << endl;
 
@@ -647,8 +665,10 @@ void Foam::Module::boundaryLayerOptimisation::optimiseHairNormalsInside()
         forAll(newNormals, hairEdgeI)
         {
             if (hairEdgeType_[hairEdgeI] & INSIDE)
+            {
                 newNormals[hairEdgeI] /=
                     Foam::max(mag(newNormals[hairEdgeI]), VSMALL);
+            }
         }
 
         // transfer new hair vectors to the hairVecs list

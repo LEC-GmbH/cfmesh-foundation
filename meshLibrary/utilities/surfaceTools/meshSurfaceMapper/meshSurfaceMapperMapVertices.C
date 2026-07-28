@@ -84,7 +84,9 @@ void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurface()
     DynamicList<label> nodesToMap;
     nodesToMap.setSize(surfaceEngine_.boundaryPoints().size());
     forAll(nodesToMap, i)
+    {
         nodesToMap[i] = i;
+    }
 
     mapVerticesOntoSurface(nodesToMap);
 
@@ -137,7 +139,9 @@ void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurfacePatches()
     DynamicList<label> nodesToMap;
     nodesToMap.setSize(surfaceEngine_.boundaryPoints().size());
     forAll(nodesToMap, i)
+    {
         nodesToMap[i] = i;
+    }
 
     mapVerticesOntoSurfacePatches(nodesToMap);
 
@@ -187,7 +191,9 @@ void Foam::Module::meshSurfaceMapper::mapVerticesOntoSurfacePatches
         const label bpI = nodesToMap[nI];
 
         if (treatedPoint[bpI])
+        {
             continue;
+        }
 
         const point& p = points[bPoints[bpI]];
         point mapPoint;

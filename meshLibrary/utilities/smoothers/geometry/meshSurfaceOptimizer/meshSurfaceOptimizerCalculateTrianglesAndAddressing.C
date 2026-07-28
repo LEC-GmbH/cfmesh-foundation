@@ -37,8 +37,10 @@ License
 void Foam::Module::meshSurfaceOptimizer::calculateTrianglesAndAddressing() const
 {
     if (triMeshPtr_)
+    {
         FatalErrorInFunction
             << "Addressing is already calculated!" << abort(FatalError);
+    }
 
     triMeshPtr_ = new partTriMesh(*partitionerPtr_);
 }

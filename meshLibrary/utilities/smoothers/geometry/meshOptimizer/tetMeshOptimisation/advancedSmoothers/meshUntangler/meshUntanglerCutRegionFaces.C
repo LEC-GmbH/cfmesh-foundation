@@ -79,8 +79,12 @@ void Foam::Module::meshUntangler::cutRegion::findNewFaces()
             {
                 DynamicList<label> newEdge;
                 forAll(pointUsage, pI)
+                {
                     if (pointUsage[pI] == 1)
+                    {
                         newEdge.append(pI);
+                    }
+                }
 
                 if (newEdge.size() == 2)
                 {
@@ -112,12 +116,18 @@ void Foam::Module::meshUntangler::cutRegion::findNewFaces()
             const DynamicList<label>& f = cFaces[fI];
 
             forAll(f, eI)
+            {
                 ++edgeUsage[f[eI]];
+            }
         }
 
         forAll(edgeUsage, eI)
+        {
             if (edgeUsage[eI] == 1)
+            {
                 faceInPlane.append(eI);
+            }
+        }
 
         if (faceInPlane.size() > 2)
         {

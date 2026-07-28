@@ -36,7 +36,9 @@ License
 void Foam::Module::voronoiMeshExtractor::createAddressing() const
 {
     if (pointEdgesPtr_ || edgeTetsPtr_ || boundaryEdgePtr_ || edgesPtr_)
+    {
         return;
+    }
 
     pointEdgesPtr_ = new labelListList2D(tetCreator_.tetPoints().size());
     labelListList2D& pointEdges = *pointEdgesPtr_;
@@ -75,7 +77,9 @@ void Foam::Module::voronoiMeshExtractor::createAddressing() const
                 const label tetJ = pointTets[start][ptI];
 
                 if (findIndex(endTets, tetJ) < 0)
+                {
                     continue;
+                }
 
                 if (tetJ < tetI)
                 {
@@ -134,21 +138,27 @@ void Foam::Module::voronoiMeshExtractor::createAddressing() const
             }
 
             if (searchPoint < 0)
+            {
                 FatalErrorInFunction
                     << " invalid search point " << abort(FatalError);
+            }
 
             bool found(false);
             forAll(eTets, i)
             {
                 if (tetI == i)
+                {
                     continue;
+                }
 
                 const partTet& ptNei = tets[eTets[i]];
 
                 const label pos = ptNei.whichPosition(searchPoint);
 
                 if (pos < 0)
+                {
                     continue;
+                }
 
                 if (tetI < eTets.size()-1)
                 {
@@ -161,7 +171,9 @@ void Foam::Module::voronoiMeshExtractor::createAddressing() const
             }
 
             if (!found)
+            {
                 boundaryEdges[edgeI] = true;
+            }
         }
     }
 }
@@ -171,7 +183,9 @@ const Foam::Module::labelListList2D&
 Foam::Module::voronoiMeshExtractor::pointEdges() const
 {
     if (!pointEdgesPtr_)
+    {
         createAddressing();
+    }
 
     return *pointEdgesPtr_;
 }
@@ -181,7 +195,9 @@ const Foam::DynamicList<Foam::edge>&
 Foam::Module::voronoiMeshExtractor::edges() const
 {
     if (!edgesPtr_)
+    {
         createAddressing();
+    }
 
     return *edgesPtr_;
 }
@@ -191,7 +207,9 @@ const Foam::DynamicList<Foam::DynamicList<Foam::label>>&
 Foam::Module::voronoiMeshExtractor::edgeTets() const
 {
     if (!edgeTetsPtr_)
+    {
         createAddressing();
+    }
 
     return *edgeTetsPtr_;
 }
@@ -200,7 +218,9 @@ Foam::Module::voronoiMeshExtractor::edgeTets() const
 const Foam::boolList& Foam::Module::voronoiMeshExtractor::boundaryEdge() const
 {
     if (!boundaryEdgePtr_)
+    {
         createAddressing();
+    }
 
     return *boundaryEdgePtr_;
 }

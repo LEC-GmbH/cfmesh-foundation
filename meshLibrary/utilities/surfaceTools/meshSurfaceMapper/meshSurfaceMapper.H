@@ -88,7 +88,9 @@ class meshSurfaceMapper
         inline const meshSurfacePartitioner& meshPartitioner() const
         {
             if (!surfaceEnginePartitionerPtr_)
+            {
                 createMeshSurfacePartitioner();
+            }
 
             return *surfaceEnginePartitionerPtr_;
         }
@@ -98,7 +100,9 @@ class meshSurfaceMapper
         inline const triSurfacePartitioner& surfacePartitioner() const
         {
             if (!surfPartitionerPtr_)
+            {
                 createTriSurfacePartitioner();
+            }
 
             return *surfPartitionerPtr_;
         }

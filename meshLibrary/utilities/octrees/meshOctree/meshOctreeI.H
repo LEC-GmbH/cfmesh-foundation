@@ -48,8 +48,10 @@ Foam::Module::meshOctree::octantVectors() const
 inline Foam::label Foam::Module::meshOctree::numberOfLeaves() const
 {
     if (leaves_.size() == 0)
+    {
         FatalErrorInFunction
             << "Leaves are not yet created!!" << exit(FatalError);
+    }
 
     return leaves_.size();
 }
@@ -71,7 +73,9 @@ inline bool Foam::Module::meshOctree::hasContainedTriangles
 ) const
 {
     if (leaves_[leafI]->hasContainedElements())
+    {
         return true;
+    }
 
     return false;
 }
@@ -96,7 +100,9 @@ inline void Foam::Module::meshOctree::containedTriangles
     const DynamicList<label>& elmts =
         containedTriangles[leaves_[leafI]->containedElements()];
     forAll(elmts, elI)
+    {
         triangles.append(elmts[elI]);
+    }
 }
 
 
@@ -106,7 +112,9 @@ inline bool Foam::Module::meshOctree::hasContainedEdges
 ) const
 {
     if (leaves_[leafI]->hasContainedEdges())
+    {
         return true;
+    }
 
     return false;
 }
@@ -131,7 +139,9 @@ inline void Foam::Module::meshOctree::containedEdges
     const DynamicList<label>& elmts =
         containedEdges[leaves_[leafI]->containedEdges()];
     forAll(elmts, eI)
+    {
         edges.append(elmts[eI]);
+    }
 }
 
 

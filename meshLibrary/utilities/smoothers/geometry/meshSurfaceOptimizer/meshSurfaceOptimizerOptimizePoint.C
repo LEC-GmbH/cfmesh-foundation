@@ -45,7 +45,9 @@ void Foam::Module::meshSurfaceOptimizer::nodeDisplacementLaplacian
 ) const
 {
     if (vertexType_[bpI] & LOCKED)
+    {
         return;
+    }
 
     const point newP = newPositionLaplacian(bpI, transformIntoPlane);
 
@@ -61,7 +63,9 @@ void Foam::Module::meshSurfaceOptimizer::nodeDisplacementLaplacianFC
 ) const
 {
     if (vertexType_[bpI] & LOCKED)
+    {
         return;
+    }
 
     const point newP = newPositionLaplacianFC(bpI, transformIntoPlane);
 
@@ -77,7 +81,9 @@ void Foam::Module::meshSurfaceOptimizer::nodeDisplacementSurfaceOptimizer
 )
 {
     if (vertexType_[bpI] & LOCKED)
+    {
         return;
+    }
 
     const pointFieldPMG& points = surfaceEngine_.points();
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
@@ -85,7 +91,9 @@ void Foam::Module::meshSurfaceOptimizer::nodeDisplacementSurfaceOptimizer
     // project vertices onto the plane
     const vector& pNormal = surfaceEngine_.pointNormals()[bpI];
     if (magSqr(pNormal) < VSMALL)
+    {
         return;
+    }
 
     const plane pl(points[bPoints[bpI]], pNormal);
 
@@ -119,7 +127,9 @@ void Foam::Module::meshSurfaceOptimizer::edgeNodeDisplacement
 ) const
 {
     if (vertexType_[bpI] & LOCKED)
+    {
         return;
+    }
 
     const pointFieldPMG& points = surfaceEngine_.points();
     const labelList& bPoints = surfaceEngine_.boundaryPoints();

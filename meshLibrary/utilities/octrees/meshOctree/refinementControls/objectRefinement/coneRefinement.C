@@ -107,16 +107,22 @@ bool Foam::Module::coneRefinement::intersectsObject(const boundBox& bb) const
     const scalar d = magSqr(v);
 
     if (d < VSMALL)
+    {
         return false;
+    }
 
     const scalar t = ((c - p0_) & v) / d;
     if ((t > 1.0) || (t < 0.0))
+    {
         return false;
+    }
 
     const scalar r = r0_ + (r1_ - r0_)*t;
 
     if (mag(p0_ + t*v - c) < r)
+    {
         return true;
+    }
 
     return false;
 }

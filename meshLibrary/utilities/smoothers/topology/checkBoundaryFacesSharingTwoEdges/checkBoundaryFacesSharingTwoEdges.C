@@ -67,7 +67,9 @@ void Foam::Module::checkBoundaryFacesSharingTwoEdges::findFacesAtBndEdge()
             const label bpI = bp[f[pI]];
 
             if (bpI < 0)
+            {
                 continue;
+            }
 
             if (nBndFacesAtBndPoint_[bpI] == 2)
             {
@@ -113,7 +115,9 @@ void Foam::Module::checkBoundaryFacesSharingTwoEdges::findBndFacesAtBndVertex()
     nBndFacesAtBndPoint_ = 0;
 
     forAll(nBndFacesAtBndPoint_, bpI)
+    {
         nBndFacesAtBndPoint_[bpI] = pointFaces[bpI].size();
+    }
 }
 
 
@@ -150,7 +154,9 @@ void Foam::Module::checkBoundaryFacesSharingTwoEdges::removeExcessiveVertices()
             face& mf = const_cast<face&>(f);
             mf.setSize(newF.size());
             forAll(mf, i)
+            {
                 mf[i] = newF[i];
+            }
         }
     }
 
@@ -172,7 +178,9 @@ void Foam::Module::checkBoundaryFacesSharingTwoEdges::removeExcessiveVertices()
                 const label bpI = bp[f[pI]];
 
                 if (removeBndPoint_[bpI] && (nBndFacesAtBndPoint_[bpI] == 2))
+                {
                     continue;
+                }
 
                 newF.append(f[pI]);
             }
@@ -182,7 +190,9 @@ void Foam::Module::checkBoundaryFacesSharingTwoEdges::removeExcessiveVertices()
                 face& mf = const_cast<face&>(f);
                 mf.setSize(newF.size());
                 forAll(mf, i)
+                {
                     mf[i] = newF[i];
+                }
             }
         }
     }
@@ -263,7 +273,9 @@ void Foam::Module::checkBoundaryFacesSharingTwoEdges::findPoints
     forAll(nBndFacesAtBndPoint_, bpI)
     {
         if (nBndFacesAtBndPoint_[bpI] != 2)
+        {
             continue;
+        }
 
         badPoints.insert(bPoints[bpI]);
     }
@@ -296,7 +308,9 @@ bool Foam::Module::checkBoundaryFacesSharingTwoEdges::improveTopology()
         forAll(decomposeFace, faceI)
         {
             if (decomposeFace[faceI])
+            {
                 decomposeCell[owner[faceI]];
+            }
         }
 
         // decompose marked faces

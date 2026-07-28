@@ -79,7 +79,9 @@ void Foam::Module::meshOctree::findNearestSurfacePoint
         forAll(neighbours, neiI)
         {
             if (!neighbours[neiI]->hasContainedElements())
+            {
                 continue;
+            }
 
             const labelListList2D& ct =
                 neighbours[neiI]->slotPtr()->containedTriangles_;
@@ -103,7 +105,9 @@ void Foam::Module::meshOctree::findNearestSurfacePoint
         }
 
         if (!found)
+        {
             sizeVec *= 2.0;
+        }
 
     } while (!found && (iterationI++< 100));
 
@@ -162,7 +166,9 @@ void Foam::Module::meshOctree::findNearestSurfacePointInRegion
         forAll(neighbours, neiI)
         {
             if (!neighbours[neiI]->hasContainedElements())
+            {
                 continue;
+            }
 
             const labelListList2D& ct =
                 neighbours[neiI]->slotPtr()->containedTriangles_;
@@ -171,7 +177,9 @@ void Foam::Module::meshOctree::findNearestSurfacePointInRegion
             forAll(el, tI)
             {
                 if (surface_[el[tI]].region() != region)
+                {
                     continue;
+                }
 
                 const point p0 =
                     help::nearestPointOnTheTriangle(el[tI], surface_, p);
@@ -188,12 +196,16 @@ void Foam::Module::meshOctree::findNearestSurfacePointInRegion
         }
 
         if (!found)
+        {
             sizeVec *= 2.0;
+        }
 
     } while (!found && (iterationI++< 5));
 
     if (!found || (region < 0))
+    {
         Warning << "Could not find a boundary region for vertex " << p << endl;
+    }
 }
 
 
@@ -247,7 +259,9 @@ bool Foam::Module::meshOctree::findNearestEdgePoint
         forAll(neighbours, neiI)
         {
             if (!neighbours[neiI]->hasContainedEdges())
+            {
                 continue;
+            }
 
             const labelListList2D& containedEdges =
                 neighbours[neiI]->slotPtr()->containedEdges_;
@@ -277,7 +291,9 @@ bool Foam::Module::meshOctree::findNearestEdgePoint
                 }
 
                 if (!correctPatches)
+                {
                     continue;
+                }
 
                 const edge& e = edges[edgeI];
                 const point& sp = sPoints[e.start()];
@@ -296,7 +312,9 @@ bool Foam::Module::meshOctree::findNearestEdgePoint
         }
 
         if (!foundAnEdge)
+        {
             sizeVec *= 2.0;
+        }
 
     } while (!foundAnEdge && (++iterationI < 3));
 
@@ -334,7 +352,9 @@ bool Foam::Module::meshOctree::findNearestPointToEdge
     forAll(leavesInBox, leafI)
     {
         if (!leavesInBox[leafI]->hasContainedEdges())
+        {
             continue;
+        }
 
         const labelListList2D& containedEdges =
             leavesInBox[leafI]->slotPtr()->containedEdges_;
@@ -345,7 +365,9 @@ bool Foam::Module::meshOctree::findNearestPointToEdge
         {
             const DynamicList<label>& ef = edgeFaces[edges[eI]];
             if (ef.size() != 2)
+            {
                 continue;
+            }
 
             if
             (
@@ -435,7 +457,9 @@ bool Foam::Module::meshOctree::findNearestCorner
         forAll(neighbours, neiI)
         {
             if (!neighbours[neiI]->hasContainedElements())
+            {
                 continue;
+            }
 
             const labelListList2D& ct =
                 neighbours[neiI]->slotPtr()->containedTriangles_;
@@ -450,7 +474,9 @@ bool Foam::Module::meshOctree::findNearestCorner
                     const label spI = tri[pI];
 
                     if (checkedPoint.found(spI))
+                    {
                         continue;
+                    }
 
                     checkedPoint.insert(spI);
 
@@ -462,7 +488,9 @@ bool Foam::Module::meshOctree::findNearestCorner
                         const label eI = pEdges[spI][i];
 
                         if (eFacets[eI].size() != 2)
+                        {
                             break;
+                        }
 
                         if
                         (
@@ -517,7 +545,9 @@ bool Foam::Module::meshOctree::findNearestCorner
         }
 
         if (!found)
+        {
             sizeVec *= 2.0;
+        }
 
     } while (!found && (iterationI++< 3));
 
@@ -535,7 +565,9 @@ bool Foam::Module::meshOctree::findNearestPointToPatches
 ) const
 {
     if (patches.size() == 0)
+    {
         return false;
+    }
 
     nearest = p;
     scalar distSqApprox;
@@ -563,7 +595,9 @@ bool Foam::Module::meshOctree::findNearestPointToPatches
         distSq = magSqr(newP - p);
 
         if (Foam::magSqr(newP - nearest) < tol*distSq)
+        {
             break;
+        }
 
         nearest = newP;
     }

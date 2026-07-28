@@ -90,11 +90,15 @@ Foam::label Foam::Module::triSurfaceChecks::checkAngles
     {
         label setId = surf.facetSubsetIndex(subsetName);
         if (setId >= 0)
+        {
             surf.removeFacetSubset(setId);
+        }
         setId = surf.addFacetSubset(subsetName);
 
         forAll(badTriangles, i)
+        {
             surf.addFacetToSubset(setId, badTriangles[i]);
+        }
     }
 
     return badTriangles.size();
@@ -154,13 +158,17 @@ public:
                 const label eI = faceEdges_[tI][teI];
 
                 if (edgeFaces_[eI].size() != 2)
+                {
                     continue;
+                }
 
                 // ind the neighbour triangle over the edge
                 label nei = edgeFaces_[eI][0];
 
                 if (nei == tI)
+                {
                     nei = edgeFaces_[eI][1];
+                }
 
                 neiTriangles.append(nei);
             }
@@ -258,12 +266,16 @@ Foam::label Foam::Module::triSurfaceChecks::checkSurfaceManifolds
             const word sName = subsetPrefix + Foam::name(i);
             label setId = surf.facetSubsetIndex(sName);
             if (setId >= 0)
+            {
                 surf.removeFacetSubset(setId);
+            }
             groupIds[i] = surf.addFacetSubset(sName);
         }
 
         forAll(facetInManifold, tI)
+        {
             surf.addFacetToSubset(groupIds[facetInManifold[tI]], tI);
+        }
     }
 
     return nManifolds;
@@ -306,11 +318,15 @@ Foam::label Foam::Module::triSurfaceChecks::checkForHoles
     {
         label setId = surf.facetSubsetIndex(subsetName);
         if (setId >= 0)
+        {
             surf.removeFacetSubset(setId);
+        }
         setId = surf.addFacetSubset(subsetName);
 
         forAll(trianglesNearHoles, i)
+        {
             surf.addFacetToSubset(setId, trianglesNearHoles[i]);
+        }
     }
 
     return trianglesNearHoles.size();
@@ -335,7 +351,9 @@ Foam::label Foam::Module::triSurfaceChecks::checkForNonManifoldEdges
             # pragma omp critical
             {
                 forAllRow(edgeFacets, eI, efI)
+                {
                     badTriangles.append(edgeFacets[eI][efI]);
+                }
             }
         }
     }
@@ -356,11 +374,15 @@ Foam::label Foam::Module::triSurfaceChecks::checkForNonManifoldEdges
     {
         label setId = surf.facetSubsetIndex(subsetPrefix);
         if (setId >= 0)
+        {
             surf.removeFacetSubset(setId);
+        }
         setId = surf.addFacetSubset(subsetPrefix);
 
         forAll(trianglesNearHoles, i)
+        {
             surf.addFacetToSubset(setId, trianglesNearHoles[i]);
+        }
     }
 
     return trianglesNearHoles.size();
@@ -424,24 +446,30 @@ public:
                 const label eI = faceEdges_[tI][teI];
 
                 if (edgeFaces_[eI].size() != 2)
+                {
                     continue;
+                }
 
                 // ind the neighbour triangle over the edge
                 label nei = edgeFaces_[eI][0];
 
                 if (nei == tI)
+                {
                     nei = edgeFaces_[eI][1];
+                }
 
                 const labelledTri& neiTri = triangles_[nei];
 
                 // check the orientation
                 label pos(-1);
                 forAll(neiTri, i)
+                {
                     if (neiTri[i] == tri[teI])
                     {
                         pos = i;
                         break;
                     }
+                }
 
                 if (tri[tri.fcIndex(teI)] == neiTri[neiTri.rcIndex(pos)])
                 {
@@ -515,13 +543,17 @@ Foam::label Foam::Module::triSurfaceChecks::checkOrientation
             const word sName = subsetPrefix + Foam::name(i);
             label setId = surf.facetSubsetIndex(sName);
             if (setId >= 0)
+            {
                 surf.removeFacetSubset(setId);
+            }
 
             groupIds[i] = surf.addFacetSubset(sName);
         }
 
         forAll(triangleInGroup, tI)
+        {
             surf.addFacetToSubset(groupIds[triangleInGroup[tI]], tI);
+        }
     }
 
     return nGroups;
@@ -585,7 +617,9 @@ public:
                     const label tJ = edgeFaces_[eI][efI];
 
                     if (tJ == tI)
+                    {
                         continue;
+                    }
 
                     neiTriangles.append(tJ);
                 }
@@ -655,13 +689,17 @@ Foam::label Foam::Module::triSurfaceChecks::checkDisconnectedParts
             const word sName = subsetPrefix + Foam::name(i);
             label setId = surf.facetSubsetIndex(sName);
             if (setId >= 0)
+            {
                 surf.removeFacetSubset(setId);
+            }
 
             groupIds[i] = surf.addFacetSubset(sName);
         }
 
         forAll(triangleInRegion, tI)
+        {
             surf.addFacetToSubset(groupIds[triangleInRegion[tI]], tI);
+        }
     }
 
     return nGroups;
@@ -724,7 +762,9 @@ Foam::label Foam::Module::triSurfaceChecks::checkCollocatedPoints
                 forAll(nt, tpI)
                 {
                     if (nt[tpI] == pI)
+                    {
                         continue;
+                    }
 
                     if (magSqr(pts[nt[tpI]] - p) < sqr(distTol))
                     {
@@ -737,8 +777,12 @@ Foam::label Foam::Module::triSurfaceChecks::checkCollocatedPoints
     }
 
     forAll(collocated, pI)
+    {
         if (collocated[pI])
+        {
             collocatedPoints.append(pI);
+        }
+    }
 
     return collocatedPoints.size();
 }
@@ -757,11 +801,15 @@ Foam::label Foam::Module::triSurfaceChecks::checkCollocatedPoints
     {
         label setId = surf.pointSubsetIndex(subsetName);
         if (setId >= 0)
+        {
             surf.removePointSubset(setId);
+        }
         setId = surf.addPointSubset(subsetName);
 
         forAll(collocatedPoints, i)
+        {
             surf.addPointToSubset(setId, collocatedPoints[i]);
+        }
     }
 
     return collocatedPoints.size();
@@ -823,15 +871,21 @@ Foam::label Foam::Module::triSurfaceChecks::checkSelfIntersections
                 const labelledTri& nt = surf[triJ];
 
                 if (tI >= triJ)
+                {
                     continue;
+                }
 
                 DynamicList<label> sharedPoints;
                 sharedPoints.reserve(3);
                 forAll(nt, pJ)
                 {
                     forAll(tri, pI)
+                    {
                     if (tri[pI] == nt[pJ])
+                    {
                         sharedPoints.append(pJ);
+                    }
+                    }
                 }
 
                 if (sharedPoints.size() >= 2)
@@ -887,7 +941,9 @@ Foam::label Foam::Module::triSurfaceChecks::checkSelfIntersections
     forAll(intersected, tI)
     {
         if (intersected[tI])
+        {
             badFaces.append(tI);
+        }
     }
 
     return badFaces.size();
@@ -907,11 +963,15 @@ Foam::label Foam::Module::triSurfaceChecks::checkSelfIntersections
     {
         label setId = surf.facetSubsetIndex(subsetName);
         if (setId >= 0)
+        {
             surf.removeFacetSubset(setId);
+        }
         setId = surf.addFacetSubset(subsetName);
 
         forAll(badFacets, i)
+        {
             surf.addFacetToSubset(setId, badFacets[i]);
+        }
     }
 
     return badFacets.size();
@@ -976,7 +1036,9 @@ Foam::label Foam::Module::triSurfaceChecks::checkOverlaps
                 const labelledTri& nt = surf[triJ];
 
                 if (tI >= triJ)
+                {
                     continue;
+                }
 
                 const triangle<point, point> neiTri
                 (
@@ -1010,7 +1072,9 @@ Foam::label Foam::Module::triSurfaceChecks::checkOverlaps
     forAll(intersected, tI)
     {
         if (intersected[tI])
+        {
             badFaces.append(tI);
+        }
     }
 
     return badFaces.size();
@@ -1031,11 +1095,15 @@ Foam::label Foam::Module::triSurfaceChecks::checkOverlaps
     {
         label setId = surf.facetSubsetIndex(subsetName);
         if (setId >= 0)
+        {
             surf.removeFacetSubset(setId);
+        }
         setId = surf.addFacetSubset(subsetName);
 
         forAll(badFaces, i)
+        {
             surf.addFacetToSubset(setId, badFaces[i]);
+        }
     }
 
     return badFaces.size();

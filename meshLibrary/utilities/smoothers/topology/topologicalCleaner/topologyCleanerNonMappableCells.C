@@ -55,14 +55,18 @@ void Foam::Module::topologicalCleaner::checkNonMappableCells()
 
     label nBadCells(0);
     forAll(nBoundaryFaces, cI)
+    {
         if (nBoundaryFaces[cI] > 1)
         {
             ++nBadCells;
             decomposeCell_[cI] = true;
         }
+    }
 
     if (nBadCells != 0)
+    {
         changed_ = true;
+    }
 
     Info<< "Found " << nBadCells << " non - mappable cells" << endl;
     Info<< "Finished checking for non - mappable cells" << endl;
@@ -89,7 +93,9 @@ void Foam::Module::topologicalCleaner::checkNonMappableFaces()
         {
             const face& f = faces[faceI];
             forAll(f, pI)
+            {
                 boundaryVertex[f[pI]] = true;
+            }
         }
     }
 
@@ -110,8 +116,12 @@ void Foam::Module::topologicalCleaner::checkNonMappableFaces()
 
         DynamicList<label> bPos;
         forAll(f, pI)
+        {
             if (boundaryVertex[f[pI]])
+            {
                 bPos.append(pI);
+            }
+        }
 
         if
         (

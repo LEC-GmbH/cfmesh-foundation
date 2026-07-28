@@ -60,10 +60,14 @@ void Foam::Module::meshOctreeCube::findContainedEdges
             const label edgeI = faceEdges[facetI][feI];
 
             if (addEdge.found(edgeI))
+            {
                 continue;
+            }
 
             if (edgeFaces[edgeI].size() != 2)
+            {
                 continue;
+            }
 
             if (
                 surface[edgeFaces[edgeI][0]].region() !=
@@ -101,7 +105,9 @@ void Foam::Module::meshOctreeCube::refineCube2D
 )
 {
     if (!slotPtr)
+    {
         slotPtr = activeSlotPtr_;
+    }
 
     // set the cube label to -1
     cubeLabel_ = -1;
@@ -109,7 +115,9 @@ void Foam::Module::meshOctreeCube::refineCube2D
     // create subCubes
     FixedList<meshOctreeCube*, 8> subCubes;
     forAll(subCubes, scI)
+    {
         subCubes[scI] = nullptr;
+    }
 
     // create new cubes in the Z-order fashion
     for (label scI = 0; scI < 4; ++scI)
@@ -136,7 +144,9 @@ void Foam::Module::meshOctreeCube::refineCube2D
         // check if the subCube contain the element
         FixedList<DynamicList<label>, 4> elementsInSubCubes;
         forAll(elementsInSubCubes, scI)
+        {
             elementsInSubCubes[scI].reserve(512);
+        }
 
         forAllRow(containedElements, containedElementsLabel_, tI)
         {
@@ -145,6 +155,7 @@ void Foam::Module::meshOctreeCube::refineCube2D
 
             bool used(false);
             for (label scI = 0; scI < 4; ++scI)
+            {
                 if
                 (
                     subCubes[scI]->intersectsTriangleExact
@@ -158,6 +169,7 @@ void Foam::Module::meshOctreeCube::refineCube2D
                     used = true;
                     elementsInSubCubes[scI].append(elI);
                 }
+            }
 
             if (!used)
             {
@@ -180,6 +192,7 @@ void Foam::Module::meshOctreeCube::refineCube2D
 
         // find surface edges within the cube
         for (label scI = 0; scI < 4; ++scI)
+        {
             if (subCubes[scI]->hasContainedElements())
             {
                 subCubes[scI]->findContainedEdges
@@ -192,6 +205,7 @@ void Foam::Module::meshOctreeCube::refineCube2D
             {
                 subCubes[scI]->setCubeType(UNKNOWN);
             }
+        }
     }
 
 }
@@ -205,7 +219,9 @@ void Foam::Module::meshOctreeCube::refineCube
 )
 {
     if (!slotPtr)
+    {
         slotPtr = activeSlotPtr_;
+    }
 
     // set the cube label to -1
     cubeLabel_ = -1;
@@ -236,7 +252,9 @@ void Foam::Module::meshOctreeCube::refineCube
         // check if the subCube contain the element
         FixedList<DynamicList<label>, 8> elementsInSubCubes;
         forAll(elementsInSubCubes, scI)
+        {
             elementsInSubCubes[scI].reserve(512);
+        }
 
         forAllRow(containedElements, containedElementsLabel_, tI)
         {
@@ -245,6 +263,7 @@ void Foam::Module::meshOctreeCube::refineCube
 
             bool used(false);
             for (label scI = 0; scI < 8; ++scI)
+            {
                 if (
                     subCubes[scI]->intersectsTriangleExact
                     (
@@ -257,6 +276,7 @@ void Foam::Module::meshOctreeCube::refineCube
                     used = true;
                     elementsInSubCubes[scI].append(elI);
                 }
+            }
 
             if (!used)
             {
@@ -279,6 +299,7 @@ void Foam::Module::meshOctreeCube::refineCube
 
         // find surface edges within the cube
         for (label scI = 0; scI < 8; ++scI)
+        {
             if (subCubes[scI]->hasContainedElements())
             {
                 subCubes[scI]->findContainedEdges
@@ -291,6 +312,7 @@ void Foam::Module::meshOctreeCube::refineCube
             {
                 subCubes[scI]->setCubeType(UNKNOWN);
             }
+        }
     }
 
 }

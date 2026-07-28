@@ -133,7 +133,9 @@ void Foam::Module::polyMeshGenAddressing::updateGeometry
                 // estimate position of cell centre
                 vector cEst(vector::zero);
                 forAll(c, fI)
+                {
                     cEst += fCtrs[c[fI]];
+                }
                 cEst /= c.size();
 
                 forAll(c, fI)

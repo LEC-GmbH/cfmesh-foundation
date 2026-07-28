@@ -116,7 +116,9 @@ void Foam::Module::meshSurfaceEngineModifier::moveBoundaryVertex
         vectorField& pn = *surfaceEngine_.pointNormalsPtr_;
         vector n(vector::zero);
         forAllRow(pFaces, bpI, pfI)
+        {
             n += faceNormals[pFaces[bpI][pfI]];
+        }
 
         const scalar l = mag(n);
         if (l > VSMALL)
@@ -136,7 +138,9 @@ void Foam::Module::meshSurfaceEngineModifier::moveBoundaryVertex
             const label bpJ = pPoints[bpI][ppI];
             n = vector::zero;
             forAllRow(pFaces, bpJ, pfI)
+            {
                 n += faceNormals[pFaces[bpJ][pfI]];
+            }
 
             const scalar d = mag(n);
             if (d > VSMALL)
@@ -170,7 +174,9 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
     {
         const label bpI = updateBndNodes[i];
         forAllRow(pFaces, bpI, j)
+        {
             updateFaces[pFaces[bpI][j]] = true;
+        }
     }
 
     if (surfaceEngine_.faceCentresPtr_)
@@ -182,7 +188,9 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
         forAll(updateFaces, bfI)
         {
             if (updateFaces[bfI])
+            {
                 faceCentres[bfI] = stableFaceCentre(bFaces[bfI], points);
+            }
         }
     }
 
@@ -195,7 +203,9 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
         forAll(updateFaces, bfI)
         {
             if (updateFaces[bfI])
+            {
                 faceNormals[bfI] = stableFaceArea(bFaces[bfI], points);
+            }
         }
     }
 
@@ -214,7 +224,9 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
                 const face& bf = bFaces[pFaces[bpI][pfI]];
 
                 forAll(bf, pI)
+                {
                     updateBndPoint[bp[bf[pI]]] = true;
+                }
             }
         }
 
@@ -223,11 +235,15 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry
         forAll(updateBndPoint, bpI)
         {
             if (!updateBndPoint[bpI])
+            {
                 continue;
+            }
 
             vector n(vector::zero);
             forAllRow(pFaces, bpI, pfI)
+            {
                 n += faceNormals[pFaces[bpI][pfI]];
+            }
 
             const scalar l = mag(n);
             if (l > VSMALL)
@@ -252,7 +268,9 @@ void Foam::Module::meshSurfaceEngineModifier::updateGeometry()
 
     # pragma omp parallel for if (updateBndNodes.size() > 10000)
     forAll(updateBndNodes, bpI)
+    {
         updateBndNodes[bpI] = bpI;
+    }
 
     updateGeometry(updateBndNodes);
 }

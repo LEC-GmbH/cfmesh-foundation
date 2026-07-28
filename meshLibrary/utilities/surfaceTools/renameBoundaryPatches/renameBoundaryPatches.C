@@ -108,6 +108,7 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
             patchesToRename.setSize(keys.size());
 
             forAll(keys, patchI)
+            {
                 patchesToRename.set
                 (
                     patchI,
@@ -118,6 +119,7 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
                         false
                     ).clone()
                 );
+            }
         }
         else
         {
@@ -221,7 +223,9 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
     }
 
     if (newPatchI == 0)
+    {
         return;
+    }
 
     newPatchNames.setSize(newPatchI);
     newPatchTypes.setSize(newPatchI);
@@ -272,8 +276,10 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
         newBoundaryPatches
     );
     forAll(meshModifier.boundariesAccess(), patchI)
+    {
         meshModifier.boundariesAccess()[patchI].patchType() =
             newPatchTypes[patchI];
+    }
 
     Info<< "Finished renaming boundary patches" << endl;
 }
@@ -315,7 +321,9 @@ Foam::Module::renameBoundaryPatches::renameBoundaryPatches
     meshDict_(meshDict)
 {
     if (meshDict.found("renameBoundary"))
+    {
         calculateNewBoundary();
+    }
 
     if (!allowEmptyPatches)
     {

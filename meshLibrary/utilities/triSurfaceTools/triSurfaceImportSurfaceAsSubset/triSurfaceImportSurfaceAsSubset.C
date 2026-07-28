@@ -138,17 +138,23 @@ void Foam::Module::triSurfaceImportSurfaceAsSubset::addSurfaceAsSubset
 
         // skip sliver triangles
         if (magSqrTri < VSMALL)
+        {
             continue;
+        }
 
         vector normal = fNornals[nt];
         const scalar dSqNormal = magSqr(normal);
 
         // skip sliver triangles
         if (dSqNormal < VSMALL)
+        {
             continue;
+        }
 
         if (((nTri & normal)/(magSqrTri*dSqNormal)) > angleTol)
+        {
             nearestTriangle[triI] = nt;
+        }
     }
 
     meshOctree otherSurfOctree(importSurf);
@@ -202,25 +208,33 @@ void Foam::Module::triSurfaceImportSurfaceAsSubset::addSurfaceAsSubset
 
         // check if the triangle has been found
         if ((nt < 0) || (dSq > 0.09*maxEdgeDSq))
+        {
             continue;
+        }
 
         // skip firther checkes f it has found the same triangle
         if (nearestTriangle[nt] == triI)
+        {
             continue;
+        }
 
         vector nTri = fNornals[triI];
         const scalar magSqrTri = magSqr(nTri);
 
         // skip sliver triangles
         if (magSqrTri < VSMALL)
+        {
             continue;
+        }
 
         vector normal = importFaceNormals[nt];
         const scalar dSqNormal = magSqr(normal);
 
         // skip sliver triangles
         if (dSqNormal < VSMALL)
+        {
             continue;
+        }
 
         if (((nTri & normal)/(magSqrTri*dSqNormal)) > angleTol)
         {
@@ -241,7 +255,9 @@ void Foam::Module::triSurfaceImportSurfaceAsSubset::addSurfaceAsSubset
     forAll(nearestTriangle, triI)
     {
         if (nearestTriangle[triI] < 0)
+        {
             continue;
+        }
 
         surf_.addFacetToSubset(subsetId, nearestTriangle[triI]);
     }

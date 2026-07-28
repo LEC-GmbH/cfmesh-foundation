@@ -117,17 +117,23 @@ bool Foam::Module::hollowConeRefinement::intersectsObject
     const scalar d = magSqr(v);
 
     if (d < VSMALL)
+    {
         return false;
+    }
 
     const scalar t = ((c - p0_) & v) / d;
     if ((t > 1.0) || (t < 0.0))
+    {
         return false;
+    }
 
     const scalar rOuter = r0Outer_ + (r1Outer_ - r0Outer_)*t;
     const scalar rInner = r0Inner_ + (r1Inner_ - r0Inner_)*t;
 
     if ((mag(p0_ + t*v - c) < rOuter) && (mag(p0_ + t*v - c) > rInner))
+    {
         return true;
+    }
 
     return false;
 }

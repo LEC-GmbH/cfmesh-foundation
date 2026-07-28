@@ -111,7 +111,9 @@ void Foam::Module::objectRefinement::calculateAdditionalRefLevels
 )
 {
     if (cellSize_ < 0.0 || additionalRefLevel_ != 0)
+    {
         return;
+    }
 
     scalar s = globalCellSize;
 

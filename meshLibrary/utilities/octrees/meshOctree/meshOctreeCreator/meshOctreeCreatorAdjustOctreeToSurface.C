@@ -266,7 +266,9 @@ void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
             const meshOctreeCube& oc = *leaves[leafI];
 
             if (oc.cubeType() & meshOctreeCubeBasic::OUTSIDE)
+            {
                 continue;
+            }
 
             boundBox bb;
             oc.cubeBox(rootBox, bb.min(), bb.max());
@@ -284,7 +286,9 @@ void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
                 if (refObjects[oI].intersectsObject(bb))
                 {
                     if (oc.level() < refLevels[oI])
+                    {
                         refine = true;
+                    }
 
                     if (refThickness[oI] > VSMALL)
                     {

@@ -74,7 +74,9 @@ class checkIrregularSurfaceConnections
         inline const meshSurfaceEngine& surfaceEngine() const
         {
             if (!meshSurfacePtr_)
+            {
                 meshSurfacePtr_ = new meshSurfaceEngine(mesh_);
+            }
 
             return *meshSurfacePtr_;
         }

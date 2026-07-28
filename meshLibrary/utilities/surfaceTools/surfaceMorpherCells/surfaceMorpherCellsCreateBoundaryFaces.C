@@ -47,6 +47,7 @@ removeCellsWithAllVerticesAtTheBoundary()
 
     label nRemoved(0);
     forAll(cellFlags_, cellI)
+    {
         if (cellFlags_[cellI] & BOUNDARY)
         {
             const cell& c = cells[cellI];
@@ -56,11 +57,13 @@ removeCellsWithAllVerticesAtTheBoundary()
             const labelList labels = c.labels(faces);
 
             forAll(labels, lI)
+            {
                 if (!boundaryVertex_[labels[lI]])
                 {
                     allBoundary = false;
                     break;
                 }
+            }
 
             if (allBoundary)
             {
@@ -93,14 +96,17 @@ removeCellsWithAllVerticesAtTheBoundary()
             }
 
             forAll(nAppearances, eI)
+            {
                 if (nAppearances[eI] != 2)
                 {
                     ++nRemoved;
                     changed = true;
                     removeCells[cellI] = true;
                 }
+            }
 
         }
+    }
 
     if (nRemoved != 0)
     {
@@ -127,6 +133,7 @@ bool Foam::Module::surfaceMorpherCells::morphBoundaryFaces()
     bool changed(false);
 
     forAll(cells, cellI)
+    {
         if (cellFlags_[cellI] & BOUNDARY)
         {
             const cell& c = cells[cellI];
@@ -134,8 +141,12 @@ bool Foam::Module::surfaceMorpherCells::morphBoundaryFaces()
             DynamicList<label> bFaces;
 
             forAll(c, fI)
+            {
                 if (mesh_.faceIsInPatch(c[fI]) != -1)
+                {
                     bFaces.append(c[fI]);
+                }
+            }
 
             boolList mergedFaces(bFaces.size(), false);
 
@@ -156,15 +167,27 @@ bool Foam::Module::surfaceMorpherCells::morphBoundaryFaces()
 
                     direction nSharedEdges(0);
                     forAll(bEdges, eI)
+                    {
                         forAll(mEdges, eJ)
+                        {
                             if (bEdges[eI] == mEdges[eJ])
+                            {
                                 ++nSharedEdges;
+                            }
+                        }
+                    }
 
                     direction nSharedPoints(0);
                     forAll(bf, pI)
+                    {
                         forAll(mf, pJ)
+                        {
                             if (bf[pI] == mf[pJ])
+                            {
                                 ++nSharedPoints;
+                            }
+                        }
+                    }
 
                     if (
                         nSharedEdges &&
@@ -187,13 +210,16 @@ bool Foam::Module::surfaceMorpherCells::morphBoundaryFaces()
             newBoundaryPatches_.append(0);
 
             for (label i = 1; i < bFaces.size(); ++i)
+            {
                 if (!mergedFaces[i])
                 {
                     appendList(newBoundaryFaces_, faces[bFaces[i]]);
                     newBoundaryOwners_.append(cellI);
                     newBoundaryPatches_.append(0);
                 }
+            }
         }
+    }
 
     if (changed)
     {

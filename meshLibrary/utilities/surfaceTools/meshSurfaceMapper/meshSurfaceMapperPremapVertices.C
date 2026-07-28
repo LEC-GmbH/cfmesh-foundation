@@ -106,7 +106,9 @@ void Foam::Module::meshSurfaceMapper::preMapVertices(const label nIterations)
                 meshOctree_.containedTriangles(containedLeaves[clI], ct);
 
                 forAll(ct, i)
+                {
                     appendUniq(patches, surf[ct[i]].region());
+                }
             }
 
             scalar metric(VGREAT);

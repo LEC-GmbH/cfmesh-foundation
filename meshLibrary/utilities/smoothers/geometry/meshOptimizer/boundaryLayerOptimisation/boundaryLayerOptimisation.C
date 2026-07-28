@@ -94,7 +94,9 @@ Foam::Module::boundaryLayerOptimisation::~boundaryLayerOptimisation()
     deleteDemandDrivenData(partitionerPtr_);
 
     if (deleteMeshSurface_)
+    {
         deleteDemandDrivenData(meshSurfacePtr_);
+    }
 }
 
 
@@ -203,9 +205,11 @@ void Foam::Module::boundaryLayerOptimisation::readSettings
             if (optParams.readIfPresent("featureSizeFactor", featureSizeFactor))
             {
                 if (featureSizeFactor >= 1.0 || featureSizeFactor < 0.0)
+                {
                     FatalErrorInFunction
                         << "Feature size factor is out"
                         << " of a valid range 0 to 1" << exit(FatalError);
+                }
 
                 blOptimisation.setFeatureSizeFactor(featureSizeFactor);
             }
@@ -214,9 +218,11 @@ void Foam::Module::boundaryLayerOptimisation::readSettings
             if (optParams.readIfPresent("relThicknessTol", relThicknessTol))
             {
                 if (relThicknessTol >= 1.0 || relThicknessTol < 0.0)
+                {
                     FatalErrorInFunction
                         << "Relative thickness tolerance is out"
                         << " of a valid range 0 to 1" << exit(FatalError);
+                }
 
                 blOptimisation.setRelativeThicknessTolerance(relThicknessTol);
             }

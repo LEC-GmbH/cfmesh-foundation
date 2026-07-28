@@ -71,14 +71,18 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
     {
         bool create(true);
         forAllRow(pointEdges, pointI, eI)
+        {
             if (boundaryEdge[pointEdges[pointI][eI]])
             {
                 create = false;
                 break;
             }
+        }
 
         if (!create || (pointEdges[pointI].size() == 0))
+        {
             continue;
+        }
 
         cellLabel[pointI] = nCells;
         ++nCells;
@@ -91,11 +95,15 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
     forAll(boundaryEdge, edgeI)
     {
         if (boundaryEdge[edgeI])
+        {
             continue;
+        }
 
         const edge& e = edges[edgeI];
         if (cellLabel[e[0]] < 0 && cellLabel[e[1]] < 0)
+        {
             continue;
+        }
 
         faceLabel[edgeI] = nFaces;
         ++nFaces;
@@ -109,7 +117,9 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
     forAll(edges, edgeI)
     {
         if (faceLabel[edgeI] < 0)
+        {
             continue;
+        }
 
         const label faceI = faceLabel[edgeI];
 
@@ -118,7 +128,9 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
 
         // fill the faces with the node labels
         forAllRow(edgeTets, edgeI, pI)
+        {
             f[pI] = edgeTets[edgeI][pI];
+        }
 
         const edge& e = edges[edgeI];
         const label cOwn = cellLabel[e[0]];
@@ -131,9 +143,13 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
         }
 
         if (cOwn >= 0)
+        {
             ++nFacesInCell[cOwn];
+        }
         if (cNei >= 0)
+        {
             ++nFacesInCell[cNei];
+        }
     }
 
     // create cells
@@ -148,7 +164,9 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
     forAll(edges, edgeI)
     {
         if (faceLabel[edgeI] < 0)
+        {
             continue;
+        }
 
         const label faceI = faceLabel[edgeI];
         const edge& e = edges[edgeI];
@@ -156,9 +174,13 @@ void Foam::Module::voronoiMeshExtractor::createPolyMesh()
         const label cNei = cellLabel[e[1]];
 
         if (cOwn >= 0)
+        {
             cells[cOwn][nFacesInCell[cOwn]++] = faceI;
+        }
         if (cNei >= 0)
+        {
             cells[cNei][nFacesInCell[cNei]++] = faceI;
+        }
     }
 
     mesh_.clearAddressingData();

@@ -52,7 +52,9 @@ void Foam::Module::polyMeshGenModifier::removeFaces(const boolList& removeFace)
         if (!removeFace[faceI])
         {
             if (nFaces < faceI)
+            {
                 faces[nFaces].transfer(faces[faceI]);
+            }
 
             newFaceLabel[faceI] = nFaces;
             ++nFaces;

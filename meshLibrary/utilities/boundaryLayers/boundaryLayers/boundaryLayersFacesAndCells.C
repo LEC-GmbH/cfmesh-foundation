@@ -87,7 +87,9 @@ void Foam::Module::boundaryLayers::createNewFacesAndCells
             // create parallel face
             face newF(f.size());
             forAll(f, pI)
+            {
                 newF[pI] = newLabelForVertex_[f[pI]];
+            }
             cellFaces[fI++] = newF;
 
             appendList(newBoundaryFaces,newF);

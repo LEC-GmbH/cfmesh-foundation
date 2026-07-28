@@ -51,7 +51,9 @@ void Foam::Module::meshSurfacePartitioner::calculateCornersEdgesAndAddressing()
 
         # pragma omp for
         forAll(facePatch_, bfI)
+        {
             localMax = Foam::max(localMax, facePatch_[bfI]);
+        }
 
         # pragma omp critical
         nPatches = Foam::max(localMax, nPatches);
@@ -70,7 +72,9 @@ void Foam::Module::meshSurfacePartitioner::calculateCornersEdgesAndAddressing()
     forAll(edgeFaces, edgeI)
     {
         if (edgeFaces[edgeI].size() != 2)
+        {
             continue;
+        }
 
         const label patch0 = facePatch_[edgeFaces[edgeI][0]];
         const label patch1 = facePatch_[edgeFaces[edgeI][1]];
@@ -106,7 +110,9 @@ void Foam::Module::meshSurfacePartitioner::calculateCornersEdgesAndAddressing()
     forAll(pointFaces, bpI)
     {
         forAllRow(pointFaces, bpI, pfI)
+        {
             appendUniq(pointPatches_[bpI], facePatch_[pointFaces[bpI][pfI]]);
+        }
     }
 
     label counter = corners_.size();

@@ -70,7 +70,9 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeConcaveFaces()
         if (edgeType[eI] & meshSurfaceCheckEdgeTypes::PATCHEDGE)
         {
             if (edgeFaces[eI].size())
+            {
                 edgeInPatch[eI] = facePatch[edgeFaces[eI][0]];
+            }
 
             continue;
         }
@@ -108,10 +110,14 @@ void Foam::Module::correctEdgesBetweenPatches::decomposeConcaveFaces()
             const label bpI = bp[f[pI]];
 
             if (bpI < 0)
+            {
                 continue;
+            }
 
             if (concavePoint[bpI])
+            {
                 hasConcave = true;
+            }
 
             // points is at a concave edge
             // count the number of boundary edge
@@ -198,10 +204,14 @@ void Foam::Module::correctEdgesBetweenPatches::patchCorrection()
     forAll(edgeFaces, eI)
     {
         if (edgeFaces[eI].size() != 2)
+        {
             continue;
+        }
 
         if (facePatches[edgeFaces[eI][0]] != facePatches[edgeFaces[eI][1]])
+        {
             featureEdge[eI] = true;
+        }
     }
 
     // decompose bad faces into triangles

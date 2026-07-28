@@ -294,7 +294,9 @@ inline Foam::faceList Foam::Module::help::mergePatchFaces
             const DynamicList<label>& f = pfcs[faceI];
             face f_(f.size());
             forAll(f_, fJ)
+            {
                 f_[fJ] = f[fJ];
+            }
 
             patchFaces[counter++] = f_;
         }
@@ -1902,7 +1904,9 @@ inline Foam::label Foam::Module::help::numberOfFaceGroups
                     if (testEdge.found(edgeI))
                     {
                         if (!testEdge[edgeI])
+                        {
                             continue;
+                        }
                     }
                     else
                     {

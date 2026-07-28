@@ -113,7 +113,9 @@ void Foam::Module::meshSurfaceEngine::calculateBoundaryOwners() const
 
     # pragma omp parallel for schedule(static, 1)
     forAll(boundaryFaces, fI)
+    {
     owners[fI] = owner[start + fI];
+    }
 }
 
 

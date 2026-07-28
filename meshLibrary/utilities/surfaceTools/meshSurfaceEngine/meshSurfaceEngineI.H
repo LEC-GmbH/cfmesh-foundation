@@ -69,9 +69,11 @@ Foam::Module::meshSurfaceEngine::bp() const
     if (!bppPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateBoundaryFaces();
         calculateBoundaryNodes();
@@ -87,9 +89,11 @@ Foam::Module::meshSurfaceEngine::boundaryPoints() const
     if (!boundaryPointsPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateBoundaryNodes();
     }
@@ -104,9 +108,11 @@ Foam::Module::meshSurfaceEngine::boundaryFaces() const
     if (!boundaryFacesPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateBoundaryFaces();
     }
@@ -121,9 +127,11 @@ Foam::Module::meshSurfaceEngine::boundaryFacePatches() const
     if (!boundaryFacePatchPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateBoundaryFacePatches();
     }
@@ -138,9 +146,11 @@ Foam::Module::meshSurfaceEngine::faceOwners() const
     if (!boundaryFaceOwnersPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateBoundaryOwners();
     }
@@ -155,9 +165,11 @@ Foam::Module::meshSurfaceEngine::pointFaces() const
     if (!pointFacesPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculatePointFaces();
     }
@@ -172,9 +184,11 @@ Foam::Module::meshSurfaceEngine::pointInFaces() const
     if (!pointInFacePtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculatePointFaces();
     }
@@ -189,9 +203,11 @@ Foam::Module::meshSurfaceEngine::pointPoints() const
     if (!pointPointsPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculatePointPoints();
     }
@@ -206,9 +222,11 @@ Foam::Module::meshSurfaceEngine::pointNormals() const
     if (!pointNormalsPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculatePointNormals();
     }
@@ -223,9 +241,11 @@ Foam::Module::meshSurfaceEngine::faceNormals() const
     if (!faceNormalsPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateFaceNormals();
     }
@@ -240,9 +260,11 @@ Foam::Module::meshSurfaceEngine::faceCentres() const
     if (!faceCentresPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateFaceCentres();
     }
@@ -257,9 +279,11 @@ Foam::Module::meshSurfaceEngine::edges() const
     if (!edgesPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateEdgesAndAddressing();
     }
@@ -274,9 +298,11 @@ Foam::Module::meshSurfaceEngine::boundaryPointEdges() const
     if (!bpEdgesPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateEdgesAndAddressing();
     }
@@ -291,9 +317,11 @@ Foam::Module::meshSurfaceEngine::edgeFaces() const
     if (!edgeFacesPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateEdgeFacesAddressing();
     }
@@ -308,9 +336,11 @@ Foam::Module::meshSurfaceEngine::faceEdges() const
     if (!faceEdgesPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateFaceEdgesAddressing();
     }
@@ -325,9 +355,11 @@ Foam::Module::meshSurfaceEngine::edgePatches() const
     if (!edgePatchesPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateEdgePatchesAddressing();
     }
@@ -342,9 +374,11 @@ Foam::Module::meshSurfaceEngine::faceFaces() const
     if (!faceFacesPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Calculating addressing inside a parallel region."
                 << " This is not thread safe" << exit(FatalError);
+        }
 
         calculateFaceFacesAddressing();
     }

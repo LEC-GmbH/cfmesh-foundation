@@ -77,7 +77,9 @@ void Foam::Module::triSurfaceRemoveFacets::markFacetsForRemoval
             surf_.facetsInSubset(facetSubsetsIDs[i], containedFacets);
 
             forAll(containedFacets, cfI)
+            {
                 removeFacet[containedFacets[cfI]] = true;
+            }
         }
     }
 }
@@ -98,14 +100,18 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
     forAll(removeFacet, triI)
     {
         if (removeFacet[triI])
+        {
             continue;
+        }
 
         const labelledTri& tri = surf_[triI];
 
         forAll(tri, pI)
         {
             if (newPointLabel[tri[pI]] == -1)
+            {
                 newPointLabel[tri[pI]] = pointCounter++;
+            }
         }
 
         newFacetLabel[triI] = facetCounter++;
@@ -116,7 +122,9 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
     forAll(newPointLabel, pI)
     {
         if (newPointLabel[pI] < 0)
+        {
             continue;
+        }
 
         newPts[newPointLabel[pI]] = points[pI];
     }
@@ -131,7 +139,9 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
     forAll(newFacetLabel, triI)
     {
         if (newFacetLabel[triI] < 0)
+        {
             continue;
+        }
 
         const labelledTri& tri = surf_[triI];
 
@@ -162,7 +172,9 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
         const edge& e = featureEdges[feI];
 
         if ((newPointLabel[e.start()] < 0) || (newPointLabel[e.end()] < 0))
+        {
             continue;
+        }
 
         // find global edge label
         label eI(-1);
@@ -177,7 +189,9 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
         }
 
         if (eI < 0)
+        {
             continue;
+        }
 
         // check if the edge is attached to at least one triangle
         bool foundTriangle(false);
@@ -190,7 +204,9 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
             }
         }
         if (!foundTriangle)
+        {
             continue;
+        }
 
         newFeatureEdgeLabel[feI] = edgeCounter++;
     }
@@ -200,7 +216,9 @@ void Foam::Module::triSurfaceRemoveFacets::removeFacets()
     forAll(newFeatureEdgeLabel, eI)
     {
         if (newFeatureEdgeLabel[eI] < 0)
+        {
             continue;
+        }
 
         const edge& e = featureEdges[eI];
 

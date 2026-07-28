@@ -133,7 +133,9 @@ void Foam::Module::meshOctreeCube::findLeaves
             const meshOctreeCube* scPtr = subCubesPtr_[scI];
 
             if (scPtr)
+            {
                 scPtr->findLeaves(leaves);
+            }
         }
     }
 }

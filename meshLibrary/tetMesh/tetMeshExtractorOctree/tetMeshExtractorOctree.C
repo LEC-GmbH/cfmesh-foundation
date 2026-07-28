@@ -47,7 +47,9 @@ void Foam::Module::tetMeshExtractorOctree::createPoints()
 
     # pragma omp parallel for
     forAll(tetPoints, pointI)
+    {
         points[pointI] = tetPoints[pointI];
+    }
 }
 
 
@@ -76,7 +78,9 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
         // set face labels
         # pragma omp for
         forAll(removeFace, faceI)
+        {
             removeFace[faceI] = false;
+        }
 
         // set sizes of cells and create all faces
         # pragma omp for schedule(dynamic, 20)
@@ -153,7 +157,9 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
                     // do not check cells with greater labels
                     // they cannot be face owners
                     if (pTets[pointI][ptI] >= cellI)
+                    {
                         continue;
+                    }
 
                     const cell& otherTet = cells[pTets[pointI][ptI]];
 
@@ -163,7 +169,9 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
                         // do not compare faces with greater labels
                         // they shall not be removed here
                         if (otherTet[ofI] >= c[fI])
+                        {
                             continue;
+                        }
 
                         // check if the faces are equal
                         if (f == faces[otherTet[ofI]])
@@ -186,7 +194,9 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
         if (!removeFace[faceI])
         {
             if (nFaces < faceI)
+            {
                 faces[nFaces].transfer(faces[faceI]);
+            }
 
             newFaceLabel[faceI] = nFaces;
             ++nFaces;
@@ -207,12 +217,16 @@ void Foam::Module::tetMeshExtractorOctree::createPolyMesh()
         forAll(c, fI)
         {
             if (newFaceLabel[c[fI]] != -1)
+            {
                 newC.append(newFaceLabel[c[fI]]);
+            }
         }
 
         c.setSize(newC.size());
         forAll(c, fI)
+        {
         c[fI] = newC[fI];
+        }
     }
 }
 

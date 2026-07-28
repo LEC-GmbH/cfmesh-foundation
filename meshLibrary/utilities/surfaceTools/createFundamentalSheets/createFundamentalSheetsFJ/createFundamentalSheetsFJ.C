@@ -58,7 +58,9 @@ namespace Module
 void Foam::Module::createFundamentalSheetsFJ::createInitialSheet()
 {
     if (!createWrapperSheet_)
+    {
         return;
+    }
 
     const PtrList<boundaryPatch>& boundaries = mesh_.boundaries();
 
@@ -78,7 +80,9 @@ void Foam::Module::createFundamentalSheetsFJ::createInitialSheet()
 
     # pragma omp parallel for
     for (label faceI = start; faceI < end; ++faceI)
+    {
         extrudeFaces[faceI - start] = labelPair(faceI, owner[faceI]);
+    }
 
     extrudeLayer(mesh_, extrudeFaces);
 }
@@ -100,7 +104,9 @@ void Foam::Module::createFundamentalSheetsFJ::createSheetsAtFeatureEdges()
         const label end = start + boundaries[patchI].patchSize();
 
         for (label faceI = start; faceI < end; ++faceI)
+        {
             patchCell[owner[faceI]] = true;
+        }
 
         DynamicList<labelPair> front;
 
@@ -111,14 +117,20 @@ void Foam::Module::createFundamentalSheetsFJ::createSheetsAtFeatureEdges()
             forAll(c, fI)
             {
                 if (neighbour[c[fI]] < 0)
+                {
                     continue;
+                }
 
                 label nei = owner[c[fI]];
                 if (nei == owner[faceI])
+                {
                     nei = neighbour[c[fI]];
+                }
 
                 if (!patchCell[nei])
+                {
                     front.append(labelPair(c[fI], nei));
+                }
             }
         }
 

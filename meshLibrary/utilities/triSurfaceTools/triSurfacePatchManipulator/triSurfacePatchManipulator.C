@@ -68,7 +68,9 @@ void Foam::Module::triSurfacePatchManipulator::detectedSurfaceRegions
     DynamicList<label> nFacetsInPatch(nPatches_, 0);
 
     forAll(facetInPatch_, triI)
+    {
         ++nFacetsInPatch[facetInPatch_[triI]];
+    }
 
     setSizeAndRowSize(graph, nFacetsInPatch);
 
@@ -132,6 +134,7 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
     DynamicList<label> newFacetLabel(newTriangles.size(), -1);
 
     forAll(facetsInPatch, patchI)
+    {
         forAllRow(facetsInPatch, patchI, tI)
         {
             newFacetLabel[facetsInPatch[patchI][tI]] = counter;
@@ -139,6 +142,7 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
             tria.region() = patchI;
             newTriangles[counter++] = tria;
         }
+    }
 
     // create and return a new surface mesh
     triSurf* newSurfPtr =
@@ -182,7 +186,9 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
         surf_.pointsInSubset(subsetIDs[subsetI], pointsInSubset);
 
         forAll(pointsInSubset, i)
+        {
             newSurfPtr->addPointToSubset(newID, pointsInSubset[i]);
+        }
     }
 
     if (meshDictPtr)
@@ -194,8 +200,10 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
 
         const geometricSurfacePatchList& origPatches = surf_.patches();
         forAll(origPatches, patchI)
+        {
             patchTypes(origPatches[patchI].name()) =
                 origPatches[patchI].geometricType();
+        }
 
         // find the mapping of patch ids
         List<labelHashSet> patchToNewPatches(origPatches.size());

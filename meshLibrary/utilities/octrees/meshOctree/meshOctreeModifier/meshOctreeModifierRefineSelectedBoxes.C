@@ -54,8 +54,12 @@ void Foam::Module::meshOctreeModifier::markAdditionalLayers
     {
         DynamicList<label> activeLeaves;
         forAll(leaves, leafI)
+        {
             if (refineBox[leafI] == i)
+            {
                 activeLeaves.append(leafI);
+            }
+        }
 
         # pragma omp parallel for private(neiLeaves) schedule(dynamic, 20)
         forAll(activeLeaves, lI)
@@ -72,10 +76,14 @@ void Foam::Module::meshOctreeModifier::markAdditionalLayers
                 const label neiLabel = neiLeaves[posI];
 
                 if (neiLabel < 0)
+                {
                     continue;
+                }
 
                 if (!refineBox[neiLabel])
+                {
                     refineBox[neiLabel] = i + 1;
+                }
             }
         }
 
@@ -97,8 +105,12 @@ void Foam::Module::meshOctreeModifier::markAdditionalLayersOfFaceNeighbours
     {
         DynamicList<label> activeLeaves;
         forAll(leaves, leafI)
+        {
             if (refineBox[leafI] == i)
+            {
                 activeLeaves.append(leafI);
+            }
+        }
 
         # pragma omp parallel for private(neiLeaves) schedule(dynamic, 20)
         forAll(activeLeaves, lI)
@@ -115,10 +127,14 @@ void Foam::Module::meshOctreeModifier::markAdditionalLayersOfFaceNeighbours
                 const label neiLabel = neiLeaves[posI];
 
                 if (neiLabel < 0)
+                {
                     continue;
+                }
 
                 if (!refineBox[neiLabel])
+                {
                     refineBox[neiLabel] = i + 1;
+                }
             }
         }
 
@@ -142,7 +158,9 @@ Foam::label Foam::Module::meshOctreeModifier::markAdditionalLayers
     forAll(nLayers, leafI)
     {
         if (nLayers[leafI] < 1)
+        {
             continue;
+        }
 
         leavesForLayer[nLayers[leafI]].append(leafI);
     }
@@ -155,7 +173,9 @@ Foam::label Foam::Module::meshOctreeModifier::markAdditionalLayers
         const DynamicList<label>& activeLeaves = leavesForLayer[layerI];
 
         if (activeLeaves.size() == 0 )
+        {
             continue;
+        }
 
         // find the max required refinement level
         direction maxLevel(0);
@@ -166,7 +186,9 @@ Foam::label Foam::Module::meshOctreeModifier::markAdditionalLayers
 
             # pragma omp for schedule(dynamic, 50)
             forAll(activeLeaves, i)
+            {
                 localMax = Foam::max(localMax, targetRefLevel[activeLeaves[i]]);
+            }
 
             # pragma omp critical
             maxLevel = Foam::max(localMax, maxLevel);
@@ -191,7 +213,9 @@ Foam::label Foam::Module::meshOctreeModifier::markAdditionalLayers
             }
 
             if (counter == 0)
+            {
                 continue;
+            }
 
             // mark additional cells at this refinement level
             markAdditionalLayersOfFaceNeighbours(markedBoxes, layerI);
@@ -202,10 +226,14 @@ Foam::label Foam::Module::meshOctreeModifier::markAdditionalLayers
             forAll(markedBoxes, leafI)
             {
                 if (markedBoxes[leafI] < 2)
+                {
                     continue;
+                }
 
                 if (leaves[leafI]->level() >= levelI)
+                {
                     continue;
+                }
 
                 if (!refineBox[leafI])
                 {
@@ -283,8 +311,12 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxes
 
     label nRefined(0);
     forAll(refineBox, leafI)
+    {
         if (refineBox[leafI])
+        {
             ++nRefined;
+        }
+    }
 
     reserveSlotCapacity(nRefined);
 
@@ -298,7 +330,9 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxes
             forAll(leaves, leafI)
             {
                 if (refineBox[leafI])
+                {
                     leaves[leafI]->refineCube(surface, rootBox, slotPtr);
+                }
             }
         }
         else
@@ -307,7 +341,9 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxes
             forAll(leaves, leafI)
             {
                 if (refineBox[leafI])
+                {
                     leaves[leafI]->refineCube2D(surface, rootBox, slotPtr);
+                }
             }
         }
     }
@@ -346,7 +382,9 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
         forAll(refineBox, leafI)
         {
             if (refineBox[leafI])
+            {
                 localMax = Foam::max(localMax, leaves[leafI]->level());
+            }
         }
 
         # pragma omp critical
@@ -358,7 +396,9 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
     forAll(refineBox, leafI)
     {
         if (!refineBox[leafI])
+        {
             continue;
+        }
 
         leavesForLevel[leaves[leafI]->level()].append(leafI);
     }
@@ -369,7 +409,9 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
         const DynamicList<label>& activeLeaves = leavesForLevel[levelI];
 
         if (activeLeaves.size() == 0 )
+        {
             continue;
+        }
 
         DynamicList<label> nLayersForActive;
         nLayersForActive.setSize(activeLeaves.size());
@@ -427,7 +469,9 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
                 innerMap[nLayers];
 
             if (selectedLeaves.size() == 0 )
+            {
                 continue;
+            }
 
             label nMarked;
             do
@@ -441,7 +485,9 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
                 forAll(selectedLeaves, i)
                 {
                     if (!selectedLeaves[i]->isLeaf())
+                    {
                         continue;
+                    }
 
                     markedLeaves[selectedLeaves[i]->cubeLabel()] = 1;
                     ++nMarked;
@@ -449,7 +495,9 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
 
                 // get out of the do-while loop if there are no selected leaves
                 if (nMarked == 0)
+                {
                     break;
+                }
 
                 // mark additional boxes for refinement
                 markAdditionalLayers(markedLeaves, nLayers);
@@ -459,7 +507,9 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
                 forAll(markedLeaves, leafI)
                 {
                     if (markedLeaves[leafI])
+                    {
                         activeLeaves.append(leafI);
+                    }
                 }
 
                 // check if there exist leaves at lower refinement level
@@ -489,7 +539,9 @@ void Foam::Module::meshOctreeModifier::refineSelectedBoxesAndAdditionalLayers
                     forAll(activeLeaves, i)
                     {
                         if (leaves[activeLeaves[i]]->level() == levelI)
+                        {
                             markedLeaves[activeLeaves[i]] = 0;
+                        }
                     }
                 }
 

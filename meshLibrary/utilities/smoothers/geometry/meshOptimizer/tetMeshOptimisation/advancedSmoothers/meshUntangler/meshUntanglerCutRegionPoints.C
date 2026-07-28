@@ -104,23 +104,31 @@ void Foam::Module::meshUntangler::cutRegion::removeCoincidentVertices()
     {
         if (newLabelForPoint[pI] != -1) continue;
         for (label pJ = pI + 1; pJ < points.size(); ++pJ)
+        {
             if (mag(points[pJ] - points[pI]) < tol_)
             {
                 newLabelForPoint[pJ] = pI;
                 found = true;
             }
+        }
     }
 
     if (!found)
+    {
         return;
+    }
 
     forAll(edges, eI)
     {
         edge& e = edges[eI];
         if (newLabelForPoint[e.start()] != -1)
+        {
             e.start() = newLabelForPoint[e.start()];
+        }
         if (newLabelForPoint[e.end()] != -1)
+        {
             e.end() = newLabelForPoint[e.end()];
+        }
     }
 
     // remove edges which contain the same vertex
@@ -129,11 +137,13 @@ void Foam::Module::meshUntangler::cutRegion::removeCoincidentVertices()
 
     cEdgesPtr_ = new DynamicList<edge>();
     forAll(edges, eI)
+    {
         if (edges[eI].start() != edges[eI].end())
         {
             cEdgesPtr_->append(edges[eI]);
             newEdgeLabel_[eI] = edgeLabel++;
         }
+    }
 
     deleteDemandDrivenData(edgesPtr_);
     edgesPtr_ = cEdgesPtr_;
@@ -149,8 +159,12 @@ void Foam::Module::meshUntangler::cutRegion::removeCoincidentVertices()
         DynamicList<label> nf;
 
         forAll(f, eI)
+        {
             if (newEdgeLabel_[f[eI]] != -1)
+            {
                 nf.append(newEdgeLabel_[f[eI]]);
+            }
+        }
 
         if (nf.size() > 2)
         {

@@ -55,7 +55,9 @@ void Foam::Module::meshOctree::findEdgesInBox
         const meshOctreeCube& oc = *neighbours[neiI];
 
         if (!oc.hasContainedEdges() || !oc.isLeaf())
+        {
             continue;
+        }
 
         const label ceI = oc.containedEdges();
         const labelListList2D& ce = oc.slotPtr()->containedEdges_;
@@ -71,7 +73,9 @@ void Foam::Module::meshOctree::findEdgesInBox
                 );
 
             if (magSqr(p - c) < dSq)
+            {
                 edges.append(ce[ceI][i]);
+            }
         }
     }
 }
@@ -95,7 +99,9 @@ void Foam::Module::meshOctree::findTrianglesInBox
         const meshOctreeCube& oc = *neighbours[neiI];
 
         if (!oc.hasContainedElements() || !oc.isLeaf())
+        {
             continue;
+        }
 
         const label elI = oc.containedElements();
         const labelListList2D& ct = oc.slotPtr()->containedTriangles_;
@@ -105,7 +111,9 @@ void Foam::Module::meshOctree::findTrianglesInBox
 
             const point p = help::nearestPointOnTheTriangle(tI, surface_, c);
             if (Foam::magSqr(p - c) < dSq)
+            {
                 triaLabels.append(tI);
+            }
         }
     }
 }
@@ -161,7 +169,9 @@ void Foam::Module::meshOctree::findLeavesContainedInBox
     forAll(cb, cI)
     {
         if (cb[cI]->isLeaf())
+        {
             containedCubes.append(cb[cI]->cubeLabel());
+        }
     }
 }
 

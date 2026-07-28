@@ -126,7 +126,9 @@ void Foam::Module::meshOctreeInsideOutside::frontalMarking()
     const meshOctree& octree = octreeModifier_.octree();
 
     if (leaves.size() > 1000)
+    {
         nThreads = 3*omp_get_num_procs();
+    }
 
     # pragma omp parallel num_threads(nThreads) \
     private(frontCubes, neighbours)
@@ -144,9 +146,13 @@ void Foam::Module::meshOctreeInsideOutside::frontalMarking()
         for (label leafI = minLeaf; leafI < maxLeaf; ++leafI)
         {
             if (leaves[leafI]->hasContainedElements())
+            {
                 continue;
+            }
             if (cubeGroup_[leafI] != -1)
+            {
                 continue;
+            }
 
             label groupI;
             # pragma omp critical
@@ -170,7 +176,9 @@ void Foam::Module::meshOctreeInsideOutside::frontalMarking()
                     if ((nei >= minLeaf) && (nei < maxLeaf))
                     {
                         if (cubeGroup_[nei] != -1)
+                        {
                             continue;
+                        }
 
                         if (leaves[nei]->hasContainedElements())
                         {
@@ -206,7 +214,9 @@ void Foam::Module::meshOctreeInsideOutside::frontalMarking()
             # pragma omp critical
             {
                 if (groupI >= boundaryDATACubes_.size())
+                {
                     boundaryDATACubes_.setSize(groupI + 1);
+                }
 
                 setRow(boundaryDATACubes_, groupI, neiDATACubes);
                 groupType_(groupI) = cType;
@@ -224,9 +234,11 @@ void Foam::Module::meshOctreeInsideOutside::frontalMarking()
             const label neiGroup = cubeGroup_[lp.second()];
 
             if ((neiGroup >= nGroup) || (groupI >= nGroup))
+            {
                 FatalError << "neiGroup " << neiGroup
                     << " groupI " << groupI << " are >= than "
                     << "nGroups " << nGroup << abort(FatalError);
+            }
 
             if (neiGroup != -1)
             {
@@ -258,7 +270,9 @@ void Foam::Module::meshOctreeInsideOutside::frontalMarking()
     forAll(cubeGroup_, leafI)
     {
         if (cubeGroup_[leafI] < 0)
+        {
             continue;
+        }
 
         ++nCubesInGroup[cubeGroup_[leafI]];
     }
@@ -270,7 +284,9 @@ void Foam::Module::meshOctreeInsideOutside::frontalMarking()
         const label groupI = cubeGroup_[leafI];
 
         if (groupI < 0)
+        {
             continue;
+        }
 
         cubesInGroup_[groupI][--nCubesInGroup[groupI]] = leafI;
     }
@@ -313,7 +329,9 @@ void Foam::Module::meshOctreeInsideOutside::markOutsideCubes()
             }
 
             if (nChanged != 0)
+            {
                 keepUpdating = true;
+            }
 
         } while (nChanged != 0);
 
@@ -323,7 +341,9 @@ void Foam::Module::meshOctreeInsideOutside::markOutsideCubes()
     forAllConstIter(Map<direction>, groupType_, it)
     {
         if (it.key() < 0)
+        {
             continue;
+        }
 
         if (it() & meshOctreeCubeBasic::OUTSIDE)
         {
@@ -331,14 +351,18 @@ void Foam::Module::meshOctreeInsideOutside::markOutsideCubes()
 
             // set the cube type to OUTSIDE
             forAllRow(cubesInGroup_, groupI, i)
+            {
                 leaves[cubesInGroup_[groupI][i]]->setCubeType
                 (
                     meshOctreeCube::OUTSIDE
                 );
+            }
 
             // set true to the collected DATA boxes
             forAllRow(boundaryDATACubes_, groupI, neiI)
+            {
                 hasOutsideNeighbour_[boundaryDATACubes_[groupI][neiI]] = true;
+            }
         }
     }
 }
@@ -363,6 +387,7 @@ void Foam::Module::meshOctreeInsideOutside::reviseDataBoxes()
         # pragma omp parallel for if (leaves.size() > 1000) \
         private(neighbours) schedule(dynamic, 20) reduction(+ : nMarked)
         forAll(leaves, leafI)
+        {
             if (
                 (leaves[leafI]->cubeType() & meshOctreeCube::DATA) &&
                 !hasOutsideNeighbour_[leafI]
@@ -375,10 +400,14 @@ void Foam::Module::meshOctreeInsideOutside::reviseDataBoxes()
                     oc->slotPtr()->containedTriangles_;
                 const DynamicList<label>& el = ct[oc->containedElements()];
                 forAll(el, elI)
+                {
                     appendUniq(patches, surface[el[elI]].region());
+                }
 
                 if (patches.size() > 1)
+                {
                     continue;
+                }
 
                 // check if there exist neighbours
                 // which have some DATA neighbours
@@ -388,7 +417,9 @@ void Foam::Module::meshOctreeInsideOutside::reviseDataBoxes()
                     const label nei = neighbours[neiI];
 
                     if (nei < 0)
+                    {
                         continue;
+                    }
 
                     if (hasOutsideNeighbour_[nei])
                     {
@@ -399,6 +430,7 @@ void Foam::Module::meshOctreeInsideOutside::reviseDataBoxes()
                     }
                 }
             }
+        }
 
     } while (nMarked != 0);
 
@@ -418,7 +450,9 @@ void Foam::Module::meshOctreeInsideOutside::markInsideCubes()
         const label groupI = it.key();
 
         if (groupI < 0)
+        {
             continue;
+        }
 
         if (it() & meshOctreeCubeBasic::UNKNOWN)
         {
@@ -465,7 +499,9 @@ void Foam::Module::meshOctreeInsideOutside::markInsideCubes()
             }
 
             if (nChanged != 0)
+            {
                 keepUpdating = true;
+            }
 
         } while (nChanged != 0);
 
@@ -475,7 +511,9 @@ void Foam::Module::meshOctreeInsideOutside::markInsideCubes()
     forAllConstIter(Map<direction>, groupType_, it)
     {
         if (it.key() < 0)
+        {
             continue;
+        }
 
         if (it() & meshOctreeCubeBasic::INSIDE)
         {
@@ -483,10 +521,12 @@ void Foam::Module::meshOctreeInsideOutside::markInsideCubes()
 
             // set the cube type to OUTSIDE
             forAllRow(cubesInGroup_, groupI, i)
+            {
                 leaves[cubesInGroup_[groupI][i]]->setCubeType
                 (
                     meshOctreeCube::INSIDE
                 );
+            }
         }
     }
 }

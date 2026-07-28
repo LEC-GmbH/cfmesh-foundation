@@ -76,7 +76,9 @@ void Foam::Module::workflowControls::setStepCompleted() const
 
     DynamicList<word> completedSteps;
     if (mesh_.metaData().found("completedSteps"))
+    {
         completedSteps = wordList(mesh_.metaData().lookup("completedSteps"));
+    }
 
     completedSteps.append(currentStep_);
 
@@ -170,8 +172,10 @@ bool Foam::Module::workflowControls::stopAfterCurrentStep() const
         }
 
         if (!writeSuccess)
+        {
             FatalErrorInFunction
                 << "Mesh was not written on disk" << exit(FatalError);
+        }
 
 
         std::string message("Stopping after step ");
@@ -306,10 +310,14 @@ bool Foam::Module::workflowControls::runCurrentStep(const word& stepName)
 void Foam::Module::workflowControls::workflowCompleted()
 {
     if (mesh_.metaData().found("lastStep"))
+    {
         mesh_.metaData().remove("lastStep");
+    }
 
     if (mesh_.metaData().found("completedSteps"))
+    {
         mesh_.metaData().remove("completedSteps");
+    }
 }
 
 

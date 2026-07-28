@@ -64,11 +64,15 @@ void Foam::Module::volumeOptimizer::optimizeNodePosition(const scalar tol)
     point& p = points_[pointI_];
 
     if (!bb_.contains(p))
+    {
         p = 0.5*(bb_.max() + bb_.min());
+    }
 
     const scalar scale = 1.0/bb_.mag();
     forAll(points_, pI)
+    {
         points_[pI] *= scale;
+    }
     bb_.min() *= scale;
     bb_.max() *= scale;
 
@@ -80,11 +84,15 @@ void Foam::Module::volumeOptimizer::optimizeNodePosition(const scalar tol)
     const scalar funcAfter = optimiseSteepestDescent(tol);
 
     if (funcAfter > func)
+    {
         p = copyP;
+    }
 
     // scale back to the original size
     forAll(points_, pI)
+    {
         points_[pI] /= scale;
+    }
     bb_.min() /= scale;
     bb_.max() /= scale;
 }

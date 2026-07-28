@@ -42,7 +42,9 @@ inline void Foam::Module::meshOptimizer::lockCells(const labelListType& l)
         const cell& c = cells[l[lcI]];
 
         forAll(c, fI)
+        {
             lockedFace[c[fI]] = true;
+        }
     }
 
     //- Finally, mark locked points and faces
@@ -56,7 +58,9 @@ inline void Foam::Module::meshOptimizer::lockCells(const labelListType& l)
             const face& f = faces[faceI];
 
             forAll(f, pI)
+            {
                 vertexLocation_[f[pI]] |= LOCKED;
+            }
         }
     }
 
@@ -83,7 +87,9 @@ inline void Foam::Module::meshOptimizer::lockFaces(const labelListType& lf)
             const face& f = faces[faceI];
 
             forAll(f, pI)
+            {
                 vertexLocation_[f[pI]] |= LOCKED;
+            }
         }
     }
 
@@ -94,7 +100,9 @@ template<class labelListType>
 inline void Foam::Module::meshOptimizer::lockPoints(const labelListType& lp)
 {
     forAll(lp, lpI)
+    {
         vertexLocation_[lp[lpI]] |= LOCKED;
+    }
 }
 
 

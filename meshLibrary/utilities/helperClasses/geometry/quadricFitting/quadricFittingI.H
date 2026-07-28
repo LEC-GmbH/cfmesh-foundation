@@ -60,7 +60,9 @@ void Foam::Module::quadricFitting::calculateCoordinateSystem()
     {
         vecX_ = vecY_ = vector::zero;
         forAll(transformedPoints_, i)
+        {
             transformedPoints_[i] = vector::zero;
+        }
 
         return;
     }

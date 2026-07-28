@@ -46,7 +46,9 @@ void Foam::Module::triSurfaceMetaData::createMetaData()
     // store nformation about surface patches
     labelList nInPatch(surf_.patches().size(), 0);
     forAll(surf_, triI)
+    {
         ++nInPatch[surf_[triI].region()];
+    }
 
     forAll(surf_.patches(), patchI)
     {

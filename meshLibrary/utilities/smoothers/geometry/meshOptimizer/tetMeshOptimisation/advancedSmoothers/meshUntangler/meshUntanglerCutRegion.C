@@ -183,7 +183,9 @@ Foam::Module::meshUntangler::cutRegion::~cutRegion()
 void Foam::Module::meshUntangler::cutRegion::planeCut(const plane& plane)
 {
     if (!valid_)
+    {
         return;
+    }
 
     if (findNewVertices(plane))
     {
@@ -217,7 +219,9 @@ void Foam::Module::meshUntangler::cutRegion::createPolyMeshFromRegion
     pointFieldPMG& points = meshModifier.pointsAccess();
     points.setSize(pointsPtr_->size());
     forAll(points, pI)
+    {
         points[pI] = (*pointsPtr_)[pI];
+    }
 
     faceListPMG& faces = meshModifier.facesAccess();
     cellListPMG& cells = meshModifier.cellsAccess();
@@ -232,18 +236,24 @@ void Foam::Module::meshUntangler::cutRegion::createPolyMeshFromRegion
         DynamicList<edge> fEdges;
         const DynamicList<label>& f = fcs[fI];
         forAll(f, eI)
+        {
             fEdges.append(edges[f[eI]]);
+        }
 
         Info<< "Edges forming face " << fI << " are " << fEdges << endl;
         const DynamicList<DynamicList<label>> sf =
             sortEdgesIntoChains(fEdges).sortedChains();
         if (sf.size() != 1)
+        {
             FatalErrorInFunction
                 << "More than one face created!" << abort(FatalError);
+        }
 
         faces[fI].setSize(sf[0].size());
         forAll(sf[0], pI)
+        {
             faces[fI][pI] = sf[0][pI];
+        }
 
         cells[0][fI] = fI;
     }

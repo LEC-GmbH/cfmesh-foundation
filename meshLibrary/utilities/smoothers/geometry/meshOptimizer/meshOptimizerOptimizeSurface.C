@@ -45,7 +45,9 @@ void Foam::Module::meshOptimizer::optimizeSurface(const meshOctree& octree)
     meshSurfaceOptimizer surfaceOptimizer(mse, octree);
 
     if (enforceConstraints_)
+    {
         surfaceOptimizer.enforceConstraints(badPointsSubsetName_);
+    }
 
     surfaceOptimizer.optimizeSurface();
 

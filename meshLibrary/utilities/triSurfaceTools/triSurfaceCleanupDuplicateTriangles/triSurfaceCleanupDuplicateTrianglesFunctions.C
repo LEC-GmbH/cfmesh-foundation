@@ -46,7 +46,9 @@ checkDuplicateTriangles()
     forAll(surf_, triI)
     {
         if (newTriangleLabel[triI] != -1)
+        {
             continue;
+        }
 
         newTriangleLabel[triI] = counter;
         ++counter;
@@ -58,12 +60,16 @@ checkDuplicateTriangles()
             const label triJ = pointTriangles[tri[0]][ptI];
 
             if (triJ <= triI)
+            {
                 continue;
+            }
 
             const labelledTri& otherTri = surf_[triJ];
 
             if (tri == otherTri)
+            {
                 newTriangleLabel[triJ] = newTriangleLabel[triI];
+            }
         }
     }
 
@@ -72,7 +78,9 @@ checkDuplicateTriangles()
 
     // return if there exist no duplicate triangles
     if (counter == newTriangleLabel.size())
+    {
         return;
+    }
 
     Info<< "Current number of triangles" << surf_.size() << endl;
     Info<< "New number of triangles " << counter << endl;

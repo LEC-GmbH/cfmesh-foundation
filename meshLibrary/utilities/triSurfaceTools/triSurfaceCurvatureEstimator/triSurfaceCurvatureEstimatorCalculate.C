@@ -57,7 +57,9 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateEdgeCurvature()
     {
         # pragma omp for schedule(static, 1)
         forAll(edgePointCurvature_, i)
+        {
             edgePointCurvature_[i] = 0.0;
+        }
 
         // mark feature edges
         # pragma omp for schedule(static, 1)
@@ -94,7 +96,9 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateEdgeCurvature()
             {
                 const label edgeI = pointEdges[pI][peI];
                 if (featureEdge[edgeI])
+                {
                     features.append(edgeI);
+                }
             }
 
             if (features.size() == 2)
@@ -149,15 +153,21 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
             const label regionI = surface_[triI].region();
 
             if (!normals.found(regionI))
+            {
                 normals.insert(regionI, vector::zero);
+            }
             if (regionTriangles.found(regionI))
+            {
                 regionTriangles.insert
                 (
                     regionI,
                     DynamicList<label>()
                 );
+            }
             if (!otherLabels.found(regionI))
+            {
                 otherLabels.insert(regionI, labelHashSet());
+            }
 
             regionTriangles(regionI).append(triI);
 
@@ -166,7 +176,9 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                 const label pI = surface_[triI][tpI];
 
                 if (pointI == pI)
+                {
                     continue;
+                }
 
                 otherLabels[regionI].insert(pI);
                 normals[regionI] += surface_[triI].area(points);
@@ -178,7 +190,9 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
             const labelHashSet& currLabels = it();
 
             if (otherLabels[it.key()].size() > 5)
+            {
                 continue;
+            }
 
             labelHashSet additionalPoints;
             for (const label neiPointI : currLabels.toc())
@@ -190,10 +204,14 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                     const labelledTri& nTri = surface_[pTriangles[ptI]];
 
                     if (nTri.region() != it.key())
+                    {
                         continue;
+                    }
 
                     forAll(nTri, pI)
+                    {
                         additionalPoints.insert(nTri[pI]);
+                    }
                 }
             }
 
@@ -225,11 +243,13 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
 
                 label pos(-1);
                 forAll(surface_[tI], j)
+                {
                     if (surface_[tI][j] == pointI)
                     {
                         pos = j;
                         break;
                     }
+                }
 
                 patchPositions_[tI][pos] = gaussianCurvature_[pointI].size();
             }
@@ -271,25 +291,31 @@ void Foam::Module::triSurfaceCurvatureEstimator::calculateSurfaceCurvatures()
                 // find neighbouring points for each patch
                 Map<DynamicList<label>> patchNeiPoints;
                 forAll(pointPatches[pointI], ppI)
+                {
                     patchNeiPoints.insert
                     (
                         pointPatches[pointI][ppI],
                         DynamicList<label>()
                     );
+                }
 
                 forAll(pTriangles, ptI)
                 {
                     const labelledTri& tri = surface_[pTriangles[ptI]];
 
                     if (!patchNeiPoints.found(tri.region()))
+                    {
                         patchNeiPoints.insert(tri.region(), DynamicList<label>());
+                    }
 
                     forAll(tri, pI)
                     {
                         const label neiPointI = tri[pI];
 
                         if (neiPointI == pointI)
+                        {
                             continue;
+                        }
 
                         appendUniq(patchNeiPoints[tri.region()], neiPointI);
                     }

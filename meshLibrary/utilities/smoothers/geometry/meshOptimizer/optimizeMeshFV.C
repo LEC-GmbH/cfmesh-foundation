@@ -65,7 +65,9 @@ void Foam::Module::meshOptimizer::untangleMeshFV
     forAll(vertexLocation_, pointI)
     {
         if (vertexLocation_[pointI] & LOCKED)
+        {
             lockedPoints.append(pointI);
+        }
     }
 
     labelHashSet badFaces;
@@ -105,7 +107,9 @@ void Foam::Module::meshOptimizer::untangleMeshFV
 
             // perform optimisation
             if (nBadFaces == 0)
+            {
                 break;
+            }
 
             if (nBadFaces < minNumBadFaces)
             {
@@ -138,7 +142,9 @@ void Foam::Module::meshOptimizer::untangleMeshFV
         } while ((nIter < minIter + 5) && (++nIter < maxNumIterations));
 
         if ((nBadFaces == 0) || (++nGlobalIter >= maxNumGlobalIterations))
+        {
             break;
+        }
 
         // move boundary vertices
         nIter = 0;
@@ -185,7 +191,9 @@ void Foam::Module::meshOptimizer::untangleMeshFV
                 {
                     const face& f = faces[facei];
                     forAll(f, pI)
+                    {
                         mesh_.addPointToSubset(subsetId, f[pI]);
+                    }
                 }
 
                 WarningInFunction
@@ -233,7 +241,9 @@ void Foam::Module::meshOptimizer::untangleMeshFV
     {
         label subsetId = mesh_.faceSubsetIndex("badFaces");
         if (subsetId >= 0)
+        {
             mesh_.removeFaceSubset(subsetId);
+        }
         subsetId = mesh_.addFaceSubset("badFaces");
 
         const labelList& owner = mesh_.owner();
@@ -278,7 +288,9 @@ void Foam::Module::meshOptimizer::optimizeBoundaryLayer
         }
 
         if (!smoothLayer)
+        {
             return;
+        }
 
         if (addBufferLayer)
         {
@@ -413,7 +425,9 @@ void Foam::Module::meshOptimizer::optimizeLowQualityFaces
     forAll(vertexLocation_, pointI)
     {
         if (vertexLocation_[pointI] & LOCKED)
+        {
             lockedPoints.append(pointI);
+        }
     }
 
     do
@@ -439,7 +453,9 @@ void Foam::Module::meshOptimizer::optimizeLowQualityFaces
 
         // perform optimisation
         if (nBadFaces == 0)
+        {
             break;
+        }
 
         partTetMesh tetMesh(mesh_, lockedPoints, lowQualityFaces, 2);
 
@@ -472,7 +488,9 @@ void Foam::Module::meshOptimizer::optimizeMeshNearBoundaries
     forAll(vertexLocation_, pointI)
     {
         if (vertexLocation_[pointI] & LOCKED)
+        {
             lockedPoints.append(pointI);
+        }
     }
 
     partTetMesh tetMesh(mesh_, lockedPoints, numLayersOfCells);
@@ -533,7 +551,9 @@ void Foam::Module::meshOptimizer::optimizeMeshFVBestQuality
     forAll(vertexLocation_, pointI)
     {
         if (vertexLocation_[pointI] & LOCKED)
+        {
             lockedPoints.append(pointI);
+        }
     }
 
     label minNumBadFaces(10*faces.size());
@@ -561,7 +581,9 @@ void Foam::Module::meshOptimizer::optimizeMeshFVBestQuality
 
         // perform optimisation
         if (nBadFaces == 0)
+        {
             break;
+        }
 
         if (nBadFaces < minNumBadFaces)
         {

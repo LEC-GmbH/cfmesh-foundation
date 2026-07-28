@@ -40,12 +40,16 @@ Foam::Module::meshSurfaceEngine&
 Foam::Module::meshSurfaceEdgeExtractorFUN::surfaceEngine()
 {
     if (omp_in_parallel())
+    {
         FatalErrorInFunction
             << "Cannot create surface engine with a parallel region"
             << exit(FatalError);
+    }
 
     if (!surfaceEnginePtr_)
+    {
         surfaceEnginePtr_ = new meshSurfaceEngine(mesh_);
+    }
 
     return *surfaceEnginePtr_;
 }

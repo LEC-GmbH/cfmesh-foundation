@@ -42,7 +42,9 @@ inline const Foam::Module::partTriMesh&
 Foam::Module::meshSurfaceOptimizer::triMesh() const
 {
     if (!triMeshPtr_)
+    {
         calculateTrianglesAndAddressing();
+    }
 
     return *triMeshPtr_;
 }
@@ -54,8 +56,10 @@ inline void Foam::Module::meshSurfaceOptimizer::updateTriMesh
 )
 {
     if (!triMeshPtr_)
+    {
         FatalErrorInFunction
             << "triMeshPtr_ is not allocated " << abort(FatalError);
+    }
 
     triMeshPtr_->updateVertices(selPoints);
 }
@@ -64,8 +68,10 @@ inline void Foam::Module::meshSurfaceOptimizer::updateTriMesh
 inline void Foam::Module::meshSurfaceOptimizer::updateTriMesh()
 {
     if (!triMeshPtr_)
+    {
         FatalErrorInFunction
             << "triMeshPtr_ is not allocated " << abort(FatalError);
+    }
 
     triMeshPtr_->updateVertices();
 }
@@ -84,7 +90,9 @@ inline bool Foam::Module::meshSurfaceOptimizer::transformIntoPlane
     const partTriMesh& triMesh = this->triMesh();
     const label triPointI = triMesh.meshSurfacePointLabelInTriMesh()[bpI];
     if (triPointI < 0)
+    {
         return false;
+    }
 
     partTriMeshSimplex simplex(triMesh, triPointI);
 
@@ -110,7 +118,9 @@ inline bool Foam::Module::meshSurfaceOptimizer::transformIntoPlane
     }
 
     if (!found)
+    {
         return false;
+    }
 
     trias = simplex.triangles();
 
@@ -144,7 +154,9 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacian
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
 
     if (vertexType_[bpI] & LOCKED)
+    {
         return points[bPoints[bpI]];
+    }
 
     vector newP(vector::zero);
     if (transformIntoPlane)
@@ -152,25 +164,33 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacian
         const vector& pNormal = surfaceEngine_.pointNormals()[bpI];
 
         if (magSqr(pNormal) < VSMALL)
+        {
             return points[bPoints[bpI]];
+        }
 
         plane pl(points[bPoints[bpI]], pNormal);
 
         DynamicList<point> projectedPoints;
         projectedPoints.setSize(pPoints[bpI].size());
         forAllRow(pPoints, bpI, pI)
+        {
             projectedPoints[pI] =
                 pl.nearestPoint(points[bPoints[pPoints[bpI][pI]]]);
+        }
 
         forAll(projectedPoints, pI)
+        {
             newP += projectedPoints[pI];
+        }
 
         newP /= projectedPoints.size();
     }
     else
     {
         forAllRow(pPoints, bpI, pI)
+        {
             newP += points[bPoints[pPoints[bpI][pI]]];
+        }
 
         newP /= pPoints[bpI].size();
     }
@@ -191,7 +211,9 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacianFC
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
 
     if (vertexType_[bpI] & LOCKED)
+    {
         return points[bPoints[bpI]];
+    }
 
     vector newP(vector::zero);
 
@@ -200,25 +222,33 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacianFC
         const vector& pNormal = surfaceEngine_.pointNormals()[bpI];
 
         if (magSqr(pNormal) < VSMALL)
+        {
             return points[bPoints[bpI]];
+        }
 
         plane pl(points[bPoints[bpI]], pNormal);
 
         DynamicList<point> projectedPoints;
         projectedPoints.setSize(pointFaces[bpI].size());
         forAllRow(pointFaces, bpI, pfI)
+        {
             projectedPoints[pfI] =
                 pl.nearestPoint(faceCentres[pointFaces[bpI][pfI]]);
+        }
 
         forAll(projectedPoints, pI)
+        {
             newP += projectedPoints[pI];
+        }
 
         newP /= projectedPoints.size();
     }
     else
     {
         forAllRow(pointFaces, bpI, pfI)
+        {
             newP += faceCentres[pointFaces[bpI][pfI]];
+        }
 
         newP /= pointFaces[bpI].size();
     }
@@ -240,7 +270,9 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacianWFC
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
 
     if (vertexType_[bpI] & LOCKED)
+    {
         return points[bPoints[bpI]];
+    }
 
     vector newP(vector::zero);
 
@@ -249,15 +281,19 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newPositionLaplacianWFC
         const vector& pNormal = surfaceEngine_.pointNormals()[bpI];
 
         if (magSqr(pNormal) < VSMALL)
+        {
             return points[bPoints[bpI]];
+        }
 
         plane pl(points[bPoints[bpI]], pNormal);
 
         DynamicList<point> projectedPoints;
         projectedPoints.setSize(pointFaces[bpI].size());
         forAllRow(pointFaces, bpI, pfI)
+        {
             projectedPoints[pfI] =
                 pl.nearestPoint(faceCentres[pointFaces[bpI][pfI]]);
+        }
 
         scalar sumW(0.0);
         forAll(projectedPoints, pI)
@@ -299,12 +335,16 @@ Foam::Module::meshSurfaceOptimizer::newPositionSurfaceOptimizer
     const labelList& bPoints = surfaceEngine_.boundaryPoints();
 
     if (vertexType_[bpI] & LOCKED)
+    {
         return points[bPoints[bpI]];
+    }
 
     //- project vertices onto the plane
     const vector& pNormal = surfaceEngine_.pointNormals()[bpI];
     if (magSqr(pNormal) < VSMALL)
+    {
         return points[bPoints[bpI]];
+    }
 
     const plane pl(points[bPoints[bpI]], pNormal);
 
@@ -351,7 +391,9 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newEdgePositionLaplacian
     const pointFieldPMG& points = surfaceEngine_.points();
 
     if (vertexType_[bpI] & LOCKED)
+    {
         return points[bPoints[bpI]];
+    }
 
     const labelHashSet& featureEdges = partitionerPtr_->featureEdges();
 
@@ -368,11 +410,15 @@ inline Foam::point Foam::Module::meshSurfaceOptimizer::newEdgePositionLaplacian
     }
 
     if (edgePoints.size() != 2)
+    {
         return points[bPoints[bpI]];
+    }
 
     vector pos(vector::zero);
     forAll(edgePoints, epI)
+    {
         pos += points[edgePoints[epI]];
+    }
 
     pos /= edgePoints.size();
 
@@ -397,7 +443,9 @@ inline void Foam::Module::meshSurfaceOptimizer::lockBoundaryFaces
         const face& bf = bFaces[lockedSurfaceFaces_[lfI]];
 
         forAll(bf, pI)
+        {
             vertexType_[bp[bf[pI]]] |= LOCKED;
+        }
     }
 }
 
@@ -422,8 +470,12 @@ inline void Foam::Module::meshSurfaceOptimizer::lockFeatureEdges()
 {
     # pragma omp parallel for schedule(dynamic, 50)
     forAll(vertexType_, bpI)
+    {
         if (vertexType_[bpI] & (EDGE | CORNER))
+        {
             vertexType_[bpI] |= LOCKED;
+        }
+    }
 }
 
 

@@ -62,9 +62,11 @@ void Foam::Module::polyMeshGenModifier::replaceBoundary
 
         cell newC(c.size());
         forAll(c, fI)
+        {
         if (newFaceLabel[c[fI]] != -1)
         {
             newC[nFacesInCell[cellI]++] = newFaceLabel[c[fI]];
+        }
         }
 
         cells[cellI].transfer(newC);

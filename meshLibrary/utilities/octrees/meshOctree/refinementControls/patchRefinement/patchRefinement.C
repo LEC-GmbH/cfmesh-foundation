@@ -76,7 +76,9 @@ Foam::Module::patchRefinement::patchInSurface(const triSurf& ts) const
     forAll(ts.patches(), patchI)
     {
         if (ts.patches()[patchI].name() == patchName_)
+        {
             return patchI;
+        }
     }
 
     FatalErrorInFunction

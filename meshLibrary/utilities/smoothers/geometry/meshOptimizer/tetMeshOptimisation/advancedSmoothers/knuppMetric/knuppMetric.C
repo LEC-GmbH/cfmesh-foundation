@@ -125,7 +125,9 @@ void Foam::Module::knuppMetric::optimizeNodePosition
 )
 {
     if (!bb_.contains(p_))
+    {
         p_ = 0.5*(bb_.min() + bb_.max());
+    }
 
     const scalar tol = Foam::sqr(2.0*SMALL)*magSqr(bb_.min() - bb_.max());
 
@@ -181,7 +183,9 @@ void Foam::Module::knuppMetric::optimizeNodePosition
             func = evaluateMetric();
 
             if (func < lastFunc)
+            {
             continue;
+            }
 
             // it seems that this direction is wrong
             if (++nLoops == 5)

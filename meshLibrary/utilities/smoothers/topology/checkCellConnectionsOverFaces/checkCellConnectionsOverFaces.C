@@ -78,10 +78,14 @@ public:
             label nei = owner[c[fI]];
 
             if (nei == cellI)
+            {
                 nei = neighbour[c[fI]];
+            }
 
             if (nei >= 0)
+            {
                 neighbourCells.append(nei);
+            }
         }
     }
 };
@@ -148,29 +152,39 @@ Foam::Module::checkCellConnectionsOverFaces::checkCellConnectionsOverFaces
 bool Foam::Module::checkCellConnectionsOverFaces::checkCellGroups()
 {
     if (nGroups_ == 1)
+    {
         return false;
+    }
 
     Warning << "Mesh has " << nGroups_ << " unconnected regions" << endl;
 
     labelList nCellsInGroup(nGroups_, 0);
 
     forAll(cellGroup_, cI)
+    {
         ++nCellsInGroup[cellGroup_[cI]];
+    }
 
     // find groups which has most cells this group will be kept
     label maxGroup(-1);
     forAll(nCellsInGroup, groupI)
+    {
         if (nCellsInGroup[groupI] > maxGroup)
         {
             maxGroup = nCellsInGroup[groupI];
             nGroups_ = groupI;
         }
+    }
 
     // remove cells which are not in the group which has max num of cells
     boolList removeCell(mesh_.cells().size(), false);
     forAll(cellGroup_, cellI)
+    {
         if (cellGroup_[cellI] != nGroups_)
+        {
             removeCell[cellI] = true;
+        }
+    }
 
     polyMeshGenModifier(mesh_).removeCells(removeCell);
 

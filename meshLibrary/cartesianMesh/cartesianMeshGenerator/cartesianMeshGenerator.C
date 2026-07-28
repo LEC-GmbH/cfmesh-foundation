@@ -91,13 +91,19 @@ void Foam::Module::cartesianMeshGenerator::surfacePreparation()
 
         checkIrregularSurfaceConnections checkConnections(mesh_);
         if (checkConnections.checkAndFixIrregularConnections())
+        {
             changed = true;
+        }
 
         if (checkNonMappableCellConnections(mesh_).removeCells())
+        {
             changed = true;
+        }
 
         if (checkCellConnectionsOverFaces(mesh_).checkCellGroups())
+        {
             changed = true;
+        }
     } while (changed);
 
     checkBoundaryFacesSharingTwoEdges(mesh_).improveTopology();
@@ -224,7 +230,9 @@ void Foam::Module::cartesianMeshGenerator::optimiseFinalMesh()
 void Foam::Module::cartesianMeshGenerator::projectSurfaceAfterBackScaling()
 {
     if (!meshDict_.found("anisotropicSources"))
+    {
         return;
+    }
 
     deleteDemandDrivenData(octreePtr_);
     octreePtr_ = new meshOctree(*surfacePtr_);

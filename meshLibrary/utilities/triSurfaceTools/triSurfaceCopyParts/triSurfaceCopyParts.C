@@ -65,7 +65,9 @@ void Foam::Module::triSurfaceCopyParts::markFacetsForCopying
     forAll(surf_, triI)
     {
         if (copyPatch[surf_[triI].region()])
+        {
             copyFacets[triI] = true;
+        }
     }
 
     // mark facets contained in selected subsets
@@ -84,7 +86,9 @@ void Foam::Module::triSurfaceCopyParts::markFacetsForCopying
                 surf_.facetsInSubset(facetSubsetsIDs[i], containedFacets);
 
                 forAll(containedFacets, cfI)
+                {
                     copyFacets[containedFacets[cfI]] = true;
+                }
 
                 break;
             }
@@ -113,14 +117,18 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
     sm.featureEdgesAccess().clear();
     sm.patchesAccess().setSize(surf_.patches().size());
     forAll(surf_.patches(), patchI)
+    {
         sm.patchesAccess()[patchI] = surf_.patches()[patchI];
+    }
 
     // copy selected patches
     DynamicList<label> newTriangleLabel(surf_.size(), -1);
     forAll(copyFacets, triI)
     {
         if (!copyFacets[triI])
+        {
             continue;
+        }
 
         const labelledTri& tri = surf_[triI];
 
@@ -152,7 +160,9 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
     forAll(newPointLabel, i)
     {
         if (newPointLabel[i] < 0)
+        {
             continue;
+        }
 
         newPts[newPointLabel[i]] = pts[i];
     }
@@ -174,7 +184,9 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
             const label newPointI = newPointLabel[pointsInSubset[i]];
 
             if (newPointI < 0)
+            {
                 continue;
+            }
 
             s.addPointToSubset(newId, newPointI);
         }
@@ -196,7 +208,9 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
             const label newTriI = newTriangleLabel[trianglesInSubset[i]];
 
             if (newTriI < 0)
+            {
                 continue;
+            }
 
             s.addFacetToSubset(newId, newTriI);
         }
@@ -222,9 +236,13 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
         }
 
         if (newPointLabel[e.start()] < 0)
+        {
             continue;
+        }
         if (newPointLabel[e.end()] < 0)
+        {
             continue;
+        }
         bool foundTriangle(false);
         forAllRow(edgeFacets, eI, efI)
         {
@@ -235,7 +253,9 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
             }
         }
         if (!foundTriangle)
+        {
             continue;
+        }
 
         newEdgeLabel[edgeI] = sm.featureEdgesAccess().size();
         sm.featureEdgesAccess().append
@@ -260,7 +280,9 @@ void Foam::Module::triSurfaceCopyParts::copySurfaceMesh
             const label newEdgeI = newEdgeLabel[edgesInSubset[i]];
 
             if (newEdgeI < 0)
+            {
                 continue;
+            }
 
             s.addEdgeToSubset(newId, newEdgeI);
         }

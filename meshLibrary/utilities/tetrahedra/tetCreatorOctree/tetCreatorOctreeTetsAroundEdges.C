@@ -60,7 +60,9 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
             const label leafI = pLeaves[nodeI][plI];
 
             if (leafI < 0)
+            {
                 continue;
+            }
 
             level = Foam::max(level, octree.returnLeaf(leafI).level());
         }
@@ -80,7 +82,9 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
             const label curLeaf = curLevelLeaves[leafI];
 
             if (cubeLabel[curLeaf] == -1)
+            {
                 continue;
+            }
 
             const meshOctreeCubeCoordinates& cc =
                 octree.returnLeaf(curLeaf).coordinates();
@@ -117,7 +121,9 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                     // store octree leaves at this edge
                     // they are all adjacent to the start point
                     for (label i = 0; i < 4; ++i)
+                    {
                         edgeCubes[i] = pLeaves[start][fNodes[i]];
+                    }
 
                     DynamicList<label> centreNodes;
 
@@ -155,7 +161,9 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                                     [faceCentreHelper_[helpFace][i]];
 
                                 if (fcl != -1)
+                                {
                                     centreNodes.append(fcl);
+                                }
                             }
                         }
                         else if (oc.level() < direction(levelI))
@@ -177,9 +185,11 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                             }
 
                             if (pos == -1)
+                            {
                                 FatalErrorInFunction
                                     << "Cannot find cube position"
                                     << abort(FatalError);
+                            }
 
                             centreNodes.append(subNodeLabels[cLabel][pos]);
                         }
@@ -193,9 +203,13 @@ void Foam::Module::tetCreatorOctree::createTetsAroundEdges()
                         forAll(centreNodes, i)
                         {
                             if (centreNodes[i] == -1)
+                            {
                                 continue;
+                            }
                             if (centreNodes[(i + 1)%nCentres] == -1)
+                            {
                                 continue;
+                            }
 
                             partTet tet
                             (

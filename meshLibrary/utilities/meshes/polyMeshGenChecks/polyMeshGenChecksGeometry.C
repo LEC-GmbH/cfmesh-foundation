@@ -489,7 +489,9 @@ bool Foam::Module::polyMeshGenChecks::checkTetQuality
                 }
 
                 if (neighbour[faceI] < 0)
+                {
                     continue;
+                }
 
                 // check the tet on the neighbour side
                 tetrahedron<point, point> tetNei

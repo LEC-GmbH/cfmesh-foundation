@@ -61,7 +61,9 @@ void Foam::Module::triSurfaceDetectFeatureEdges::detectFeatureEdges()
     forAll(featureEdges_, eI)
     {
         if (featureEdges_[eI])
+        {
             featureEdges.append(edges[eI]);
+        }
     }
 }
 

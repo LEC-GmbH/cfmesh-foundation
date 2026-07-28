@@ -39,7 +39,9 @@ License
 void Foam::Module::topologicalCleaner::decomposeCells()
 {
     if (!changed_)
+    {
          return;
+    }
 
     Foam::Module::decomposeCells dc(mesh_);
     dc.decomposeMesh(decomposeCell_);
@@ -76,7 +78,9 @@ bool Foam::Module::topologicalCleaner::cleanTopology()
     decomposeCells();
 
     if (checkCellConnectionsOverFaces(mesh_).checkCellGroups())
+    {
         changed_ = true;
+    }
 
     return changed_;
 }

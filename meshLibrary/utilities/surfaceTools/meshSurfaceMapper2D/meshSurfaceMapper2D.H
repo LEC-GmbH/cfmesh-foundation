@@ -101,7 +101,9 @@ class meshSurfaceMapper2D
         inline const polyMeshGen2DEngine& mesh2DEngine() const
         {
             if (!mesh2DEnginePtr_)
+            {
                 create2DEngine();
+            }
 
             return *mesh2DEnginePtr_;
         }
@@ -113,7 +115,9 @@ class meshSurfaceMapper2D
         inline const triSurfacePartitioner& surfacePartitioner() const
         {
             if (!surfPartitionerPtr_)
+            {
                 createTriSurfacePartitioner();
+            }
 
             return *surfPartitionerPtr_;
         }
@@ -125,7 +129,9 @@ class meshSurfaceMapper2D
         inline const meshSurfacePartitioner& meshPartitioner() const
         {
             if (!meshPartitionerPtr_)
+            {
                 createMeshSurfacePartitioner();
+            }
 
             return *meshPartitionerPtr_;
         }

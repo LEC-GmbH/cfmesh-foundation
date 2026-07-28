@@ -95,7 +95,9 @@ void Foam::Module::createFundamentalSheetsJFS::createInitialSheet()
     if (!createWrapperSheet_)
     {
         if (isTopologyOk())
+        {
             return;
+        }
 
         Warning << "Found invalid topology!"
                 << "\nStarting creating initial wrapper sheet" << endl;
@@ -119,7 +121,9 @@ void Foam::Module::createFundamentalSheetsJFS::createInitialSheet()
 
     # pragma omp parallel for schedule(guided, 100)
     for (label faceI = start; faceI < end; ++faceI)
+    {
         extrudeFaces[faceI - start] = labelPair(faceI, owner[faceI]);
+    }
 
     extrudeLayer(mesh_, extrudeFaces);
 
@@ -159,12 +163,16 @@ void Foam::Module::createFundamentalSheetsJFS::createSheetsAtFeatureEdges()
         const label patchEnd = patchStart + boundaries[patchI].patchSize();
 
         for (label faceI = patchStart; faceI < patchEnd; ++faceI)
+        {
             facePatch[faceI - start] = patchI;
+        }
     }
 
     labelList patchCell(mesh_.cells().size(), -1);
     forAll(facePatch, bfI)
+    {
         patchCell[owner[start + bfI]] = facePatch[bfI];
+    }
 
     DynamicList<labelPair> front;
 
@@ -186,14 +194,20 @@ void Foam::Module::createFundamentalSheetsJFS::createSheetsAtFeatureEdges()
             forAll(c, fI)
             {
                 if (neighbour[c[fI]] < 0)
+                {
                     continue;
+                }
 
                 label nei = owner[c[fI]];
                 if (nei == cellI)
+                {
                     nei = neighbour[c[fI]];
+                }
 
                 if (patchCell[nei] != patchI)
+                {
                     localFront.append(labelPair(c[fI], cellI));
+                }
             }
         }
 
@@ -208,7 +222,9 @@ void Foam::Module::createFundamentalSheetsJFS::createSheetsAtFeatureEdges()
 
         // copy the local front into the global front
         forAll(localFront, lfI)
+        {
             front[frontStart + lfI] = localFront[lfI];
+        }
     }
 
     // extrude the layer

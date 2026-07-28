@@ -140,7 +140,9 @@ void Foam::Module::triSurface2DCheck::createSubsets()
         fn /= Foam::max(mag(fn), VSMALL);
 
         if (mag(fn.z()) > SMALL)
+        {
             surf.addFacetToSubset(badFacetsId, triI);
+        }
     }
 
     // create a subset containing points which are not

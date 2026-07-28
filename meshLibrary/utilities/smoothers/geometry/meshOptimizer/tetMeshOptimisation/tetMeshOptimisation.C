@@ -73,7 +73,9 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingKnuppMetric
         invertedTets[tetI] = false;
 
         if (tets[tetI].mag(points) < VSMALL)
+        {
             invertedTets[tetI] = true;
+        }
     }
 
     label nIter(0), nNegative, nNegativeBefore;
@@ -93,12 +95,16 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingKnuppMetric
                 const partTet& tet = tets[tetI];
 
                 for (label i = 0; i < 4; ++i)
+                {
                     negativeNode[tet[i]] = true;
+                }
             }
         }
 
         if (nNegative == 0)
+        {
             return;
+        }
 
         // smooth the mesh
         List<DynamicList<labelledPoint>> newPositions;
@@ -154,13 +160,17 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingKnuppMetric
                 const partTet& tet = tets[tetI];
 
                 for (label i = 0; i < 4; ++i)
+                {
                     negativeNode[tet[i]] = true;
+                }
             }
         }
         invertedTets.transfer(helper);
 
         if (nNegative == 0)
+        {
             return;
+        }
 
     } while ((nNegative < nNegativeBefore) || (++nIter < nIterations));
 }
@@ -185,7 +195,9 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingMeshUntangler
         invertedTets[tetI] = false;
 
         if (tets[tetI].mag(points) < VSMALL)
+        {
             invertedTets[tetI] = true;
+        }
     }
 
     label nIter(0), nNegative, nNegativeBefore;
@@ -205,12 +217,16 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingMeshUntangler
                 const partTet& tet = tets[tetI];
 
                 for (label i = 0; i < 4; ++i)
+                {
                     negativeNode[tet[i]] = true;
+                }
             }
         }
 
         if (nNegative == 0)
+        {
             return;
+        }
 
         // smooth the mesh
         List<DynamicList<labelledPoint>> newPositions;
@@ -229,10 +245,14 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingMeshUntangler
             forAll(smoothVertex, nodeI)
             {
                 if (!negativeNode[nodeI])
+                {
                     continue;
+                }
 
                 if (smoothVertex[nodeI] & partTetMesh::LOCKED)
+                {
                     continue;
+                }
 
                 if (smoothVertex[nodeI] & partTetMesh::SMOOTH)
                 {
@@ -263,12 +283,16 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingMeshUntangler
                 const partTet& tet = tets[tetI];
 
                 for (label i = 0; i < 4; ++i)
+                {
                     negativeNode[tet[i]] = true;
+                }
             }
         }
 
         if (nNegative == 0)
+        {
             return;
+        }
         invertedTets.transfer(helper);
 
     } while ((nNegative < nNegativeBefore) || (++nIter < nIterations));
@@ -302,7 +326,9 @@ void Foam::Module::tetMeshOptimisation::optimiseUsingVolumeOptimizer
             forAll(smoothVertex, nodeI)
             {
                 if (smoothVertex[nodeI] & partTetMesh::LOCKED)
+                {
                     continue;
+                }
 
                 if (smoothVertex[nodeI] & partTetMesh::SMOOTH)
                 {
@@ -334,7 +360,9 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundaryVolumeOptimizer
 
     label nThreads = omp_get_num_procs();
     if (smoothVertex.size() < 100)
+    {
       nThreads = 1;
+    }
 
     for (label i = 0; i < nIterations; ++i)
     {
@@ -348,7 +376,9 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundaryVolumeOptimizer
             forAll(smoothVertex, nodeI)
             {
                 if (smoothVertex[nodeI] & partTetMesh::LOCKED)
+                {
                     continue;
+                }
 
                 if (smoothVertex[nodeI] & partTetMesh::BOUNDARY)
                 {
@@ -390,7 +420,9 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundaryVolumeOptimizer
                         forAll(bEdges, beI)
                         {
                             if (numAppearances[beI] != 1)
+                            {
                                 continue;
+                            }
 
                             triangle<point, point> tri
                             (
@@ -467,7 +499,9 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundarySurfaceLaplace
 
     label nThreads = omp_get_num_procs();
     if (smoothVertex.size() < 1000)
+    {
       nThreads = 1;
+    }
 
     for (label i = 0; i < nIterations; ++i)
     {
@@ -482,7 +516,9 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundarySurfaceLaplace
             forAll(smoothVertex, nodeI)
             {
                 if (smoothVertex[nodeI] & partTetMesh::LOCKED)
+                {
                     continue;
+                }
 
                 if (smoothVertex[nodeI] & partTetMesh::BOUNDARY)
                 {
@@ -520,7 +556,9 @@ void Foam::Module::tetMeshOptimisation::optimiseBoundarySurfaceLaplace
                     forAll(bndEdges, beI)
                     {
                         if (numAppearances[beI] != 1)
+                        {
                             continue;
+                        }
 
                         triangle<point, point> tri
                         (

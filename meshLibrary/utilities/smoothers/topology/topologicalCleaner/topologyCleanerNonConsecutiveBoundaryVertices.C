@@ -61,6 +61,7 @@ void Foam::Module::topologicalCleaner::checkNonConsecutiveBoundaryVertices()
             const cell& c = cells[owner[faceI]];
 
             forAll(c, fI)
+            {
                 if (c[fI] < nIntFaces)
                 {
                     const face& f = faces[c[fI]];
@@ -68,11 +69,15 @@ void Foam::Module::topologicalCleaner::checkNonConsecutiveBoundaryVertices()
                     DynamicList<label> shN;
 
                     forAll(bf, pI)
+                    {
                         forAll(f, pJ)
+                        {
                             if (bf[pI] == f[pJ])
                             {
                                 shN.append(pI);
                             }
+                        }
+                    }
 
                     if (shN.size() > 2)
                     {
@@ -94,6 +99,7 @@ void Foam::Module::topologicalCleaner::checkNonConsecutiveBoundaryVertices()
                         }
                     }
                 }
+            }
         }
     }
 

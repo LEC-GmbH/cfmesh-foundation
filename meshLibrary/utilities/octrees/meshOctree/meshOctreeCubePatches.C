@@ -48,7 +48,9 @@ void Foam::Module::meshOctree::findBoundaryPatchesForLeaf
         const DynamicList<label>& ce =
             ct[leaves_[leafI]->containedElements()];
         forAll(ce, elI)
+        {
             appendUniq(patches, surface_[ce[elI]].region());
+        }
     }
     else
     {

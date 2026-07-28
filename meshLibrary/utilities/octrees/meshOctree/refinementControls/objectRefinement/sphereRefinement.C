@@ -98,7 +98,9 @@ bool Foam::Module::sphereRefinement::intersectsObject(const boundBox& bb) const
     const point c = (bb.max() + bb.min()) / 2.0;
 
     if (magSqr(c - centre_) < sqr(radius_))
+    {
         return true;
+    }
 
     return false;
 }

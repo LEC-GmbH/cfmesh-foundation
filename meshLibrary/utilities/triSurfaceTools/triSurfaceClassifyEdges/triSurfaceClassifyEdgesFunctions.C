@@ -56,7 +56,9 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
     forAll(surf, triI)
     {
         if (orientationGroup[triI] != -1)
+        {
             continue;
+        }
 
         orientationGroup[triI] = nGroups;
         DynamicList<label> front;
@@ -73,16 +75,22 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
                 const label edgeI = facetEdges[tLabel][eI];
 
                 if (edgeFacets[edgeI].size() != 2)
+                {
                     continue;
+                }
 
                 forAllRow(edgeFacets, edgeI, efI)
                 {
                     const label neiFacetI = edgeFacets[edgeI][efI];
 
                     if (orientationGroup[neiFacetI] != -1)
+                    {
                         continue;
+                    }
                     if (neiFacetI == tLabel)
+                    {
                         continue;
+                    }
 
                     const labelledTri& neiFacet = surf[neiFacetI];
 
@@ -95,7 +103,9 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
                         forAll(neiFacet, j)
                         {
                             if (facet[i] == neiFacet[j])
+                            {
                                 sharedIndices.append(labelPair(i, j));
+                            }
                         }
                     }
 
@@ -141,11 +151,15 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
         octree_.containedTriangles(leafI, helper);
 
         forAll(helper, i)
+        {
             ++ntl[helper[i]];
+        }
     }
 
     forAll(ntl, triI)
+    {
         triangleInLeaves[triI].setSize(ntl[triI]);
+    }
 
     ntl = 0;
     for (label leafI = 0; leafI < octree_.numberOfLeaves(); ++leafI)
@@ -181,7 +195,9 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
             const scalar magN = mag(n);
 
             if (magN < VSMALL)
+            {
                 continue;
+            }
 
             n /= magN;
 
@@ -259,7 +275,9 @@ void Foam::Module::triSurfaceClassifyEdges::checkOrientation()
     // Finally, set the orientation of the normal
     facetOrientation_.setSize(surf.size());
     forAll(facetOrientation_, triI)
+    {
         facetOrientation_[triI] = outwardGroup[orientationGroup[triI]];
+    }
 }
 
 
@@ -284,7 +302,9 @@ void Foam::Module::triSurfaceClassifyEdges::classifyEdgesTypes()
         forAllRow(pointEdges, e.start(), peI)
         {
             if (edges[pointEdges[e.start()][peI]] == e)
+            {
                 edgeTypes_[pointEdges[e.start()][peI]] |= FEATUREEDGE;
+            }
         }
     }
 
@@ -307,7 +327,9 @@ void Foam::Module::triSurfaceClassifyEdges::classifyEdgesTypes()
         const labelledTri& tri1 = surf[f1];
 
         if (tri0.region() != tri1.region())
+        {
             edgeTypes_[edgeI] |= FEATUREEDGE;
+        }
 
         label apexNode(-1);
         forAll(tri1, pI)
@@ -322,7 +344,9 @@ void Foam::Module::triSurfaceClassifyEdges::classifyEdgesTypes()
                 }
 
                 if (found)
+                {
                     break;
+                }
             }
 
             if (!found)

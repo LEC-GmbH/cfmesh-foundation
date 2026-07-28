@@ -60,11 +60,17 @@ Foam::label Foam::Module::meshOctree::findLeafContainingVertex
             label scI(0);
 
             if (p.x() >= c.x())
+            {
                 scI |= 1;
+            }
             if (p.y() >= c.y())
+            {
                 scI |= 2;
+            }
             if (!isQuadtree_ && p.z() >= c.z())
+            {
                 scI |= 4;
+            }
 
             ocPtr = ocPtr->subCube(scI);
         }
@@ -103,7 +109,9 @@ Foam::label Foam::Module::meshOctree::findNeighbourOverNode
 ) const
 {
     if (isQuadtree_)
+    {
         return -1;
+    }
 
     const meshOctreeCubeCoordinates nc(cc + regularityPositions_[18 + nodeI]);
 
@@ -209,9 +217,13 @@ void Foam::Module::meshOctree::findNeighboursOverEdge
         else
         {
             if (sc[7 - eNodes[1]] >= 0)
+            {
                 neighbourLeaves.append(sc[7 - eNodes[1]]);
+            }
             if ((sc[7 - eNodes[0]] >= 0) && (sc[7 - eNodes[0]] != sc[7 - eNodes[1]]))
+            {
                 neighbourLeaves.append(sc[7 - eNodes[0]]);
+            }
         }
     }
 }
@@ -308,7 +320,9 @@ void Foam::Module::meshOctree::findNeighboursInDirection
         for (label i = 0; i < 4; ++i)
         {
             if (isQuadtree_ && sc[7 - fNodes[i]] < 0)
+            {
                 continue;
+            }
 
             neighbourLeaves.append(sc[7 - fNodes[i]]);
         }
@@ -344,26 +358,36 @@ void Foam::Module::meshOctree::findAllLeafNeighbours
     if (!isQuadtree_)
     {
         for (label i = 0; i < 8; ++i)
+        {
             neighbourLeaves.append(findNeighbourOverNode(cc, i));
+        }
 
         // neighbours over edges
         for (label i = 0; i < 12; ++i)
+        {
             findNeighboursOverEdge(cc, i, neighbourLeaves);
+        }
 
         // neighbours over faces
         for (label i = 0; i < 6; ++i)
+        {
             findNeighboursInDirection(cc, i, neighbourLeaves);
+        }
     }
     else
     {
         // neighbours of an quadtree leaf
         // neighbours over edges
         for (label i = 8; i < 12; ++i)
+        {
             findNeighboursOverEdge(cc, i, neighbourLeaves);
+        }
 
         // neighbours over faces
         for (label i = 0; i < 4; ++i)
+        {
             findNeighboursInDirection(cc, i, neighbourLeaves);
+        }
     }
 }
 
@@ -392,7 +416,9 @@ void Foam::Module::meshOctree::findLeavesForCubeVertex
         const label nei = findLeafLabelForPosition(positions[posI]);
 
         if ((nei > -1) && leaves_[nei]->isLeaf())
+        {
             neighbours[posI] = nei;
+        }
     }
 
 }
@@ -432,11 +458,17 @@ Foam::Module::meshOctree::findCubeForPosition
             label scI(0);
 
             if (cpx & levelLimiter)
+            {
                 scI |= 1;
+            }
             if (cpy & levelLimiter)
+            {
                 scI |= 2;
+            }
             if (!isQuadtree_ && (cpz & levelLimiter))
+            {
                 scI |= 4;
+            }
 
             neiPtr = neiPtr->subCube(scI);
         }

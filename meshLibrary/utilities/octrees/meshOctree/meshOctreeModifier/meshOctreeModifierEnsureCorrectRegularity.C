@@ -45,7 +45,9 @@ void Foam::Module::meshOctreeModifier::ensureCorrectRegularity
     forAll(refineBox, leafI)
     {
         if (refineBox[leafI])
+        {
             front.append(leafI);
+        }
     }
 
     DynamicList<label> neighbours;
@@ -73,12 +75,16 @@ void Foam::Module::meshOctreeModifier::ensureCorrectRegularity
                     const label nei = neighbours[neiI];
 
                     if (nei < 0)
+                    {
                         continue;
+                    }
 
                     const meshOctreeCube& noc = *leaves[nei];
 
                     if (noc.level() >= oc->level())
+                    {
                         continue;
+                    }
 
                     if (!refineBox[nei])
                     {
@@ -101,7 +107,9 @@ void Foam::Module::meshOctreeModifier::ensureCorrectRegularity
                 front.setSize(start + tFront.size());
 
                 forAll(tFront, i)
+                {
                     front[start++] = tFront[i];
+                }
             }
         }
 
@@ -124,7 +132,9 @@ bool Foam::Module::meshOctreeModifier::ensureCorrectRegularitySons
     forAll(leaves, leafI)
     {
         if (!refineBox[leafI])
+        {
             continue;
+        }
 
         const meshOctreeCubeCoordinates cc = leaves[leafI]->reduceLevelBy(1);
 
@@ -143,7 +153,9 @@ bool Foam::Module::meshOctreeModifier::ensureCorrectRegularitySons
     }
 
     if (nMarked)
+    {
         return true;
+    }
 
     return false;
 }

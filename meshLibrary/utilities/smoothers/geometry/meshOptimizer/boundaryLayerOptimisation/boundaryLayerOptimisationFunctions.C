@@ -54,8 +54,10 @@ void Foam::Module::boundaryLayerOptimisation::writeVTK
 )
 {
     if (origin.size() != vecs.size())
+    {
         FatalErrorInFunction
             << "Sizes do not match" << abort(FatalError);
+    }
 
     OFstream file(fName);
 
@@ -98,15 +100,21 @@ void Foam::Module::boundaryLayerOptimisation::writeHairEdges
 ) const
 {
     if (vecs.size() != hairEdges_.size())
+    {
         FatalErrorInFunction
             << "Sizes do not match" << abort(FatalError);
+    }
 
     // count the number of hair edges matching this criteria
     label counter(0);
 
     forAll(hairEdgeType_, heI)
+    {
         if (hairEdgeType_[heI] & eType)
+        {
             ++counter;
+        }
+    }
 
     // copy edge vector
     vectorField copyVecs(counter);
@@ -144,8 +152,12 @@ void Foam::Module::boundaryLayerOptimisation::writeHairEdges
     label counter(0);
 
     forAll(hairEdgeType_, heI)
+    {
         if (hairEdgeType_[heI] & eType)
+        {
             ++counter;
+        }
+    }
 
     // copy edge vector
     vectorField vecs(counter);
@@ -179,8 +191,10 @@ Foam::Module::boundaryLayerOptimisation::meshSurface() const
     if (!meshSurfacePtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Cannot generate meshSurfaceEngine" << abort(FatalError);
+        }
 
         meshSurfacePtr_ = new meshSurfaceEngine(mesh_);
     }
@@ -195,9 +209,11 @@ Foam::Module::boundaryLayerOptimisation::surfacePartitioner() const
     if (!partitionerPtr_)
     {
         if (omp_in_parallel())
+        {
             FatalErrorInFunction
                 << "Cannot generate meshSurfacePartitioner"
                 << abort(FatalError);
+        }
 
         partitionerPtr_ = new meshSurfacePartitioner(meshSurface());
     }
@@ -249,14 +265,18 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
     {
         // avoid edges at inter-processor boundaries
         if (edgeFaces[edgeI].size() != 2)
+        {
             continue;
+        }
 
         const label f0 = edgeFaces[edgeI][0];
         const label f1 = edgeFaces[edgeI][1];
 
         // both faces have to be part of the same cell
         if (faceOwner[f0] != faceOwner[f1])
+        {
             continue;
+        }
 
         // check if the feature edge is attachd to exittin faces
         if
@@ -298,7 +318,9 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
                 hairEdgeType_[hairEdgeI] |= BOUNDARY;
 
                 if (featureEdges.found(beI))
+                {
                     hairEdgeType_[hairEdgeI] |= FEATUREEDGE;
+                }
             }
 
             if (corners.found(bpI))
@@ -312,7 +334,9 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
         }
 
         if (!(hairEdgeType_[hairEdgeI] & BOUNDARY))
+        {
             hairEdgeType_[hairEdgeI] |= INSIDE;
+        }
     }
 
     thinnedHairEdge_.setSize(hairEdges_.size());
@@ -339,7 +363,9 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
             {
                 const label bpI = bp[f[pI]];
                 if (bpI < 0)
+                {
                     continue;
+                }
 
                 appendUniq(bpFacesHelper[bpI], c[fI]);
             }
@@ -360,16 +386,20 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
 
             // face must be a quad
             if (f.size() != 4)
+            {
                 continue;
+            }
 
             // check if the current face comprises of the hair edge
             label faceEdge(-1);
             forAll(f, eI)
+            {
                 if (f.faceEdge(eI) == e)
                 {
                     faceEdge = eI;
                     break;
                 }
+            }
 
             if (faceEdge != -1)
             {
@@ -388,7 +418,9 @@ void Foam::Module::boundaryLayerOptimisation::calculateHairEdges()
                         {
                             const label heJ = hairEdgesAtBndPoint_[bpJ][pI];
                             if (hairEdges_[heJ] == fe)
+                            {
                                 neiHairEdges.append(heJ);
+                            }
                         }
                     }
                 }
@@ -435,7 +467,9 @@ bool Foam::Module::boundaryLayerOptimisation::optimiseLayersAtExittingFaces()
     }
 
     if (!modified)
+    {
         return false;
+    }
 
     Info<< "Hair edges at exitting faces shall "
          << "be modified due to inner constraints" << endl;
@@ -454,8 +488,12 @@ void Foam::Module::boundaryLayerOptimisation::optimiseLayer()
     // lock exitting faces and feature edges
     DynamicList<label> lockedFaces;
     forAll(isExitFace_, bfI)
+    {
         if (isExitFace_[bfI])
+        {
             lockedFaces.append(bfI);
+        }
+    }
     surfOpt.lockBoundaryFaces(lockedFaces);
     surfOpt.lockFeatureEdges();
 
