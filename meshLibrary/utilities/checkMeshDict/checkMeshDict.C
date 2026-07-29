@@ -756,6 +756,7 @@ void Foam::Module::checkMeshDict::updateKeepCellsIntersectingPatches
                 if (it == patchesFromPatch.end())
                 {
                     updatedPatchNames.append(pName);
+                    continue;
                 }
 
                 const wordList& newPatchNames = it();
@@ -821,6 +822,7 @@ void Foam::Module::checkMeshDict::updateRemoveCellsIntersectingPatches
                 if (it == patchesFromPatch.end())
                 {
                     updatedPatchNames.append(pName);
+                    continue;
                 }
 
                 const wordList& newPatchNames = it();

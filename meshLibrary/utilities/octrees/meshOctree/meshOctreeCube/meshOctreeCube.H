@@ -143,13 +143,6 @@ public:
 
     // Member Functions
 
-        //- clone this cube (needed for PtrList<meshOctreeCube>::operator=,
-        //- itself only required because meshOctreeSlot sits inside a
-        //- plain List<meshOctreeSlot> that must stay copy-assignable, even
-        //- though the copy path is never exercised at runtime - cubes_
-        //- grows once, from empty, per slot)
-        inline autoPtr<meshOctreeCube> clone() const;
-
         //- refine cube in two directions, it is used for generating quadtrees
         void refineCube2D
         (

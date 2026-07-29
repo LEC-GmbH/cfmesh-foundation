@@ -39,7 +39,7 @@ Description
 #define meshOctreeSlot_H
 
 #include "labelListListOps.H"
-#include "PtrList.H"
+#include "DynamicList.H"
 #include "FixedList.H"
 #include "meshOctreeCube.H"
 
@@ -61,29 +61,38 @@ public:
     // Public data
 
         //- List of octree cubes
-        //  PtrList, not DynamicList/LongList: cube addresses are cached
-        //  forever once appended (initialCubePtr_/subCubesPtr_ elsewhere
-        //  hold raw pointers into specific cubes_ elements, dereferenced
-        //  by any thread at any later time) - PtrList only ever
-        //  reallocates its array of pointers, never the individually
-        //  heap-allocated cube objects themselves. Safe without the
-        //  reserve+counter+trim scheme used for containedTriangles_/
+        //  DynamicList of POINTERS (not a DynamicList<meshOctreeCube> of
+        //  values, and not PtrList): cube addresses are cached forever
+        //  once appended (initialCubePtr_/subCubesPtr_ elsewhere hold raw
+        //  pointers into specific cubes_ elements, dereferenced by any
+        //  thread at any later time). Each cube is individually
+        //  heap-allocated (append(new meshOctreeCube(...))), so growing/
+        //  reallocating this list's own backing array only ever moves the
+        //  pointers themselves, never the pointed-to cube objects -
+        //  same address-permanence guarantee PtrList gave, but with
+        //  DynamicList's amortised (capacity-doubling) growth instead of
+        //  PtrList's reallocate-and-copy-every-append (which made octree
+        //  construction O(n^2) in the total number of cubes - the actual
+        //  root cause of a severe slowdown on large cases). Safe without
+        //  the reserve+counter+trim scheme used for containedTriangles_/
         //  containedEdges_ below: unlike those, cubes_ is never indexed
         //  by a different thread than the one that just appended to it -
         //  all other access goes through already-cached pointers
         //  (initialCubePtr_, subCubesPtr_), never by re-indexing into
         //  cubes_ itself, so the pointer array's own reallocation is
-        //  never observed by a concurrent reader.
-        PtrList<meshOctreeCube> cubes_;
+        //  never observed by a concurrent reader. Since DynamicList<T*>
+        //  does not own/delete its pointees (unlike PtrList), the
+        //  destructor below explicitly deletes them.
+        DynamicList<meshOctreeCube*> cubes_;
 
         //- Pointers to child cubes
-        //  PtrList, not DynamicList: rows must stay stable in memory
-        //  forever once appended (subCubesPtr_ elsewhere holds a raw
-        //  pointer into a specific row) - a DynamicList's own backing
-        //  array can be reallocated by a later append, invalidating any
-        //  such pointer, whereas PtrList only ever reallocates its array
-        //  of pointers, never the pointed-to row objects themselves
-        PtrList<FixedList<meshOctreeCube*, 8>> childCubes_;
+        //  Same reasoning as cubes_ above: each row is individually
+        //  heap-allocated (append(new FixedList<meshOctreeCube*,8>(...))),
+        //  so DynamicList's own backing-array reallocation never moves
+        //  the rows themselves - subCubesPtr_ elsewhere can safely hold a
+        //  raw pointer into a specific row forever. Manually deleted in
+        //  the destructor below, same reason as cubes_.
+        DynamicList<FixedList<meshOctreeCube*, 8>*> childCubes_;
 
         //- surface triangles contained in an octree cube
         labelListList2D containedTriangles_;
@@ -103,6 +112,28 @@ public:
         //  cube's activeSlotPtr_ (see meshOctreeCube::activeSlotPtr_)
         label nextContainedTrianglesRow_ = 0;
         label nextContainedEdgesRow_ = 0;
+
+
+    // Destructor
+
+        //- delete individually heap-allocated cubes_/childCubes_ entries
+        //  (DynamicList<T*> does not own/delete its pointees, unlike the
+        //  PtrList these members used to be). Safe: each meshOctreeSlot
+        //  lives inside meshOctree::dataSlots_, a List<meshOctreeSlot>
+        //  that is resized exactly once (empty -> full, never touched
+        //  again), and no meshOctreeSlot is ever copied elsewhere.
+        ~meshOctreeSlot()
+        {
+            forAll(cubes_, i)
+            {
+                delete cubes_[i];
+            }
+
+            forAll(childCubes_, i)
+            {
+                delete childCubes_[i];
+            }
+        }
 };
 
 

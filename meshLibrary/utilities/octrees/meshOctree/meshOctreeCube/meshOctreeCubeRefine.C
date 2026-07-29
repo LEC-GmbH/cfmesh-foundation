@@ -127,14 +127,14 @@ void Foam::Module::meshOctreeCube::refineCube2D
 
         slotPtr->cubes_.append(new meshOctreeCube(cc));
 
-        subCubes[scI] = &slotPtr->cubes_[cubeI];
+        subCubes[scI] = slotPtr->cubes_[cubeI];
         subCubes[scI]->activeSlotPtr_ = slotPtr;
         subCubes[scI]->setCubeType(this->cubeType());
     }
 
     const label subCubesLabel = slotPtr->childCubes_.size();
     slotPtr->childCubes_.append(new FixedList<meshOctreeCube*, 8>(subCubes));
-    subCubesPtr_ = &slotPtr->childCubes_[subCubesLabel][0];
+    subCubesPtr_ = &(*slotPtr->childCubes_[subCubesLabel])[0];
 
     if (hasContainedElements())
     {
@@ -235,14 +235,14 @@ void Foam::Module::meshOctreeCube::refineCube
         const label cubeI = slotPtr->cubes_.size();
         slotPtr->cubes_.append(new meshOctreeCube(this->refineForPosition(scI)));
 
-        subCubes[scI] = &slotPtr->cubes_[cubeI];
+        subCubes[scI] = slotPtr->cubes_[cubeI];
         subCubes[scI]->activeSlotPtr_ = slotPtr;
         subCubes[scI]->setCubeType(this->cubeType());
     }
 
     const label subCubesLabel = slotPtr->childCubes_.size();
     slotPtr->childCubes_.append(new FixedList<meshOctreeCube*, 8>(subCubes));
-    subCubesPtr_ = &slotPtr->childCubes_[subCubesLabel][0];
+    subCubesPtr_ = &(*slotPtr->childCubes_[subCubesLabel])[0];
 
     if (hasContainedElements())
     {

@@ -218,7 +218,7 @@ void Foam::Module::meshOctree::createInitialOctreeBox()
         );
     }
 
-    initialCubePtr_ = &slotPtr->cubes_[0];
+    initialCubePtr_ = slotPtr->cubes_[0];
 
     leaves_.setSize(1);
     leaves_[0] = initialCubePtr_;
