@@ -130,10 +130,8 @@ void Foam::Module::voronoiMeshGenerator::optimiseMeshSurface()
 }
 
 
-void Foam::Module::voronoiMeshGenerator::generateBoudaryLayers()
+void Foam::Module::voronoiMeshGenerator::generateBoundaryLayers()
 {
-    boundaryLayers bl(mesh_);
-
     if (meshDict_.found("boundaryLayers"))
     {
         boundaryLayers bl(mesh_);
@@ -167,9 +165,11 @@ void Foam::Module::voronoiMeshGenerator::refBoundaryLayers()
 {
     if (meshDict_.isDict("boundaryLayers"))
     {
-        refineBoundaryLayers refLayers(mesh_);
-
-        refineBoundaryLayers::readSettings(meshDict_, refLayers);
+        refineBoundaryLayers refLayers
+        (
+            mesh_,
+            meshDict_.subDict("boundaryLayers")
+        );
 
         refLayers.refineLayers();
 
@@ -311,13 +311,13 @@ void Foam::Module::voronoiMeshGenerator::snap()
     mapEdgesAndCorners();
 
     optimiseMeshSurface();
+
+    generateBoundaryLayers();
 }
 
 
 void Foam::Module::voronoiMeshGenerator::addLayers()
 {
-    generateBoudaryLayers();
-
     optimiseMesh(true);
 
     refBoundaryLayers();

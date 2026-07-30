@@ -48,7 +48,11 @@ Foam::Module::refineBoundaryLayers::surfaceEngine() const
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::Module::refineBoundaryLayers::refineBoundaryLayers(polyMeshGen& mesh)
+Foam::Module::refineBoundaryLayers::refineBoundaryLayers
+(
+    polyMeshGen& mesh,
+    const dictionary& dict
+)
 :
     mesh_(mesh),
     msePtr_(nullptr),
@@ -58,7 +62,9 @@ Foam::Module::refineBoundaryLayers::refineBoundaryLayers(polyMeshGen& mesh)
     done_(false),
     is2DMesh_(false),
     specialMode_(false)
-{}
+{
+    read(dict);
+}
 
 
 // * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
@@ -380,124 +386,82 @@ void Foam::Module::refineBoundaryLayers::pointsInBndLayer(const word subsetName)
 }
 
 
-void Foam::Module::refineBoundaryLayers::readSettings
-(
-    const dictionary& meshDict,
-    refineBoundaryLayers& refLayers
-)
+void Foam::Module::refineBoundaryLayers::read(const dictionary& bndLayers)
 {
-    if (meshDict.isDict("boundaryLayers"))
+    // read global properties (falling back to whatever is already set,
+    // i.e. a no-op, if a key is absent)
+    setGlobalNumberOfLayers
+    (
+        bndLayers.lookupOrDefault("nLayers", globalNumLayers_)
+    );
+
+    setGlobalThicknessRatio
+    (
+        bndLayers.lookupOrDefault("thicknessRatio", globalThicknessRatio_)
+    );
+
+    setGlobalMaxThicknessOfFirstLayer
+    (
+        bndLayers.lookupOrDefault
+        (
+            "maxFirstLayerThickness",
+            globalMaxThicknessFirstLayer_
+        )
+    );
+
+    // consider specified patches for exclusion from boundary layer creation
+    // implemented by setting the number of layers to 1
+    const wordList excludedPatches
+    (
+        bndLayers.lookupOrDefault("excludedPatches", wordList())
+    );
+
+    forAll(excludedPatches, patchI)
     {
-        const dictionary& bndLayers = meshDict.subDict("boundaryLayers");
-
-        // read global properties
-        {
-            label nLayers;
-            if (bndLayers.readIfPresent("nLayers", nLayers))
-            {
-                refLayers.setGlobalNumberOfLayers(nLayers);
-            }
-        }
-
-        {
-            scalar ratio;
-            if (bndLayers.readIfPresent("thicknessRatio", ratio))
-            {
-                refLayers.setGlobalThicknessRatio(ratio);
-            }
-        }
-
-        {
-            scalar thick;
-            if (bndLayers.readIfPresent("maxFirstLayerThickness", thick))
-            {
-                refLayers.setGlobalMaxThicknessOfFirstLayer(thick);
-            }
-        }
-
-        // consider specified patches for exclusion from boundary layer creation
-        // implemented by setting the number of layers to 1
-        if (bndLayers.found("excludedPatches"))
-        {
-            const wordList patchNames(bndLayers.lookup("excludedPatches"));
-
-            forAll(patchNames, patchI)
-            {
-                const word pName = patchNames[patchI];
-
-                refLayers.setNumberOfLayersForPatch(pName, 1);
-            }
-        }
-
-        // patch-based properties
-        if (bndLayers.isDict("patchBoundaryLayers"))
-        {
-            const dictionary& patchBndLayers =
-                bndLayers.subDict("patchBoundaryLayers");
-            const wordList patchNames = patchBndLayers.toc();
-
-            forAll(patchNames, patchI)
-            {
-                const word pName = patchNames[patchI];
-
-                if (patchBndLayers.isDict(pName))
-                {
-                    const dictionary& patchDict =
-                        patchBndLayers.subDict(pName);
-
-                    label nLayers;
-                    if (patchDict.readIfPresent("nLayers", nLayers))
-                    {
-                        refLayers.setNumberOfLayersForPatch(pName, nLayers);
-                    }
-
-                    scalar ratio;
-                    if (patchDict.readIfPresent("thicknessRatio", ratio))
-                    {
-                        refLayers.setThicknessRatioForPatch(pName, ratio);
-                    }
-
-                    scalar thick;
-                    if
-                    (
-                        patchDict.readIfPresent
-                        (
-                            "maxFirstLayerThickness",
-                            thick
-                        )
-                    )
-                    {
-                        refLayers.setMaxThicknessOfFirstLayerForPatch
-                        (
-                            pName,
-                            thick
-                        );
-                    }
-
-                    if
-                    (
-                        patchDict.lookupOrDefault<bool>
-                        (
-                            "allowDiscontinuity",
-                            false
-                        )
-                    )
-                    {
-                        refLayers.setInteruptForPatch(pName);
-                    }
-                }
-                else
-                {
-                    Warning << "Cannot refine layer for patch "
-                        << patchNames[patchI] << endl;
-                }
-            }
-        }
+        setNumberOfLayersForPatch(excludedPatches[patchI], 1);
     }
-    else
+
+    // patch-based properties
+    const dictionary& patchBndLayers =
+        bndLayers.subOrEmptyDict("patchBoundaryLayers");
+    const wordList patchNames = patchBndLayers.toc();
+
+    forAll(patchNames, patchI)
     {
-        // the layer will not be refined
-        refLayers.avoidRefinement();
+        const word pName = patchNames[patchI];
+
+        if (patchBndLayers.isDict(pName))
+        {
+            const dictionary& patchDict = patchBndLayers.subDict(pName);
+
+            label nLayers;
+            if (patchDict.readIfPresent("nLayers", nLayers))
+            {
+                setNumberOfLayersForPatch(pName, nLayers);
+            }
+
+            scalar ratio;
+            if (patchDict.readIfPresent("thicknessRatio", ratio))
+            {
+                setThicknessRatioForPatch(pName, ratio);
+            }
+
+            scalar thick;
+            if (patchDict.readIfPresent("maxFirstLayerThickness", thick))
+            {
+                setMaxThicknessOfFirstLayerForPatch(pName, thick);
+            }
+
+            if (patchDict.lookupOrDefault<bool>("allowDiscontinuity", false))
+            {
+                setInteruptForPatch(pName);
+            }
+        }
+        else
+        {
+            Warning << "Cannot refine layer for patch "
+                << patchNames[patchI] << endl;
+        }
     }
 }
 

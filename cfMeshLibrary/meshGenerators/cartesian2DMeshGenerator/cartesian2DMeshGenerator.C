@@ -205,9 +205,11 @@ void Foam::Module::cartesian2DMeshGenerator::refBoundaryLayers()
 {
     if (meshDict_.isDict("boundaryLayers"))
     {
-        refineBoundaryLayers refLayers(mesh_);
-
-        refineBoundaryLayers::readSettings(meshDict_, refLayers);
+        refineBoundaryLayers refLayers
+        (
+            mesh_,
+            meshDict_.subDict("boundaryLayers")
+        );
 
         refLayers.activate2DMode();
 
@@ -259,13 +261,13 @@ void Foam::Module::cartesian2DMeshGenerator::snap()
     mapEdgesAndCorners();
 
     optimiseMeshSurface();
+
+    generateBoundaryLayers();
 }
 
 
 void Foam::Module::cartesian2DMeshGenerator::addLayers()
 {
-    generateBoundaryLayers();
-
     optimiseMesh(true);
 
     refBoundaryLayers();

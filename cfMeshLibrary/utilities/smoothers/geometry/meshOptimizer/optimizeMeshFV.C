@@ -277,96 +277,71 @@ void Foam::Module::meshOptimizer::optimizeBoundaryLayer
     const bool addBufferLayer
 )
 {
-    if (!meshDict_.empty())
+    bool smoothLayer(false);
+    boundaryLayersDict_.readIfPresent("optimiseLayer", smoothLayer);
+
+    if (!smoothLayer)
     {
-        const dictionary& meshDict = meshDict_;
+        return;
+    }
 
-        bool smoothLayer(false);
+    if (addBufferLayer)
+    {
+        // create a buffer layer which will not be modified by the smoother
+        refineBoundaryLayers refLayers(mesh_, boundaryLayersDict_);
 
-        if (meshDict.found("boundaryLayers"))
-        {
-            const dictionary& layersDict = meshDict.subDict("boundaryLayers");
+        refLayers.activateSpecialMode();
 
-            layersDict.readIfPresent("optimiseLayer", smoothLayer);
-        }
-
-        if (!smoothLayer)
-        {
-            return;
-        }
-
-        if (addBufferLayer)
-        {
-            // create a buffer layer which will not be modified by the smoother
-            refineBoundaryLayers refLayers(mesh_);
-
-            refineBoundaryLayers::readSettings(meshDict, refLayers);
-
-            refLayers.activateSpecialMode();
-
-            refLayers.refineLayers();
-
-            clearSurface();
-            calculatePointLocations();
-        }
-
-        Info<< "Starting optimising boundary layer" << endl;
-
-        const meshSurfaceEngine& mse = meshSurface();
-        const labelList& faceOwner = mse.faceOwners();
-
-        boundaryLayerOptimisation optimiser(mesh_, mse);
-
-        boundaryLayerOptimisation::readSettings(meshDict, optimiser);
-
-        optimiser.optimiseLayer();
-
-        // check if the bnd layer is tangled somewhere
-        DynamicList<label> bndLayerCells;
-        const boolList& baseFace = optimiser.isBaseFace();
-
-        forAll(baseFace, bfI)
-        {
-            if (baseFace[bfI])
-            {
-                bndLayerCells.append(faceOwner[bfI]);
-            }
-        }
+        refLayers.refineLayers();
 
         clearSurface();
-        mesh_.clearAddressingData();
-
-        // lock boundary layer points, faces and cells
-        lockCells(bndLayerCells);
-
-        // optimize mesh quality
-        optimizeMeshFV(5, 1, 50, 0);
-
-        // untangle remaining faces and lock the boundary layer cells
-        untangleMeshFV(2, 50, 0);
-
-        // unlock bnd layer points
-        removeUserConstraints();
-
-        Info<< "Finished optimising boundary layer" << endl;
+        calculatePointLocations();
     }
+
+    Info<< "Starting optimising boundary layer" << endl;
+
+    const meshSurfaceEngine& mse = meshSurface();
+    const labelList& faceOwner = mse.faceOwners();
+
+    boundaryLayerOptimisation optimiser(mesh_, mse, boundaryLayersDict_);
+
+    optimiser.optimiseLayer();
+
+    // check if the bnd layer is tangled somewhere
+    DynamicList<label> bndLayerCells;
+    const boolList& baseFace = optimiser.isBaseFace();
+
+    forAll(baseFace, bfI)
+    {
+        if (baseFace[bfI])
+        {
+            bndLayerCells.append(faceOwner[bfI]);
+        }
+    }
+
+    clearSurface();
+    mesh_.clearAddressingData();
+
+    // lock boundary layer points, faces and cells
+    lockCells(bndLayerCells);
+
+    // optimize mesh quality
+    optimizeMeshFV(5, 1, 50, 0);
+
+    // untangle remaining faces and lock the boundary layer cells
+    untangleMeshFV(2, 50, 0);
+
+    // unlock bnd layer points
+    removeUserConstraints();
+
+    Info<< "Finished optimising boundary layer" << endl;
 }
 
 
 void Foam::Module::meshOptimizer::untangleBoundaryLayer()
 {
     bool untangleLayer(true);
-    if (!meshDict_.empty())
-    {
-        const dictionary& meshDict = meshDict_;
-
-        if (meshDict.found("boundaryLayers") )
-        {
-            const dictionary& subdict = meshDict.subDict("boundaryLayers");
-
-            subdict.readIfPresent("untangleLayers", untangleLayer);
-        }
-    }
+    boundaryLayersDict_.readIfPresent("untangleLayers", untangleLayer);
 
     if (!untangleLayer)
     {

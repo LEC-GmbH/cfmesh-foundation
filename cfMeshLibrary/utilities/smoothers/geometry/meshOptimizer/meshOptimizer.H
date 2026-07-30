@@ -73,14 +73,10 @@ class meshOptimizer
         //- reference to the mesh
         polyMeshGen& mesh_;
 
-        //- meshDict, if the caller has one; passed in explicitly rather
-        //- than looked up from the Time registry by a hardcoded name.
-        //- Kept (rather than just its subDicts) because optimizeBoundaryLayer
-        //- forwards it whole to refineBoundaryLayers::readSettings/
-        //- boundaryLayerOptimisation::readSettings, which look up their own
-        //- "boundaryLayers" subDict themselves. dictionary::null if the
-        //- caller didn't provide one.
-        const dictionary& meshDict_;
+        //- meshDict's boundaryLayers subDict, or dictionary::null if the
+        //- caller didn't provide a meshDict at all; derived once at
+        //- construction via subOrEmptyDict()
+        const dictionary& boundaryLayersDict_;
 
         //- meshDict's meshQualitySettings subDict, or dictionary::null if
         //- absent; derived once at construction via subOrEmptyDict()

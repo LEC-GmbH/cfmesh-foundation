@@ -109,7 +109,7 @@ class voronoiMeshGenerator
         void optimiseMeshSurface();
 
         //- add boundary layers
-        void generateBoudaryLayers();
+        void generateBoundaryLayers();
 
         //- mesh optimisation. layersExist selects whether boundary-layer
         //- specific optimisation also runs (see meshGenerator::

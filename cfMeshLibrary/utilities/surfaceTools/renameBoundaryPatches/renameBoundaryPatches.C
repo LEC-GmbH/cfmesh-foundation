@@ -41,8 +41,6 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
 {
     Info<< "Renaming boundary patches" << endl;
 
-    const dictionary& dict = meshDict_.subOrEmptyDict("renameBoundary");
-
     HashTable<label> patchToLabel;
     forAll(mesh_.boundaries(), patchI)
     {
@@ -102,9 +100,9 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
     // rename for - keeps split patches' exposed names/types stable
     // without this class needing to rewrite meshDict itself
     dictionary effectiveNewPatchNames;
-    if (dict.found("newPatchNames"))
+    if (renameBoundaryDict_.found("newPatchNames"))
     {
-        effectiveNewPatchNames = dict.subDict("newPatchNames");
+        effectiveNewPatchNames = renameBoundaryDict_.subDict("newPatchNames");
     }
 
     forAllConstIter(HashTable<wordList>, mesh_.origPatchNamesMap(), it)
@@ -195,10 +193,10 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
     }
 
     word defaultName("walls");
-    dict.readIfPresent("defaultName", defaultName);
+    renameBoundaryDict_.readIfPresent("defaultName", defaultName);
 
     word defaultType("wall");
-    dict.readIfPresent("defaultType", defaultType);
+    renameBoundaryDict_.readIfPresent("defaultType", defaultType);
 
     bool addDefaultPatch(hasOrphanFaces);
     forAll(patchToNew, patchI)
@@ -210,7 +208,7 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
         }
     }
 
-    if (dict.found("defaultName"))
+    if (renameBoundaryDict_.found("defaultName"))
     {
         if (addDefaultPatch)
         {
@@ -337,7 +335,7 @@ Foam::Module::renameBoundaryPatches::renameBoundaryPatches
 )
 :
     mesh_(mesh),
-    meshDict_(meshDict)
+    renameBoundaryDict_(meshDict.subOrEmptyDict("renameBoundary"))
 {
     // even without a user-configured renameBoundary, a mesh whose surface
     // was split by feature edges (mesh_.origPatchNamesMap() non-empty)

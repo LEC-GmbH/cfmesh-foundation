@@ -49,14 +49,12 @@ SourceFiles
 #include "labelListListOps.H"
 #include "Map.H"
 #include "Tuple2.H"
+#include "dictionary.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
 {
-// Forward declarations
-class dictionary;
-
 namespace Module
 {
 class polyMeshGen;
@@ -229,14 +227,22 @@ class boundaryLayerOptimisation
 public:
 
     // Constructors
-        //- construct from polyMeshGen
-        boundaryLayerOptimisation(polyMeshGen& mesh);
-
-        //- Construct from polyMeshGen and meshSurfaceEngine
+        //- construct from polyMeshGen, optionally reading settings from
+        //- the given boundaryLayers subDict (dictionary::null for none)
         boundaryLayerOptimisation
         (
             polyMeshGen& mesh,
-            const meshSurfaceEngine&
+            const dictionary& dict = dictionary::null
+        );
+
+        //- Construct from polyMeshGen and meshSurfaceEngine, optionally
+        //- reading settings from the given boundaryLayers subDict
+        //- (dictionary::null for none)
+        boundaryLayerOptimisation
+        (
+            polyMeshGen& mesh,
+            const meshSurfaceEngine&,
+            const dictionary& dict = dictionary::null
         );
 
 
@@ -245,6 +251,10 @@ public:
         ~boundaryLayerOptimisation();
 
     // Member Functions
+        //- read the settings from the boundaryLayers subDict (or an
+        //- empty dictionary if the caller has none)
+        void read(const dictionary&);
+
         //- set the maximum number of iterations
         void setMaxNumIterations(const label maxNumIterations);
 
@@ -272,14 +282,6 @@ public:
 
         //- performs boundary layer optimisation
         void optimiseLayer();
-
-    // Static member functions
-        //- read the settings from dictionary
-        static void readSettings
-        (
-            const dictionary&,
-            boundaryLayerOptimisation&
-        );
 };
 
 

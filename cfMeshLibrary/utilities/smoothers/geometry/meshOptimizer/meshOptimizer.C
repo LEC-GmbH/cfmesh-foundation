@@ -174,7 +174,7 @@ Foam::Module::meshOptimizer::meshOptimizer
 )
 :
     mesh_(mesh),
-    meshDict_(meshDict),
+    boundaryLayersDict_(meshDict.subOrEmptyDict("boundaryLayers")),
     qualitySettingsDict_(meshDict.subOrEmptyDict("meshQualitySettings")),
     msePtr_(nullptr),
     enforceConstraints_(false)

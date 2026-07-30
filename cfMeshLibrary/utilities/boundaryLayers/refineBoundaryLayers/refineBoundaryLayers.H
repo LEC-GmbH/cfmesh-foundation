@@ -48,6 +48,7 @@ SourceFiles
 #include "labelListListOps.H"
 #include "HashSet.H"
 #include "HashTable.H"
+#include "dictionary.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -356,8 +357,13 @@ class refineBoundaryLayers
 
 public:
 
-    //- Construct from mesh reference
-    refineBoundaryLayers(polyMeshGen& mesh);
+    //- Construct from mesh reference, optionally reading settings from
+    //- the given boundaryLayers subDict (dictionary::null for none)
+    refineBoundaryLayers
+    (
+        polyMeshGen& mesh,
+        const dictionary& dict = dictionary::null
+    );
 
     //- Destructor
      ~refineBoundaryLayers();
@@ -366,6 +372,10 @@ public:
     // Public member functions
 
         // Settings
+
+        //- read the settings from the boundaryLayers subDict (or an
+        //- empty dictionary if the caller has none)
+        void read(const dictionary&);
 
         //- set no refinement flag
         void avoidRefinement();
@@ -432,12 +442,6 @@ public:
 
         //- create a subset containing points in the boundary layer
         void pointsInBndLayer(const word subsetName="pointsInBndLayer");
-
-
-    // Static member functions
-
-        //- read the settings from dictionary
-        static void readSettings(const dictionary&, refineBoundaryLayers&);
 };
 
 

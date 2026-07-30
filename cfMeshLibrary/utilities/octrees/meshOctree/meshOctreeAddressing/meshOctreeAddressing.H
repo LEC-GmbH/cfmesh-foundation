@@ -71,8 +71,19 @@ class meshOctreeAddressing
         //- reference to the octree
         const meshOctree& octree_;
 
-        //- reference to the dictionary
-        const dictionary& meshDict_;
+        //- checkForGluedMesh, extracted once at construction
+        bool checkForGluedMesh_;
+
+        //- nonManifoldMeshing, extracted once at construction
+        bool nonManifoldMeshing_;
+
+        //- removeCellsIntersectingPatches subDict, or dictionary::null
+        //- if not present
+        const dictionary& removeCellsIntersectingPatchesDict_;
+
+        //- keepCellsIntersectingPatches subDict, or dictionary::null
+        //- if not present
+        const dictionary& keepCellsIntersectingPatchesDict_;
 
         //- use DATA boxes
         bool useDATABoxes_;

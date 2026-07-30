@@ -319,7 +319,7 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
             boxType[leafI] |= MESHCELL;
     }
 
-    if (meshDict_.lookupOrDefault<bool>("nonManifoldMeshing", false))
+    if (nonManifoldMeshing_)
     {
         # pragma omp parallel for schedule(dynamic, 40)
         forAll(boxType, leafI)
@@ -349,13 +349,12 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
         }
 
         // do not use boxes intersecting given patches
-        if (meshDict_.found("removeCellsIntersectingPatches"))
+        if (!removeCellsIntersectingPatchesDict_.empty())
         {
             wordHashSet patchesToRemove;
 
-            const dictionary& dict =
-                meshDict_.subDict("removeCellsIntersectingPatches");
-            const wordList patchNames = dict.toc();
+            const wordList patchNames =
+                removeCellsIntersectingPatchesDict_.toc();
             forAll(patchNames, patchI)
             {
                 patchesToRemove.insert(patchNames[patchI]);
@@ -415,13 +414,11 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
             }
         }
     }
-    else if (meshDict_.found("keepCellsIntersectingPatches"))
+    else if (!keepCellsIntersectingPatchesDict_.empty())
     {
         wordHashSet patchesToKeep;
 
-        const dictionary& dict =
-            meshDict_.subDict("keepCellsIntersectingPatches");
-        const wordList patchNames = dict.toc();
+        const wordList patchNames = keepCellsIntersectingPatchesDict_.toc();
 
         forAll(patchNames, patchI)
         {

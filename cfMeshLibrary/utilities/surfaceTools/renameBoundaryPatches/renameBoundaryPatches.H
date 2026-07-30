@@ -63,8 +63,9 @@ class renameBoundaryPatches
         //- mesh
         polyMeshGen& mesh_;
 
-        //- dictionary containing relevant information
-        const IOdictionary& meshDict_;
+        //- renameBoundary subDict, or dictionary::null if not present;
+        //- derived once at construction via subOrEmptyDict()
+        const dictionary& renameBoundaryDict_;
 
 
     // Private member functions

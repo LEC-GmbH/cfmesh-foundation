@@ -97,7 +97,16 @@ Foam::Module::meshOctreeAddressing::meshOctreeAddressing
 )
 :
     octree_(mo),
-    meshDict_(dict),
+    checkForGluedMesh_(dict.lookupOrDefault<bool>("checkForGluedMesh", false)),
+    nonManifoldMeshing_(dict.lookupOrDefault<bool>("nonManifoldMeshing", false)),
+    removeCellsIntersectingPatchesDict_
+    (
+        dict.subOrEmptyDict("removeCellsIntersectingPatches")
+    ),
+    keepCellsIntersectingPatchesDict_
+    (
+        dict.subOrEmptyDict("keepCellsIntersectingPatches")
+    ),
     useDATABoxes_(useDATABoxes),
     nNodes_(0),
     octreePointsPtr_(nullptr),
@@ -123,7 +132,7 @@ Foam::Module::meshOctreeAddressing::meshOctreeAddressing
         dict.readIfPresent("keepCellsIntersectingBoundary", useDATABoxes_);
     }
 
-    if (dict.lookupOrDefault<bool>("nonManifoldMeshing", false))
+    if (nonManifoldMeshing_)
     {
         useDATABoxes_ = true;
     }

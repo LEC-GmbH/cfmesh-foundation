@@ -38,11 +38,7 @@ License
 void Foam::Module::meshOctreeAddressing::checkGluedRegions()
 {
     // Only run if useDATABoxes_ is true and checkForGluedMesh is specified
-    if
-    (
-        !useDATABoxes_
-     || !meshDict_.lookupOrDefault<bool>("checkForGluedMesh", false)
-    )
+    if (!useDATABoxes_ || !checkForGluedMesh_)
     {
         return;
     }

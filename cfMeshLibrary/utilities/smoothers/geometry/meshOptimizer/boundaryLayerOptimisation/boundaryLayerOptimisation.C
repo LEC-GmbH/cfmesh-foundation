@@ -36,7 +36,8 @@ License
 
 Foam::Module::boundaryLayerOptimisation::boundaryLayerOptimisation
 (
-    polyMeshGen& mesh
+    polyMeshGen& mesh,
+    const dictionary& dict
 )
 :
     mesh_(mesh),
@@ -50,13 +51,15 @@ Foam::Module::boundaryLayerOptimisation::boundaryLayerOptimisation
     reCalculateNormals_(true)
 {
     calculateHairEdges();
+    read(dict);
 }
 
 
 Foam::Module::boundaryLayerOptimisation::boundaryLayerOptimisation
 (
     polyMeshGen& mesh,
-    const meshSurfaceEngine& mse
+    const meshSurfaceEngine& mse,
+    const dictionary& dict
 )
 :
     mesh_(mesh),
@@ -70,6 +73,7 @@ Foam::Module::boundaryLayerOptimisation::boundaryLayerOptimisation
     reCalculateNormals_(true)
 {
     calculateHairEdges();
+    read(dict);
 }
 
 
@@ -154,86 +158,68 @@ Foam::Module::boundaryLayerOptimisation::isBaseFace() const
 }
 
 
-void Foam::Module::boundaryLayerOptimisation::readSettings
-(
-    const dictionary& meshDict,
-    boundaryLayerOptimisation& blOptimisation
-)
+void Foam::Module::boundaryLayerOptimisation::read(const dictionary& layersDict)
 {
-    if (meshDict.found("boundaryLayers"))
+    if (!layersDict.lookupOrDefault<bool>("optimiseLayer", true))
     {
-        const dictionary& layersDict = meshDict.subDict("boundaryLayers");
-
-        bool smoothLayers;
-        if (layersDict.readIfPresent("optimiseLayer", smoothLayers))
-        {
-            if (!smoothLayers) return;
-        }
-
-        if (layersDict.found("optimisationParameters"))
-        {
-            const dictionary& optParams =
-                layersDict.subDict("optimisationParameters");
-
-            bool recalcNormals;
-            if (optParams.readIfPresent("recalculateNormals", recalcNormals))
-            {
-                blOptimisation.recalculateNormals(recalcNormals);
-            }
-
-            label nSmoothNormals;
-            if (optParams.readIfPresent("nSmoothNormals", nSmoothNormals))
-            {
-                if (nSmoothNormals < 0)
-                {
-                    FatalErrorInFunction
-                        << "nSmoothNormals must not be negative!"
-                        << exit(FatalError);
-                }
-
-                blOptimisation.setNumNormalsSmoothingIterations(nSmoothNormals);
-            }
-
-            scalar featureSizeFactor;
-            if (optParams.readIfPresent("featureSizeFactor", featureSizeFactor))
-            {
-                if (featureSizeFactor >= 1.0 || featureSizeFactor < 0.0)
-                {
-                    FatalErrorInFunction
-                        << "Feature size factor is out"
-                        << " of a valid range 0 to 1" << exit(FatalError);
-                }
-
-                blOptimisation.setFeatureSizeFactor(featureSizeFactor);
-            }
-
-            scalar relThicknessTol;
-            if (optParams.readIfPresent("relThicknessTol", relThicknessTol))
-            {
-                if (relThicknessTol >= 1.0 || relThicknessTol < 0.0)
-                {
-                    FatalErrorInFunction
-                        << "Relative thickness tolerance is out"
-                        << " of a valid range 0 to 1" << exit(FatalError);
-                }
-
-                blOptimisation.setRelativeThicknessTolerance(relThicknessTol);
-            }
-
-            label maxNumIterations;
-            if (optParams.readIfPresent("maxNumIterations", maxNumIterations))
-            {
-                if (maxNumIterations < 0)
-                {
-                    FatalErrorInFunction
-                        << "maxNumIterations must not be negative!"
-                        << exit(FatalError);
-                }
-
-                blOptimisation.setMaxNumIterations(maxNumIterations);
-            }
-        }
+        return;
     }
+
+    const dictionary& optParams =
+        layersDict.subOrEmptyDict("optimisationParameters");
+
+    recalculateNormals
+    (
+        optParams.lookupOrDefault("recalculateNormals", reCalculateNormals_)
+    );
+
+    const label nSmoothNormals =
+        optParams.lookupOrDefault("nSmoothNormals", nSmoothNormals_);
+
+    if (nSmoothNormals < 0)
+    {
+        FatalErrorInFunction
+            << "nSmoothNormals must not be negative!"
+            << exit(FatalError);
+    }
+
+    setNumNormalsSmoothingIterations(nSmoothNormals);
+
+    const scalar featureSizeFactor =
+        optParams.lookupOrDefault("featureSizeFactor", featureSizeFactor_);
+
+    if (featureSizeFactor >= 1.0 || featureSizeFactor < 0.0)
+    {
+        FatalErrorInFunction
+            << "Feature size factor is out"
+            << " of a valid range 0 to 1" << exit(FatalError);
+    }
+
+    setFeatureSizeFactor(featureSizeFactor);
+
+    const scalar relThicknessTol =
+        optParams.lookupOrDefault("relThicknessTol", relThicknessTol_);
+
+    if (relThicknessTol >= 1.0 || relThicknessTol < 0.0)
+    {
+        FatalErrorInFunction
+            << "Relative thickness tolerance is out"
+            << " of a valid range 0 to 1" << exit(FatalError);
+    }
+
+    setRelativeThicknessTolerance(relThicknessTol);
+
+    const label maxNumIterations =
+        optParams.lookupOrDefault("maxNumIterations", maxNumIterations_);
+
+    if (maxNumIterations < 0)
+    {
+        FatalErrorInFunction
+            << "maxNumIterations must not be negative!"
+            << exit(FatalError);
+    }
+
+    setMaxNumIterations(maxNumIterations);
 }
 
 

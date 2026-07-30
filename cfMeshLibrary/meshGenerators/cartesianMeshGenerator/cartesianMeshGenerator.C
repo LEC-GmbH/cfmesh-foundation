@@ -164,7 +164,14 @@ void Foam::Module::cartesianMeshGenerator::optimiseMeshSurface()
 
 void Foam::Module::cartesianMeshGenerator::generateBoundaryLayers()
 {
-    // add boundary layers
+    // insert a single geometry-adapted (non-constant width) buffer layer
+    // for every patch - unconditional, regardless of whether the user
+    // configured "real" (multi-cell, thicknessRatio-graded) boundary
+    // layers at all; refBoundaryLayers() only subdivides this same base
+    // layer further when boundaryLayers is actually configured. Runs at
+    // the end of snap() (not the start of addLayers()) so a snap-only
+    // run - or the snap half of a staged snap/addLayers split - gets
+    // this quality benefit too, not just full/addLayers-enabled runs
     boundaryLayers bl(mesh_);
     bl.addLayerForAllPatches();
 }
@@ -174,9 +181,11 @@ void Foam::Module::cartesianMeshGenerator::refBoundaryLayers()
 {
     if (meshDict_.isDict("boundaryLayers"))
     {
-        refineBoundaryLayers refLayers(mesh_);
-
-        refineBoundaryLayers::readSettings(meshDict_, refLayers);
+        refineBoundaryLayers refLayers
+        (
+            mesh_,
+            meshDict_.subDict("boundaryLayers")
+        );
 
         refLayers.refineLayers();
 
@@ -315,13 +324,13 @@ void Foam::Module::cartesianMeshGenerator::snap()
     mapEdgesAndCorners();
 
     optimiseMeshSurface();
+
+    generateBoundaryLayers();
 }
 
 
 void Foam::Module::cartesianMeshGenerator::addLayers()
 {
-    generateBoundaryLayers();
-
     optimiseMesh(true);
 
     refBoundaryLayers();

@@ -235,9 +235,11 @@ void Foam::Module::tetMeshGenerator::refBoundaryLayers()
 {
     if (meshDict_.isDict("boundaryLayers"))
     {
-        refineBoundaryLayers refLayers(mesh_);
-
-        refineBoundaryLayers::readSettings(meshDict_, refLayers);
+        refineBoundaryLayers refLayers
+        (
+            mesh_,
+            meshDict_.subDict("boundaryLayers")
+        );
 
         refLayers.refineLayers();
 
@@ -286,13 +288,13 @@ void Foam::Module::tetMeshGenerator::snap()
     mapEdgesAndCorners();
 
     optimiseMeshSurface();
+
+    generateBoundaryLayers();
 }
 
 
 void Foam::Module::tetMeshGenerator::addLayers()
 {
-    generateBoundaryLayers();
-
     optimiseMesh(true);
 
     refBoundaryLayers();
