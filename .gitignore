@@ -1,6 +1,8 @@
 *.dep
-lnInclude
-linux*
+*lnInclude*
+*linux*
+**/lnInclude/*
+**/Make/**/*
 log
 log.*
 *~
