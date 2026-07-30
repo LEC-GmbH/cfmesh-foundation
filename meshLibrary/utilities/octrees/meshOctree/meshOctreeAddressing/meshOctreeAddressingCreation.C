@@ -353,23 +353,12 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
         {
             wordHashSet patchesToRemove;
 
-            if (meshDict_.isDict("removeCellsIntersectingPatches"))
+            const dictionary& dict =
+                meshDict_.subDict("removeCellsIntersectingPatches");
+            const wordList patchNames = dict.toc();
+            forAll(patchNames, patchI)
             {
-                const dictionary& dict =
-                    meshDict_.subDict("removeCellsIntersectingPatches");
-                const wordList patchNames = dict.toc();
-                forAll(patchNames, patchI)
-                {
-                    patchesToRemove.insert(patchNames[patchI]);
-                }
-            }
-            else
-            {
-                wordHashSet patchesToRemoveCopy
-                (
-                    meshDict_.lookup("removeCellsIntersectingPatches")
-                );
-                patchesToRemove.transfer(patchesToRemoveCopy);
+                patchesToRemove.insert(patchNames[patchI]);
             }
 
             const triSurf& ts = octree_.surface();
@@ -430,24 +419,13 @@ void Foam::Module::meshOctreeAddressing::findUsedBoxes() const
     {
         wordHashSet patchesToKeep;
 
-        if (meshDict_.isDict("keepCellsIntersectingPatches"))
-        {
-            const dictionary& dict =
-                meshDict_.subDict("keepCellsIntersectingPatches");
-            const wordList patchNames = dict.toc();
+        const dictionary& dict =
+            meshDict_.subDict("keepCellsIntersectingPatches");
+        const wordList patchNames = dict.toc();
 
-            forAll(patchNames, patchI)
-            {
-                patchesToKeep.insert(patchNames[patchI]);
-            }
-        }
-        else
+        forAll(patchNames, patchI)
         {
-            wordHashSet patchesToKeepCopy
-            (
-                meshDict_.lookup("keepCellsIntersectingPatches")
-            );
-            patchesToKeep.transfer(patchesToKeepCopy);
+            patchesToKeep.insert(patchNames[patchI]);
         }
 
         const triSurf& ts = octree_.surface();

@@ -918,8 +918,6 @@ Foam::Module::extrudeLayer::extrudeLayer
     nOrigPoints_(mesh.points().size()),
     nOrigFaces_(mesh.faces().size()),
     nOrigCells_(mesh.cells().size()),
-    extrudedFaces_(),
-    pairOrientation_(),
     origPointLabel_(nOrigPoints_, -1)
 {
     createDuplicateFrontFaces(extrusionFront);

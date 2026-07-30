@@ -43,13 +43,6 @@ Foam::Module::boundaryLayerOptimisation::boundaryLayerOptimisation
     meshSurfacePtr_(new meshSurfaceEngine(mesh)),
     deleteMeshSurface_(true),
     partitionerPtr_(nullptr),
-    hairEdges_(),
-    hairEdgesAtBndPoint_(),
-    hairEdgesNearHairEdge_(),
-    isBndLayerBase_(),
-    isExitFace_(),
-    hairEdgeType_(),
-    thinnedHairEdge_(),
     maxNumIterations_(5),
     nSmoothNormals_(5),
     relThicknessTol_(0.1),
@@ -70,13 +63,6 @@ Foam::Module::boundaryLayerOptimisation::boundaryLayerOptimisation
     meshSurfacePtr_(&mse),
     deleteMeshSurface_(false),
     partitionerPtr_(nullptr),
-    hairEdges_(),
-    hairEdgesAtBndPoint_(),
-    hairEdgesNearHairEdge_(),
-    isBndLayerBase_(),
-    isExitFace_(),
-    hairEdgeType_(),
-    thinnedHairEdge_(),
     maxNumIterations_(5),
     nSmoothNormals_(5),
     relThicknessTol_(0.15),
@@ -198,6 +184,13 @@ void Foam::Module::boundaryLayerOptimisation::readSettings
             label nSmoothNormals;
             if (optParams.readIfPresent("nSmoothNormals", nSmoothNormals))
             {
+                if (nSmoothNormals < 0)
+                {
+                    FatalErrorInFunction
+                        << "nSmoothNormals must not be negative!"
+                        << exit(FatalError);
+                }
+
                 blOptimisation.setNumNormalsSmoothingIterations(nSmoothNormals);
             }
 
@@ -230,6 +223,13 @@ void Foam::Module::boundaryLayerOptimisation::readSettings
             label maxNumIterations;
             if (optParams.readIfPresent("maxNumIterations", maxNumIterations))
             {
+                if (maxNumIterations < 0)
+                {
+                    FatalErrorInFunction
+                        << "maxNumIterations must not be negative!"
+                        << exit(FatalError);
+                }
+
                 blOptimisation.setMaxNumIterations(maxNumIterations);
             }
         }

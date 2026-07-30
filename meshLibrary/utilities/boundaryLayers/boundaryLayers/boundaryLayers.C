@@ -334,13 +334,6 @@ Foam::Module::boundaryLayers::boundaryLayers
     meshPartitionerPtr_(nullptr),
     patchWiseLayers_(true),
     is2DMesh_(false),
-    patchNames_(),
-    patchTypes_(),
-    treatedPatch_(),
-    treatPatchesWithPatch_(),
-    newLabelForVertex_(),
-    otherVrts_(),
-    patchKey_(),
     nPoints_(mesh.points().size()),
     geometryAnalysed_(false)
 {

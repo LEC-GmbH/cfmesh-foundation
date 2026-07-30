@@ -151,6 +151,18 @@ Foam::Module::polyMeshGenFaces::~polyMeshGenFaces()
 }
 
 
+void Foam::Module::polyMeshGenFaces::setMeshLocation
+(
+    const word& regionName,
+    const fileName& meshPath
+)
+{
+    polyMeshGenPoints::setMeshLocation(regionName, meshPath);
+
+    faces_.instance() = resolvedInstance();
+}
+
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::label Foam::Module::polyMeshGenFaces::faceIsInPatch
@@ -232,6 +244,20 @@ Foam::labelList Foam::Module::polyMeshGenFaces::findPatches
     const word& patchName
 ) const
 {
+    if (origPatchNames_.found(patchName))
+    {
+        const wordList& newNames = origPatchNames_[patchName];
+
+        DynamicList<label> patchIDs;
+
+        forAll(newNames, i)
+        {
+            patchIDs.append(findMatchingStrings(regExp(newNames[i]), patchNames()));
+        }
+
+        return patchIDs;
+    }
+
     const labelList patchIDs =
         findMatchingStrings(regExp(patchName), patchNames());
 
@@ -319,12 +345,20 @@ void Foam::Module::polyMeshGenFaces::read()
 {
     polyMeshGenPoints::read();
 
-    faceIOList fcs
+    // faceCompactIOList (not the plain faceIOList) since with binary
+    // writeFormat, OpenFOAM-dev's own faces writer emits the real
+    // "faceCompactList" compact encoding (a flat start-offsets labelList
+    // + flat elems labelList, not a nested list-of-lists) - only
+    // faceCompactIOList's reader recognises and decodes that header;
+    // faceIOList only understands the plain "faceList" encoding (which
+    // ASCII always uses, since CompactIOList itself falls back to plain
+    // encoding for ASCII) and fatals on a genuinely compact binary file
+    faceCompactIOList fcs
     (
         IOobject
         (
             "faces",
-            runTime_.constant(),
+            resolvedInstance(),
             "polyMesh",
             runTime_,
             IOobject::MUST_READ
@@ -341,7 +375,7 @@ void Foam::Module::polyMeshGenFaces::read()
             IOobject
             (
                 "owner",
-                runTime_.constant(),
+                resolvedInstance(),
                 "polyMesh",
                 runTime_,
                 IOobject::MUST_READ
@@ -354,7 +388,7 @@ void Foam::Module::polyMeshGenFaces::read()
             IOobject
             (
                 "neighbour",
-                runTime_.constant(),
+                resolvedInstance(),
                 "polyMesh",
                 runTime_,
                 IOobject::MUST_READ
@@ -372,7 +406,7 @@ void Foam::Module::polyMeshGenFaces::read()
         IOobject
         (
             "boundary",
-            runTime_.constant(),
+            resolvedInstance(),
             "polyMesh",
             runTime_,
             IOobject::MUST_READ
@@ -401,7 +435,7 @@ void Foam::Module::polyMeshGenFaces::read()
     IOobjectList allSets
     (
         runTime_,
-        runTime_.constant(),
+        resolvedInstance(),
         "polyMesh/sets"
     );
 
@@ -457,7 +491,7 @@ void Foam::Module::polyMeshGenFaces::write() const
         IOobject
         (
             "boundary",
-            runTime_.constant(),
+            resolvedInstance(),
             "polyMesh",
             runTime_,
             IOobject::NO_READ,
@@ -476,7 +510,7 @@ void Foam::Module::polyMeshGenFaces::write() const
             IOobject
             (
                 setIt().name(),
-                runTime_.constant(),
+                resolvedInstance(),
                 "polyMesh/sets",
                 runTime_,
                 IOobject::NO_READ,

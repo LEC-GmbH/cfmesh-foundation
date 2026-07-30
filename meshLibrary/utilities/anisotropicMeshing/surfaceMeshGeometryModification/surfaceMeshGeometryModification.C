@@ -35,16 +35,23 @@ License
 
 // * * * * * * * * * * * * * * Private member functions* * * * * * * * * * * //
 
-void Foam::Module::surfaceMeshGeometryModification::checkModification()
+void Foam::Module::surfaceMeshGeometryModification::checkModification
+(
+    const dictionary& anisotropicSourcesDict
+)
 {
-    if (meshDict_.found("anisotropicSources"))
+    // active whenever the caller passed a real dict at all (i.e. the
+    // anisotropicSources key was present in meshDict), matching this
+    // class's historical behaviour - even an empty anisotropicSources {}
+    // block must activate (constructing a no-op coordinateModifier),
+    // NOT just a non-empty one: modifyGeometry() unconditionally returns
+    // a real triSurf* only when active, and every caller dereferences
+    // that pointer without a null check
+    if (&anisotropicSourcesDict != &dictionary::null)
     {
         modificationActive_ = true;
 
-        const dictionary& anisotropicDict =
-            meshDict_.subDict("anisotropicSources");
-
-        coordinateModifierPtr_ = new coordinateModifier(anisotropicDict);
+        coordinateModifierPtr_ = new coordinateModifier(anisotropicSourcesDict);
     }
 }
 
@@ -54,15 +61,14 @@ void Foam::Module::surfaceMeshGeometryModification::checkModification()
 Foam::Module::surfaceMeshGeometryModification::surfaceMeshGeometryModification
 (
     const triSurf& surf,
-    const dictionary& meshDict
+    const dictionary& anisotropicSourcesDict
 )
 :
     surf_(surf),
-    meshDict_(meshDict),
     coordinateModifierPtr_(nullptr),
     modificationActive_(false)
 {
-    checkModification();
+    checkModification(anisotropicSourcesDict);
 }
 
 
@@ -162,6 +168,14 @@ Foam::Module::surfaceMeshGeometryModification::modifyGeometry() const
         }
     }
 
+    // carry the pre-split -> post-split patch name/type map across, so
+    // downstream patch-name resolution (findPatches()) keeps working on
+    // the coordinate-modified copy exactly as it did on surf_ - without
+    // this, any surface using anisotropicSources silently loses the map
+    // the moment it's coordinate-modified
+    newSurf->setOrigPatchNamesMap(surf_.origPatchNamesMap());
+    newSurf->setOrigPatchTypesMap(surf_.origPatchTypesMap());
+
     return newSurf;
 }
 
@@ -248,6 +262,12 @@ const
             newSurf->addEdgeToSubset(newId, edgesInSubset[eI]);
         }
     }
+
+    // carry the pre-split -> post-split patch name/type map across, so
+    // downstream patch-name resolution (findPatches()) keeps working on
+    // the reverted copy exactly as it did on surf_
+    newSurf->setOrigPatchNamesMap(surf_.origPatchNamesMap());
+    newSurf->setOrigPatchTypesMap(surf_.origPatchTypesMap());
 
     return newSurf;
 }

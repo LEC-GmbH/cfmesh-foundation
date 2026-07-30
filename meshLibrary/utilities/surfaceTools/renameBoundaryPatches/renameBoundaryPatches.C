@@ -41,7 +41,7 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
 {
     Info<< "Renaming boundary patches" << endl;
 
-    const dictionary& dict = meshDict_.subDict("renameBoundary");
+    const dictionary& dict = meshDict_.subOrEmptyDict("renameBoundary");
 
     HashTable<label> patchToLabel;
     forAll(mesh_.boundaries(), patchI)
@@ -95,36 +95,55 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
     HashTable<label> newNameToPos;
     label newPatchI(0);
 
-    // read new patch names and types
+    // merge the user's own renameBoundary.newPatchNames (if any) with
+    // default "rename each split patch back to its original name/type"
+    // entries derived from the surface's pre-split -> post-split patch
+    // map, for any original patch the user didn't already configure a
+    // rename for - keeps split patches' exposed names/types stable
+    // without this class needing to rewrite meshDict itself
+    dictionary effectiveNewPatchNames;
     if (dict.found("newPatchNames"))
+    {
+        effectiveNewPatchNames = dict.subDict("newPatchNames");
+    }
+
+    forAllConstIter(HashTable<wordList>, mesh_.origPatchNamesMap(), it)
+    {
+        const word& origName = it.key();
+
+        if (effectiveNewPatchNames.found(origName))
+        {
+            continue;
+        }
+
+        dictionary defaultPatchDict;
+        defaultPatchDict.add("newName", origName);
+        defaultPatchDict.add("type", mesh_.origPatchTypesMap()[origName]);
+
+        effectiveNewPatchNames.add(origName, defaultPatchDict);
+    }
+
+    // read new patch names and types
+    if (!effectiveNewPatchNames.empty())
     {
         PtrList<entry> patchesToRename;
 
-        if (dict.isDict("newPatchNames"))
+        const wordList keys = effectiveNewPatchNames.toc();
+
+        patchesToRename.setSize(keys.size());
+
+        forAll(keys, patchI)
         {
-            const dictionary& newPatchNames = dict.subDict("newPatchNames");
-            const wordList keys = newPatchNames.toc();
-
-            patchesToRename.setSize(keys.size());
-
-            forAll(keys, patchI)
-            {
-                patchesToRename.set
+            patchesToRename.set
+            (
+                patchI,
+                effectiveNewPatchNames.lookupEntry
                 (
-                    patchI,
-                    newPatchNames.lookupEntry
-                    (
-                        keys[patchI],
-                        false,
-                        false
-                    ).clone()
-                );
-            }
-        }
-        else
-        {
-            PtrList<entry> copyPatchesToRename(dict.lookup("newPatchNames"));
-            patchesToRename.transfer(copyPatchesToRename);
+                    keys[patchI],
+                    false,
+                    false
+                ).clone()
+            );
         }
 
         forAll(patchesToRename, patchI)
@@ -320,7 +339,11 @@ Foam::Module::renameBoundaryPatches::renameBoundaryPatches
     mesh_(mesh),
     meshDict_(meshDict)
 {
-    if (meshDict.found("renameBoundary"))
+    // even without a user-configured renameBoundary, a mesh whose surface
+    // was split by feature edges (mesh_.origPatchNamesMap() non-empty)
+    // needs its split patches default-renamed back to their pre-split
+    // name/type - see calculateNewBoundary()
+    if (meshDict.found("renameBoundary") || !mesh_.origPatchNamesMap().empty())
     {
         calculateNewBoundary();
     }

@@ -132,9 +132,7 @@ Foam::Module::coordinateModifier::coordinateModifier
     const dictionary& geomModDict
 )
 :
-    modificationDict_(geomModDict),
-    modifiers_(),
-    backwardModifiers_()
+    modificationDict_(geomModDict)
 {
     const wordList modifiers = modificationDict_.toc();
 

@@ -65,9 +65,6 @@ class polyMeshGenGeometryModification
         //- reference to polyMeshGen
         polyMeshGen& mesh_;
 
-        //- length of box sides
-        const dictionary& meshDict_;
-
         //- construct coordinate modification
         coordinateModifier* coordinateModifierPtr_;
 
@@ -78,7 +75,7 @@ class polyMeshGenGeometryModification
     // Private member functions
 
         //- check existence of geometry modifiers
-        void checkModification();
+        void checkModification(const dictionary& anisotropicSourcesDict);
 
         //- disable bitwise copy construct
         polyMeshGenGeometryModification
@@ -92,7 +89,9 @@ class polyMeshGenGeometryModification
 
 public:
 
-    //- Construct from polyMeshGen and dictionary
+    //- Construct from polyMeshGen and meshDict's anisotropicSources
+    //- subDict (e.g. via meshDict.subOrEmptyDict("anisotropicSources") -
+    //- an empty dictionary if not present)
     polyMeshGenGeometryModification(polyMeshGen&, const dictionary&);
 
     //- Destructor

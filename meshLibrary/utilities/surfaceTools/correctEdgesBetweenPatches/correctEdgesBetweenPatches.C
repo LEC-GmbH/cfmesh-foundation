@@ -91,9 +91,6 @@ Foam::Module::correctEdgesBetweenPatches::correctEdgesBetweenPatches
     msePtr_(nullptr),
     patchNames_(mesh.boundaries().size()),
     patchTypes_(mesh.boundaries().size()),
-    newBoundaryFaces_(),
-    newBoundaryOwners_(),
-    newBoundaryPatches_(),
     decomposeCell_(mesh_.cells().size(), false),
     decompose_(false)
 {

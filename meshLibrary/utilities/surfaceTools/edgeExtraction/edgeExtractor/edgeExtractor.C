@@ -401,14 +401,7 @@ Foam::Module::edgeExtractor::edgeExtractor
     mesh_(mesh),
     surfaceEnginePtr_(nullptr),
     meshOctree_(octree),
-    surfPartitionerPtr_(nullptr),
-    pointValence_(),
-    pointPatch_(),
-    facePatch_(),
-    nCellsAtEdge_(),
-    edgeType_(),
-    patchesNearFace_(),
-    featureEdgesNearEdge_()
+    surfPartitionerPtr_(nullptr)
 {
     calculateValence();
 
@@ -1137,8 +1130,7 @@ public:
     )
     :
         mse_(mse),
-        isFeatureEdge_(isFeatureEdge),
-        nFeatureEdgesAtPoint_()
+        isFeatureEdge_(isFeatureEdge)
     {
         calculateNumberOfEdgesAtPoint();
     }
@@ -1602,6 +1594,14 @@ void Foam::Module::edgeExtractor::updateMeshPatches()
     {
         boundaries[patchI].patchType() = surfPatches[patchI].geometricType();
     }
+
+    // carry the surface's pre-split -> post-split patch name/type map
+    // (if any) over to the mesh, so patch-name-keyed meshDict entries
+    // keep resolving correctly once patchBoundaryLayers/renameBoundary
+    // are read against the mesh's own boundary patches (see
+    // triSurfFacets::origPatchNamesMap()/origPatchTypesMap())
+    mesh_.setOrigPatchNamesMap(surface.origPatchNamesMap());
+    mesh_.setOrigPatchTypesMap(surface.origPatchTypesMap());
 }
 
 

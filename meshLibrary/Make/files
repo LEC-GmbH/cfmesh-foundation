@@ -7,8 +7,6 @@ detectBoundaryLayers = $(bndLayers)/detectBoundaryLayers
 extrudeLayer = $(bndLayers)/extrudeLayer
 refineBoundaryLayers = $(bndLayers)/refineBoundaryLayers
 
-checkMeshDict = utilities/checkMeshDict
-
 anisotropicMeshing = utilities/anisotropicMeshing
 coordinateModification = $(anisotropicMeshing)/coordinateModification
 edgeMeshGeometryModification = $(anisotropicMeshing)/edgeMeshGeometryModification
@@ -121,21 +119,19 @@ writeAsFPMA = utilities/dataConversion/foamToFPMA
 polyMeshExtractor = pMeshLibrary/polyMeshExtractor
 polyMeshGenerator = pMeshLibrary/polyMeshGenerator
 
-cartesianMeshExtractor = cartesianMesh/cartesianMeshExtractor
-cartesianMeshGenerator = cartesianMesh/cartesianMeshGenerator
+meshGenerator = meshGenerators/meshGenerator
 
-cartesian2DMeshGenerator = cartesian2DMesh/cartesian2DMeshGenerator
+cartesianMeshExtractor = cartesianMesh/cartesianMeshExtractor
+cartesianMeshGenerator = meshGenerators/cartesianMeshGenerator
+
+cartesian2DMeshGenerator = meshGenerators/cartesian2DMeshGenerator
 
 tetMeshExtractor = tetMesh/tetMeshExtractor
 tetMeshExtractorOctree = tetMesh/tetMeshExtractorOctree
-tetMeshGenerator = tetMesh/tetMeshGenerator
+tetMeshGenerator = meshGenerators/tetMeshGenerator
 
 voronoiMeshExtractor = voronoiMesh/voronoiMeshExtractor
-voronoiMeshGenerator = voronoiMesh/voronoiMeshGenerator
-
-workflowControls = utilities/workflowControls
-
-$(checkMeshDict)/checkMeshDict.C
+voronoiMeshGenerator = meshGenerators/voronoiMeshGenerator
 
 $(lists)/pointFieldPMG.C
 $(lists)/faceListPMG.C
@@ -144,6 +140,7 @@ $(polyMeshGen)/polyMeshGen.C
 $(polyMeshGen)/polyMeshGenPoints.C
 $(polyMeshGen)/polyMeshGenFaces.C
 $(polyMeshGen)/polyMeshGenCells.C
+$(polyMeshGen)/polyMeshGenToFoamMesh.C
 
 $(polyMeshGen2DEngine)/polyMeshGen2DEngine.C
 
@@ -406,6 +403,9 @@ $(cartesianMeshExtractor)/cartesianMeshExtractorPointsAndAddressing.C
 $(cartesianMeshExtractor)/cartesianMeshExtractorPolyMesh.C
 $(cartesianMeshExtractor)/cartesianMeshExtractorDecomposeSplitHexes.C
 
+$(meshGenerator)/meshGenerator.C
+$(meshGenerator)/meshGeneratorNew.C
+
 $(cartesianMeshGenerator)/cartesianMeshGenerator.C
 
 $(cartesian2DMeshGenerator)/cartesian2DMeshGenerator.C
@@ -422,7 +422,5 @@ $(voronoiMeshGenerator)/voronoiMeshGenerator.C
 
 $(writeAsFPMA)/writeMeshFPMA.C
 $(writeAsFPMA)/fpmaMesh.C
-
-$(workflowControls)/workflowControls.C
 
 LIB = $(FOAM_LIBBIN)/libmeshLibrary

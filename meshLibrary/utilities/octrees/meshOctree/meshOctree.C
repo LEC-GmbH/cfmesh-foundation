@@ -42,14 +42,8 @@ Foam::Module::meshOctree::meshOctree(const triSurf& ts, const bool isQuadtree)
     surface_(ts),
     initialCubePtr_(nullptr),
     initialCubeRotation_(0),
-    rootBox_(),
     isRootInitialised_(false),
     searchRange_(0.0),
-    octantVectors_(),
-    vrtLeavesPos_(),
-    regularityPositions_(),
-    dataSlots_(),
-    leaves_(),
     isQuadtree_(isQuadtree)
 {
     createInitialOctreeBox();

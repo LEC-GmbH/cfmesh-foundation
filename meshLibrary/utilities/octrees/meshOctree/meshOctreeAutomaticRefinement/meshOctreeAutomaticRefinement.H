@@ -67,9 +67,6 @@ class meshOctreeAutomaticRefinement
         //- reference to meshOctree
         meshOctree& octree_;
 
-        //- const reference to mesh dictionary
-        const IOdictionary& meshDict_;
-
         //- use DATA boxes
         bool useDATABoxes_;
 
@@ -99,8 +96,8 @@ class meshOctreeAutomaticRefinement
         //- maximum allowed refinement level
         direction maxRefLevel_;
 
-        //- set maxRefLevel_
-        void setMaxRefLevel();
+        //- set maxRefLevel_ from the dictionary's maxCellSize/minCellSize
+        void setMaxRefLevel(const dictionary& dict);
 
         //- refine selected boxes
         void refineSelectedBoxes(labelList&, DynamicList<label>&);
@@ -149,7 +146,7 @@ public:
     meshOctreeAutomaticRefinement
     (
         meshOctree& mo,
-        const IOdictionary& dict,
+        const dictionary& dict,
         bool useDATABoxes = false
     );
 

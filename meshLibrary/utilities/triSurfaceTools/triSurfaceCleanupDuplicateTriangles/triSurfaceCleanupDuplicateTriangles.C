@@ -39,8 +39,7 @@ triSurfaceCleanupDuplicateTriangles
     triSurf& surf
 )
 :
-    surf_(surf),
-    newTriangleLabel_()
+    surf_(surf)
 {
     checkDuplicateTriangles();
 }

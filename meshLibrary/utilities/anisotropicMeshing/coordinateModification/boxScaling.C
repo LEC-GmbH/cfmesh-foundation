@@ -58,11 +58,8 @@ void Foam::Module::boxScaling::calculateBndBox()
 Foam::Module::boxScaling::boxScaling()
 :
     coordinateModification(),
-    centre_(),
     lengthVec_(0.0, 0.0, 0.0),
-    scaleVec_(1.0, 1.0, 1.0),
-    pMin_(),
-    pMax_()
+    scaleVec_(1.0, 1.0, 1.0)
 {
     calculateBndBox();
 }
@@ -83,9 +80,7 @@ Foam::Module::boxScaling::boxScaling
     coordinateModification(),
     centre_(centre),
     lengthVec_(lengthX, lengthY, lengthZ),
-    scaleVec_(scaleX, scaleY, scaleZ),
-    pMin_(),
-    pMax_()
+    scaleVec_(scaleX, scaleY, scaleZ)
 {
     calculateBndBox();
     setName(name);

@@ -43,6 +43,7 @@ SourceFiles
 #include "polyMeshGen.H"
 #include "boolList.H"
 #include "HashSet.H"
+#include "dictionary.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -303,13 +304,18 @@ bool checkGeometry(const polyMeshGen&, const bool report = false);
 //- Check mesh for correctness. Returns false for no error.
 bool checkMesh(const polyMeshGen&, const bool report = false);
 
-//- Read the user defined mesh quality settings
+//- Read the user defined mesh quality settings. qualitySettingsDict, if
+//- given, is meshDict's meshQualitySettings subDict (e.g. via
+//- meshDict.subOrEmptyDict("meshQualitySettings")) - passed in explicitly
+//- by the caller, not looked up from the Time registry. dictionary::null
+//- (the default) if the caller doesn't have one.
 label findBadFacesAdditionalChecks
 (
     const polyMeshGen& mesh,
     const bool report,
     labelHashSet& badFaces,
-    const boolList* activeFacePtr = nullptr
+    const boolList* activeFacePtr = nullptr,
+    const dictionary& qualitySettingsDict = dictionary::null
 );
 
 //- checks for bad faces making the mesh unusable
@@ -319,7 +325,8 @@ label findBadFacesRelaxed
     const polyMeshGen&,
     labelHashSet& badFaces,
     const bool report = false,
-    const boolList* activeFacePtr = nullptr
+    const boolList* activeFacePtr = nullptr,
+    const dictionary& qualitySettingsDict = dictionary::null
 );
 
 //- check mesh for bad faces which make the mesh invalid
@@ -330,7 +337,8 @@ label findBadFaces
     const polyMeshGen&,
     labelHashSet& badFaces,
     const bool report = false,
-    const boolList* activeFacePtr = nullptr
+    const boolList* activeFacePtr = nullptr,
+    const dictionary& qualitySettingsDict = dictionary::null
 );
 
 //- check mesh for faces that may cause problems to the solver
@@ -340,7 +348,8 @@ label findLowQualityFaces
     const polyMeshGen& mesh,
     labelHashSet& badFaces,
     const bool report = false,
-    const boolList* activeFacePtr = nullptr
+    const boolList* activeFacePtr = nullptr,
+    const dictionary& qualitySettingsDict = dictionary::null
 );
 
 //- checks the mesh and selects the faces with worst quality

@@ -270,10 +270,7 @@ Foam::Module::sortEdgesIntoChains::sortEdgesIntoChains
 )
 :
     bEdges_(bEdges),
-    openEdges_(false),
-    newNodeLabel_(),
-    edgesAtPoint_(),
-    createdChains_()
+    openEdges_(false)
 {
     sortEdges();
 }

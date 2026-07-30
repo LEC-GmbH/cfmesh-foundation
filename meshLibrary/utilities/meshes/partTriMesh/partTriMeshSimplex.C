@@ -38,9 +38,6 @@ Foam::Module::partTriMeshSimplex::partTriMeshSimplex
     const partTriMesh& tm,
     const label pI
 )
-:
-    pts_(),
-    trias_()
 {
     const pointField& points = tm.points();
     const DynamicList<labelledTri>& trias = tm.triangles();

@@ -41,7 +41,7 @@ SourceFiles
 #define meshOctreeCreator_H
 
 #include "boolList.H"
-#include "IOdictionary.H"
+#include "dictionary.H"
 #include "meshOctreeModifier.H"
 #include "patchRefinementList.H"
 #include "Tuple2.H"
@@ -72,8 +72,50 @@ protected:
         //- Scaling factor
         scalar scalingFactor_;
 
-        //- Dictionary containing information necessary to perform refinement
-        const IOdictionary* meshDictPtr_;
+        //- Full meshDict, kept only to pass on to meshOctreeAutomaticRefinement
+        //- (which needs keepCellsIntersectingBoundary alongside
+        //- maxCellSize/minCellSize, so no single subDict covers it) -
+        //- every other key this class itself reads is extracted once, in
+        //- the constructor, into the narrowly-scoped members below instead
+        //- of being re-read ad hoc from here. dictionary::null if no dict
+        //- was given.
+        const dictionary& meshDict_;
+
+        //- was a real dict given to the constructor (as opposed to the
+        //- default dictionary::null)? Needed only for the top-level scalar
+        //- reads (maxCellSize) below, which would otherwise FatalError via
+        //- .lookup() on a genuinely-absent dict.
+        bool haveMeshDict_;
+
+        //- maxCellSize, validated and extracted once at construction
+        //- (only meaningful if haveMeshDict_ is true)
+        scalar maxCellSize_;
+
+        //- boundaryCellSize/boundaryCellSizeRefinementThickness, if present
+        bool haveBoundaryCellSize_;
+        scalar boundaryCellSize_;
+        scalar boundaryCellSizeRefinementThickness_;
+
+        //- patchCellSize subDict, or dictionary::null if not present
+        const dictionary& patchCellSizeDict_;
+
+        //- subsetCellSize subDict, or dictionary::null if not present
+        const dictionary& subsetCellSizeDict_;
+
+        //- localRefinement subDict, or dictionary::null if not present
+        const dictionary& localRefinementDict_;
+
+        //- objectRefinements subDict, or dictionary::null if not present
+        const dictionary& objectRefinementsDict_;
+
+        //- surfaceMeshRefinement subDict, or dictionary::null if not present
+        const dictionary& surfaceMeshRefinementDict_;
+
+        //- edgeMeshRefinement subDict, or dictionary::null if not present
+        const dictionary& edgeMeshRefinementDict_;
+
+        //- anisotropicSources subDict, or dictionary::null if not present
+        const dictionary& anisotropicSourcesDict_;
 
         //- hex refinement flag
         bool hexRefinement_;
@@ -132,11 +174,14 @@ public:
 
     // Constructors
 
-        //- construct from meshOctree
-        meshOctreeCreator(meshOctree&);
-
-        //- Construct from meshOctree and dictionary
-        meshOctreeCreator(meshOctree& mo, const IOdictionary& dict);
+        //- Construct from meshOctree and, optionally, meshDict (or its
+        //- subDict, e.g. via meshDict.subOrEmptyDict("someKey")).
+        //- dictionary::null (the default) means no dict was given.
+        meshOctreeCreator
+        (
+            meshOctree& mo,
+            const dictionary& dict = dictionary::null
+        );
 
 
     //- Destructor

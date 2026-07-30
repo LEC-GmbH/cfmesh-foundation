@@ -36,10 +36,7 @@ Foam::Module::decomposeCells::decomposeCells(polyMeshGen& mesh)
 :
     mesh_(mesh),
     patchNames_(mesh.boundaries().size()),
-    patchTypes_(mesh.boundaries().size()),
-    newBoundaryFaces_(),
-    newBoundaryPatches_(),
-    facesOfNewCells_()
+    patchTypes_(mesh.boundaries().size())
 {
     const PtrList<boundaryPatch>& boundaries = mesh_.boundaries();
     forAll(boundaries, patchI)

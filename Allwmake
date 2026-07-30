@@ -26,6 +26,14 @@ wmake libso meshLibrary
 wmake -all executables
 wmake -all utilities
 
+# Install compatibility wrapper scripts for the old executable names
+# (cartesianMesh/cartesian2DMesh/tetMesh/pMesh), now provided by
+# cfMesh -mode <name>
+for name in cartesianMesh cartesian2DMesh tetMesh pMesh
+do
+    install -m 755 bin/$name "$FOAM_APPBIN"/$name
+done
+
 # Some summary information
 echo
 date "+%Y-%m-%d %H:%M:%S %z" 2>/dev/null || echo "date is unknown"

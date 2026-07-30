@@ -67,9 +67,6 @@ class edgeMeshGeometryModification
         //- reference to edgeMesh
         const edgeMesh& edgeMesh_;
 
-        //- length of box sides
-        const dictionary& meshDict_;
-
         //- contruct coordinate modification
         coordinateModifier* coordinateModifierPtr_;
 
@@ -80,7 +77,7 @@ class edgeMeshGeometryModification
     // Private Member Functions
 
         //- check existence of geometry modifiers
-        void checkModification();
+        void checkModification(const dictionary& anisotropicSourcesDict);
 
         //- No copy construct
         edgeMeshGeometryModification
@@ -92,7 +89,9 @@ class edgeMeshGeometryModification
 
 public:
 
-    //- Construct from edgeMesh and dictionary
+    //- Construct from edgeMesh and meshDict's anisotropicSources subDict
+    //- (e.g. via meshDict.subOrEmptyDict("anisotropicSources") - an empty
+    //- dictionary if not present)
     edgeMeshGeometryModification(const edgeMesh&, const dictionary&);
 
     //- Destructor

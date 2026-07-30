@@ -47,7 +47,6 @@ namespace Module
 
 Foam::Module::objectRefinement::objectRefinement()
 :
-    name_(),
     cellSize_(-1.0),
     additionalRefLevel_(0),
     refThickness_(0.0)

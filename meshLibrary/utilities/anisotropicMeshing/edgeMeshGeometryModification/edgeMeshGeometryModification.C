@@ -35,16 +35,23 @@ License
 
 // * * * * * * * * * * * * * * Private member functions* * * * * * * * * * * //
 
-void Foam::Module::edgeMeshGeometryModification::checkModification()
+void Foam::Module::edgeMeshGeometryModification::checkModification
+(
+    const dictionary& anisotropicSourcesDict
+)
 {
-    if (meshDict_.found("anisotropicSources"))
+    // active whenever the caller passed a real dict at all (i.e. the
+    // anisotropicSources key was present in meshDict), matching this
+    // class's historical behaviour - even an empty anisotropicSources {}
+    // block must activate (constructing a no-op coordinateModifier),
+    // NOT just a non-empty one: modifyGeometry() unconditionally returns
+    // a real edgeMesh* only when active, and every caller dereferences
+    // that pointer without a null check
+    if (&anisotropicSourcesDict != &dictionary::null)
     {
         modificationActive_ = true;
 
-        const dictionary& anisotropicDict =
-            meshDict_.subDict("anisotropicSources");
-
-        coordinateModifierPtr_ = new coordinateModifier(anisotropicDict);
+        coordinateModifierPtr_ = new coordinateModifier(anisotropicSourcesDict);
     }
 }
 
@@ -54,15 +61,14 @@ void Foam::Module::edgeMeshGeometryModification::checkModification()
 Foam::Module::edgeMeshGeometryModification::edgeMeshGeometryModification
 (
     const edgeMesh& em,
-    const dictionary& meshDict
+    const dictionary& anisotropicSourcesDict
 )
 :
     edgeMesh_(em),
-    meshDict_(meshDict),
     coordinateModifierPtr_(nullptr),
     modificationActive_(false)
 {
-    checkModification();
+    checkModification(anisotropicSourcesDict);
 }
 
 

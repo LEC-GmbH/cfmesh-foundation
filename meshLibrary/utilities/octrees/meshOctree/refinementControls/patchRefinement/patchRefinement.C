@@ -37,7 +37,6 @@ License
 
 Foam::Module::patchRefinement::patchRefinement()
 :
-    patchName_(),
     cellSize_(0.0)
 {}
 

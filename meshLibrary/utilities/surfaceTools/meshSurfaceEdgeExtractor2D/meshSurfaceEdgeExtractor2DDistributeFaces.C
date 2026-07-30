@@ -147,6 +147,14 @@ void Foam::Module::meshSurfaceEdgeExtractor2D::distributeBoundaryFaces()
     {
         modBnd[patchI].patchType() = patchTypes[patchI];
     }
+
+    // carry the surface's pre-split -> post-split patch name/type map
+    // (if any) over to the mesh, so patch-name-keyed meshDict entries
+    // keep resolving correctly once patchBoundaryLayers/renameBoundary
+    // are read against the mesh's own boundary patches (see
+    // triSurfFacets::origPatchNamesMap()/origPatchTypesMap())
+    mesh_.setOrigPatchNamesMap(surf.origPatchNamesMap());
+    mesh_.setOrigPatchTypesMap(surf.origPatchTypesMap());
 }
 
 

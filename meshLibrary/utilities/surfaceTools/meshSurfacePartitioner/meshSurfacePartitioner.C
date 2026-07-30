@@ -38,13 +38,7 @@ Foam::Module::meshSurfacePartitioner::meshSurfacePartitioner
 )
 :
     meshSurface_(meshSurface),
-    facePatch_(meshSurface.boundaryFacePatches()),
-    pointPatches_(),
-    corners_(),
-    edgePoints_(),
-    patchPatches_(),
-    nEdgesAtPoint_(),
-    featureEdges_()
+    facePatch_(meshSurface.boundaryFacePatches())
 {
     calculateCornersEdgesAndAddressing();
 }
@@ -57,13 +51,7 @@ Foam::Module::meshSurfacePartitioner::meshSurfacePartitioner
 )
 :
     meshSurface_(meshSurface),
-    facePatch_(facePatch),
-    pointPatches_(),
-    corners_(),
-    edgePoints_(),
-    patchPatches_(),
-    nEdgesAtPoint_(),
-    featureEdges_()
+    facePatch_(facePatch)
 {
     calculateCornersEdgesAndAddressing();
 }

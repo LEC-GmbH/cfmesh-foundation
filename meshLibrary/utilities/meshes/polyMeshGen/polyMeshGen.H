@@ -43,7 +43,6 @@ SourceFiles
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 #include "polyMeshGenCells.H"
-#include "IOdictionary.H"
 
 namespace Foam
 {
@@ -56,12 +55,6 @@ class polyMeshGen
 :
     public polyMeshGenCells
 {
-    // Private data
-
-        //- meta data about the meshing process
-        IOdictionary metaDict_;
-
-
 public:
 
     // Constructors
@@ -97,17 +90,13 @@ public:
 
     // Public member functions
 
-        //- return a constant reference to metaDict
-        inline const dictionary& metaData() const
-        {
-            return metaDict_;
-        }
-
-        //- return a reference to metaDict
-        inline dictionary& metaData()
-        {
-            return metaDict_;
-        }
+        //- set the region/mesh-path this mesh is read from/written to -
+        //- must be called (if at all) before any read()/write()
+        void setMeshLocation
+        (
+            const word& regionName,
+            const fileName& meshPath
+        );
 
         //- Read mesh
         void read();

@@ -57,7 +57,7 @@ void Foam::Module::polyMeshGenCells::calculateOwnersAndNeighbours() const
             IOobject
             (
                 "owner",
-                runTime_.constant(),
+                resolvedInstance(),
                 "polyMesh",
                 runTime_
             ),
@@ -72,7 +72,7 @@ void Foam::Module::polyMeshGenCells::calculateOwnersAndNeighbours() const
             IOobject
             (
                 "neighbour",
-                runTime_.constant(),
+                resolvedInstance(),
                 "polyMesh",
                 runTime_
             ),
@@ -239,8 +239,6 @@ void Foam::Module::polyMeshGenCells::clearOut() const
 Foam::Module::polyMeshGenCells::polyMeshGenCells(const Time& runTime)
 :
     polyMeshGenFaces(runTime),
-    cells_(),
-    cellSubsets_(),
     addressingDataPtr_(nullptr)
 {}
 
@@ -254,8 +252,6 @@ Foam::Module::polyMeshGenCells::polyMeshGenCells
 )
 :
     polyMeshGenFaces(runTime, points, faces),
-    cells_(),
-    cellSubsets_(),
     addressingDataPtr_(nullptr)
 {
     cells_ = cells;
@@ -282,8 +278,6 @@ Foam::Module::polyMeshGenCells::polyMeshGenCells
         patchStart,
         nFacesInPatch
     ),
-    cells_(),
-    cellSubsets_(),
     addressingDataPtr_(nullptr)
 {
     cells_ = cells;
@@ -442,7 +436,7 @@ void Foam::Module::polyMeshGenCells::read()
     IOobjectList allSets
     (
         runTime_,
-        runTime_.constant(),
+        resolvedInstance(),
         "polyMesh/sets"
     );
 
@@ -473,7 +467,7 @@ void Foam::Module::polyMeshGenCells::write() const
             IOobject
             (
                 setIt().name(),
-                runTime_.constant(),
+                resolvedInstance(),
                 "polyMesh/sets",
                 runTime_,
                 IOobject::NO_READ,

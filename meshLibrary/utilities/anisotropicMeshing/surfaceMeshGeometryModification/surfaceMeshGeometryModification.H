@@ -68,9 +68,6 @@ class surfaceMeshGeometryModification
         //- reference to triSurf
         const triSurf& surf_;
 
-        //- length of box sides
-        const dictionary& meshDict_;
-
         //- construct coordinate modification
         coordinateModifier* coordinateModifierPtr_;
 
@@ -81,7 +78,7 @@ class surfaceMeshGeometryModification
     // Private Member Functions
 
         //- check existence of geometry modifiers
-        void checkModification();
+        void checkModification(const dictionary& anisotropicSourcesDict);
 
         //- No copy construct
         surfaceMeshGeometryModification
@@ -93,7 +90,9 @@ class surfaceMeshGeometryModification
 
 public:
 
-    //- Construct from triSurf and dictionary
+    //- Construct from triSurf and meshDict's anisotropicSources subDict
+    //- (e.g. via meshDict.subOrEmptyDict("anisotropicSources") - an empty
+    //- dictionary if not present)
     surfaceMeshGeometryModification(const triSurf&, const dictionary&);
 
     //- Destructor

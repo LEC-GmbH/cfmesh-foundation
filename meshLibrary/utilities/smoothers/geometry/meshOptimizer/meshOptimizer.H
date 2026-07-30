@@ -46,6 +46,7 @@ SourceFiles
 #include "partTet.H"
 #include "HashSet.H"
 #include "boundBox.H"
+#include "dictionary.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -71,6 +72,19 @@ class meshOptimizer
 
         //- reference to the mesh
         polyMeshGen& mesh_;
+
+        //- meshDict, if the caller has one; passed in explicitly rather
+        //- than looked up from the Time registry by a hardcoded name.
+        //- Kept (rather than just its subDicts) because optimizeBoundaryLayer
+        //- forwards it whole to refineBoundaryLayers::readSettings/
+        //- boundaryLayerOptimisation::readSettings, which look up their own
+        //- "boundaryLayers" subDict themselves. dictionary::null if the
+        //- caller didn't provide one.
+        const dictionary& meshDict_;
+
+        //- meshDict's meshQualitySettings subDict, or dictionary::null if
+        //- absent; derived once at construction via subOrEmptyDict()
+        const dictionary& qualitySettingsDict_;
 
         //- location of vertex (internal, boundary, edge, corner)
         List<direction> vertexLocation_;
@@ -207,8 +221,14 @@ class meshOptimizer
 
 public:
 
-    //- Construct from mesh
-    meshOptimizer(polyMeshGen& mesh);
+    //- Construct from mesh, optionally with the meshDict driving
+    //- optimisation/quality settings (boundaryLayers.optimiseLayer,
+    //- meshQualitySettings, etc.)
+    meshOptimizer
+    (
+        polyMeshGen& mesh,
+        const dictionary& meshDict = dictionary::null
+    );
 
     //- Destructor
     ~meshOptimizer();

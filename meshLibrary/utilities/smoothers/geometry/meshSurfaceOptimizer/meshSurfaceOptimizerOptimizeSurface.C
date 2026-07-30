@@ -702,7 +702,10 @@ void Foam::Module::meshSurfaceOptimizer::optimizeSurface2D
 }
 
 
-void Foam::Module::meshSurfaceOptimizer::untangleSurface2D()
+void Foam::Module::meshSurfaceOptimizer::untangleSurface2D
+(
+    const dictionary& qualitySettingsDict
+)
 {
     const polyMeshGen& mesh = surfaceEngine_.mesh();
     const faceListPMG& faces = mesh.faces();
@@ -736,7 +739,8 @@ void Foam::Module::meshSurfaceOptimizer::untangleSurface2D()
                 mesh,
                 badFaces,
                 false,
-                &changedFace
+                &changedFace,
+                qualitySettingsDict
             );
 
         Info<< "Iteration " << iterationI

@@ -47,6 +47,7 @@ SourceFiles
 #include "pointFieldPMG.H"
 #include "DynamicList.H"
 #include "Map.H"
+#include "polyMesh.H"
 
 namespace Foam
 {
@@ -64,11 +65,30 @@ protected:
         //- reference to the Time registry
         const Time& runTime_;
 
+        //- region name and mesh path this mesh is read from/written to
+        //- (defaults reproduce the historical constant/polyMesh location)
+        word regionName_;
+        fileName meshPath_;
+
         //- list of vertices
         pointFieldPMG points_;
 
         //- map of point subsets
         Map<meshSubset> pointSubsets_;
+
+
+    // Protected member functions
+
+        //- instance folding in region + mesh path - local() stays the fixed
+        //- "polyMesh" literal everywhere, since local() is immutable once
+        //- an IOobject/regIOobject is constructed, unlike instance()
+        inline fileName resolvedInstance() const
+        {
+            return
+                runTime_.constant()
+               /meshPath_
+               /(regionName_ == polyMesh::defaultRegion ? word::null : regionName_);
+        }
 
 
     // Disallow bitwise assignment
@@ -104,6 +124,15 @@ public:
 
         //- access to Time
         inline const Time& returnTime() const;
+
+        //- set the region/mesh-path this mesh is read from/written to -
+        //- must be called (if at all) before any read()/write(), since it
+        //- also fixes up points_'s already-constructed IOobject instance
+        void setMeshLocation
+        (
+            const word& regionName,
+            const fileName& meshPath
+        );
 
         //- access to points
         inline const pointFieldPMG& points() const;

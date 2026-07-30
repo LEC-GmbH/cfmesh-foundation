@@ -29,6 +29,7 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "meshOctreeCreator.H"
+#include "OSspecific.H"
 #include "triSurf.H"
 #include "edgeMesh.H"
 #include "boundBox.H"
@@ -150,7 +151,7 @@ void Foam::Module::meshOctreeCreator::refineBoundary()
 
 void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
 {
-    if (!meshDictPtr_ || !meshDictPtr_->found("objectRefinements"))
+    if (objectRefinementsDict_.empty())
     {
         return;
     }
@@ -159,65 +160,36 @@ void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
     objectRefinementList refObjects;
 
     // Read objects
-    if (meshDictPtr_->isDict("objectRefinements"))
+    const dictionary& dict = objectRefinementsDict_;
+    const wordList objectNames = dict.toc();
+
+    refObjects.setSize(objectNames.size());
+
+    forAll(refObjects, objectI)
     {
-        const dictionary& dict = meshDictPtr_->subDict("objectRefinements");
-        const wordList objectNames = dict.toc();
+        const entry& objectEntry =
+            dict.lookupEntry(objectNames[objectI], false, false);
 
-        refObjects.setSize(objectNames.size());
-
-        forAll(refObjects, objectI)
-        {
-            const entry& objectEntry =
-                dict.lookupEntry(objectNames[objectI], false, false);
-
-            refObjects.set
+        refObjects.set
+        (
+            objectI,
+            objectRefinement::New
             (
-                objectI,
-                objectRefinement::New
-                (
-                    objectEntry.keyword(),
-                    objectEntry.dict()
-                )
-            );
-        }
-    }
-    else
-    {
-        Istream& is = meshDictPtr_->lookup("objectRefinements");
-
-        PtrList<entry> objectEntries(is);
-        refObjects.setSize(objectEntries.size());
-
-        forAll(refObjects, objectI)
-        {
-            refObjects.set
-            (
-                objectI,
-                objectRefinement::New
-                (
-                    objectEntries[objectI].keyword(),
-                    objectEntries[objectI].dict()
-                )
-            );
-        }
-
-        objectEntries.clear();
+                objectEntry.keyword(),
+                objectEntry.dict()
+            )
+        );
     }
 
     coordinateModifier* cModPtr = nullptr;
 
-    if (meshDictPtr_->found("anisotropicSources"))
+    if (!anisotropicSourcesDict_.empty())
     {
-        cModPtr =
-            new coordinateModifier
-            (
-                meshDictPtr_->subDict("anisotropicSources")
-            );
+        cModPtr = new coordinateModifier(anisotropicSourcesDict_);
     }
 
     // calculate refinement levels
-    const scalar s(readScalar(meshDictPtr_->lookup("maxCellSize")));
+    const scalar s(maxCellSize_);
 
     List<direction> refLevels(refObjects.size(), globalRefLevel_);
 
@@ -337,7 +309,7 @@ void Foam::Module::meshOctreeCreator::refineBoxesContainedInObjects()
 
 void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
 {
-    if (!meshDictPtr_ || !meshDictPtr_->found("surfaceMeshRefinement"))
+    if (surfaceMeshRefinementDict_.empty())
     {
         return;
     }
@@ -348,7 +320,7 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
 
     // read surface meshes and calculate the refinement level for each
     // surface mesh
-    const dictionary& surfDict = meshDictPtr_->subDict("surfaceMeshRefinement");
+    const dictionary& surfDict = surfaceMeshRefinementDict_;
     const wordList surfaces = surfDict.toc();
     PtrList<const triSurf> surfaceMeshesPtr(surfaces.size());
     List<direction> refLevels(surfaces.size(), globalRefLevel_);
@@ -361,10 +333,22 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
 
         const fileName fName(dict.lookup("surfaceFile"));
 
-        if (meshDictPtr_->found("anisotropicSources"))
+        if (!isFile(fName))
+        {
+            FatalErrorInFunction
+                << "Surface file " << fName
+                << " does not exist or is not readable!!"
+                << exit(FatalError);
+        }
+
+        if (!anisotropicSourcesDict_.empty())
         {
             triSurf origSurf(fName);
-            surfaceMeshGeometryModification surfMod(origSurf, *meshDictPtr_);
+            surfaceMeshGeometryModification surfMod
+            (
+                origSurf,
+                anisotropicSourcesDict_
+            );
 
             surfaceMeshesPtr.set(surfI, surfMod.modifyGeometry());
         }
@@ -376,9 +360,17 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
         direction addLevel(0);
         if (dict.found("cellSize"))
         {
-            scalar s(readScalar(meshDictPtr_->lookup("maxCellSize")));
+            scalar s(maxCellSize_);
 
             const scalar cs = readScalar(dict.lookup("cellSize"));
+
+            if (cs < VSMALL)
+            {
+                FatalErrorInFunction
+                    << "Cell size for entry " << surfaces[surfI]
+                    << " is extremely small or negative!!"
+                    << exit(FatalError);
+            }
 
             do
             {
@@ -393,14 +385,38 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
 
             } while (nMarked != 0);
         }
-        else
+        else if (dict.found("additionalRefinementLevels"))
         {
             label addLevelTmp(addLevel);
             dict.readIfPresent("additionalRefinementLevels", addLevelTmp);
+
+            if (addLevelTmp < 0)
+            {
+                FatalErrorInFunction
+                    << "Number refinement levels for entry "
+                    << surfaces[surfI] << " is negative!!"
+                    << exit(FatalError);
+            }
+
             addLevel = direction(addLevelTmp);
         }
+        else
+        {
+            FatalErrorInFunction
+                << "Missing cellSize or additionalRefinementLevels"
+                << " for entry " << surfaces[surfI]
+                << exit(FatalError);
+        }
 
-        dict.readIfPresent("refinementThickness", refThickness[surfI]);
+        if (dict.readIfPresent("refinementThickness", refThickness[surfI]))
+        {
+            if (refThickness[surfI] < VSMALL)
+            {
+                WarningInFunction
+                    << "Refinement thickness for entry " << surfaces[surfI]
+                    << " is extremely small or negative!!" << endl;
+            }
+        }
 
         // set the refinement level for the current surface
         refLevels[surfI] += addLevel;
@@ -518,7 +534,7 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingSurfaces()
 
 void Foam::Module::meshOctreeCreator::refineBoxesIntersectingEdgeMeshes()
 {
-    if (!meshDictPtr_ || !meshDictPtr_->found("edgeMeshRefinement"))
+    if (edgeMeshRefinementDict_.empty())
     {
         return;
     }
@@ -527,7 +543,7 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingEdgeMeshes()
 
     // read edge meshes and calculate the refinement level for each
     // edge mesh
-    const dictionary& edgeDict = meshDictPtr_->subDict("edgeMeshRefinement");
+    const dictionary& edgeDict = edgeMeshRefinementDict_;
     const wordList edgeMeshNames = edgeDict.toc();
 
     PtrList<const edgeMesh> edgeMeshesPtr(edgeMeshNames.size());
@@ -541,10 +557,14 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingEdgeMeshes()
 
         const fileName fName(dict.lookup("edgeFile"));
 
-        if (meshDictPtr_->found("anisotropicSources"))
+        if (!anisotropicSourcesDict_.empty())
         {
             edgeMesh origEdgeMesh(fName);
-            edgeMeshGeometryModification edgeMod(origEdgeMesh, *meshDictPtr_);
+            edgeMeshGeometryModification edgeMod
+            (
+                origEdgeMesh,
+                anisotropicSourcesDict_
+            );
 
             edgeMeshesPtr.set(emI, edgeMod.modifyGeometry());
         }
@@ -557,7 +577,7 @@ void Foam::Module::meshOctreeCreator::refineBoxesIntersectingEdgeMeshes()
         direction addLevel(0);
         if (dict.found("cellSize"))
         {
-            scalar s(readScalar(meshDictPtr_->lookup("maxCellSize")));
+            scalar s(maxCellSize_);
 
             const scalar cs = readScalar(dict.lookup("cellSize"));
 

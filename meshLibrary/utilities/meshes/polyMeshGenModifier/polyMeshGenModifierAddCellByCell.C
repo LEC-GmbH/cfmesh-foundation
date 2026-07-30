@@ -40,9 +40,7 @@ Foam::Module::polyMeshGenModifierAddCellByCell::polyMeshGenModifierAddCellByCell
 :
     polyMeshGenModifier(mesh),
     nFaces_(mesh.faces().size()),
-    newFaces_(),
-    nCells_(mesh.cells().size()),
-    newCells_()
+    nCells_(mesh.cells().size())
 {
     newFaces_.setSize(nFaces_);
     newCells_.setSize(nCells_);

@@ -37,9 +37,7 @@ Foam::Module::triSurfaceClassifyEdges::triSurfaceClassifyEdges
     const meshOctree& octree
 )
 :
-    octree_(octree),
-    edgeTypes_(),
-    facetOrientation_()
+    octree_(octree)
 {
     checkOrientation();
 

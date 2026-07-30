@@ -87,16 +87,27 @@ Foam::Module::meshOctreeAutomaticRefinement::curvature() const
 }
 
 
-void Foam::Module::meshOctreeAutomaticRefinement::setMaxRefLevel()
+void Foam::Module::meshOctreeAutomaticRefinement::setMaxRefLevel
+(
+    const dictionary& dict
+)
 {
     const boundBox& rootBox = octree_.rootBox();
     const scalar size = rootBox.max().x() - rootBox.min().x();
     maxRefLevel_ = 0;
 
-    if (meshDict_.found("minCellSize"))
+    if (dict.found("minCellSize"))
     {
-        const scalar maxSize(readScalar(meshDict_.lookup("maxCellSize")));
-        scalar cs(readScalar(meshDict_.lookup("minCellSize")));
+        const scalar maxSize(readScalar(dict.lookup("maxCellSize")));
+        scalar cs(readScalar(dict.lookup("minCellSize")));
+
+        if (cs < 0)
+        {
+            FatalErrorInFunction
+                << "Minimum cell size for automatic refinement is"
+                << " negative!!" << exit(FatalError);
+        }
+
         cs *= (1.0 + SMALL);
 
         if (cs > maxSize)
@@ -135,12 +146,11 @@ void Foam::Module::meshOctreeAutomaticRefinement::setMaxRefLevel()
 Foam::Module::meshOctreeAutomaticRefinement::meshOctreeAutomaticRefinement
 (
     meshOctree& mo,
-    const IOdictionary& dict,
+    const dictionary& dict,
     bool useDATABoxes
 )
 :
     octree_(mo),
-    meshDict_(dict),
     useDATABoxes_(useDATABoxes),
     hexRefinement_(false),
     partitionerPtr_(nullptr),
@@ -153,7 +163,7 @@ Foam::Module::meshOctreeAutomaticRefinement::meshOctreeAutomaticRefinement
     }
 
     // calculate maximum allowed refinement level from the minimum cell size
-    setMaxRefLevel();
+    setMaxRefLevel(dict);
 }
 
 

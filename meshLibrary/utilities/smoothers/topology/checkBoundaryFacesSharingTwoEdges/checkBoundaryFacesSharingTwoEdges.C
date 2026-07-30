@@ -243,9 +243,7 @@ checkBoundaryFacesSharingTwoEdges
 )
 :
     mesh_(mesh),
-    meshSurfacePtr_(nullptr),
-    nBndFacesAtBndPoint_(),
-    removeBndPoint_()
+    meshSurfacePtr_(nullptr)
 {}
 
 

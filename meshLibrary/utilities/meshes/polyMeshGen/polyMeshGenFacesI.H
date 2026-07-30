@@ -209,4 +209,36 @@ inline void Foam::Module::polyMeshGenFaces::updateFaceSubsets
 }
 
 
+inline const Foam::HashTable<Foam::wordList>&
+Foam::Module::polyMeshGenFaces::origPatchNamesMap() const
+{
+    return origPatchNames_;
+}
+
+
+inline void Foam::Module::polyMeshGenFaces::setOrigPatchNamesMap
+(
+    const HashTable<wordList>& origPatchNames
+)
+{
+    origPatchNames_ = origPatchNames;
+}
+
+
+inline const Foam::HashTable<Foam::word>&
+Foam::Module::polyMeshGenFaces::origPatchTypesMap() const
+{
+    return origPatchTypes_;
+}
+
+
+inline void Foam::Module::polyMeshGenFaces::setOrigPatchTypesMap
+(
+    const HashTable<word>& origPatchTypes
+)
+{
+    origPatchTypes_ = origPatchTypes;
+}
+
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

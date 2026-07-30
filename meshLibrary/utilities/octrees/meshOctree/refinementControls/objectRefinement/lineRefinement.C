@@ -47,9 +47,7 @@ namespace Module
 
 Foam::Module::lineRefinement::lineRefinement()
 :
-    objectRefinement(),
-    p0_(),
-    p1_()
+    objectRefinement()
 {}
 
 

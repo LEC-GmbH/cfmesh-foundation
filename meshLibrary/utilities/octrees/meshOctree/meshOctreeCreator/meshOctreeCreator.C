@@ -35,30 +35,65 @@ License
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::Module::meshOctreeCreator::meshOctreeCreator(meshOctree& mo)
-:
-    octree_(mo),
-    scalingFactor_(1.0),
-    meshDictPtr_(nullptr),
-    hexRefinement_(false),
-    globalRefLevel_(0),
-    surfRefLevel_(mo.surface().size())
-{}
-
-
 Foam::Module::meshOctreeCreator::meshOctreeCreator
 (
     meshOctree& mo,
-    const IOdictionary& dict
+    const dictionary& dict
 )
 :
     octree_(mo),
     scalingFactor_(1.0),
-    meshDictPtr_(&dict),
+    meshDict_(dict),
+    haveMeshDict_(&dict != &dictionary::null),
+    maxCellSize_(haveMeshDict_ ? readScalar(dict.lookup("maxCellSize")) : 0),
+    haveBoundaryCellSize_(dict.found("boundaryCellSize")),
+    boundaryCellSize_
+    (
+        haveBoundaryCellSize_ ? readScalar(dict.lookup("boundaryCellSize")) : 0
+    ),
+    boundaryCellSizeRefinementThickness_
+    (
+        haveBoundaryCellSize_
+      ? dict.lookupOrDefault<scalar>("boundaryCellSizeRefinementThickness", 0)
+      : 0
+    ),
+    patchCellSizeDict_(dict.subOrEmptyDict("patchCellSize")),
+    subsetCellSizeDict_(dict.subOrEmptyDict("subsetCellSize")),
+    localRefinementDict_(dict.subOrEmptyDict("localRefinement")),
+    objectRefinementsDict_(dict.subOrEmptyDict("objectRefinements")),
+    surfaceMeshRefinementDict_(dict.subOrEmptyDict("surfaceMeshRefinement")),
+    edgeMeshRefinementDict_(dict.subOrEmptyDict("edgeMeshRefinement")),
+    anisotropicSourcesDict_(dict.subOrEmptyDict("anisotropicSources")),
     hexRefinement_(false),
     globalRefLevel_(0),
     surfRefLevel_(mo.surface().size())
-{}
+{
+    if (haveMeshDict_)
+    {
+        if (maxCellSize_ < 0)
+        {
+            FatalErrorInFunction
+                << "maxCellSize is negative! Cannot generate the mesh!!"
+                << exit(FatalError);
+        }
+
+        if (haveBoundaryCellSize_)
+        {
+            if (boundaryCellSize_ < 0)
+            {
+                WarningInFunction
+                    << "Boundary cell size is negative!!" << endl;
+            }
+
+            if (boundaryCellSizeRefinementThickness_ < 0)
+            {
+                WarningInFunction
+                    << "Boundary cell size refinement thickness is"
+                    << " negative!!" << endl;
+            }
+        }
+    }
+}
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -294,9 +294,7 @@ Foam::Module::findCellsIntersectingSurface::findCellsIntersectingSurface
 :
     mesh_(mesh),
     octreePtr_(const_cast<meshOctree*>(&octree)),
-    octreeGenerated_(false),
-    intersectedCells_(),
-    facetsIntersectingCell_()
+    octreeGenerated_(false)
 {
     findIntersectedCells();
 }
@@ -310,9 +308,7 @@ Foam::Module::findCellsIntersectingSurface::findCellsIntersectingSurface
 :
     mesh_(mesh),
     octreePtr_(nullptr),
-    octreeGenerated_(true),
-    intersectedCells_(),
-    facetsIntersectingCell_()
+    octreeGenerated_(true)
 {
     generateOctree(surface);
 

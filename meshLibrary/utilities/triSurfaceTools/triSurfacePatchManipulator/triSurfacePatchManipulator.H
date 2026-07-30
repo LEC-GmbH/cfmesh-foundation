@@ -42,9 +42,9 @@ SourceFiles
 #ifndef triSurfacePatchManipulator_H
 #define triSurfacePatchManipulator_H
 
-#include "IOdictionary.H"
 #include "triSurf.H"
 #include "labelListListOps.H"
+#include "HashTable.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -108,10 +108,17 @@ public:
 
         void detectedSurfaceRegions(labelListList2D&) const;
 
-        //- store regions into subsets with a given prefix
+        //- store regions into subsets with a given prefix. The returned
+        //- surface's origPatchNamesMap() (see triSurfFacets) records, for
+        //- each original patch that got split by feature edges, the
+        //- literal names of the patches it was split into - this is how
+        //- downstream consumers (meshOctreeCreator, meshOctreeAddressing,
+        //- refineBoundaryLayers, renameBoundaryPatches, ...) keep
+        //- resolving patch-name-keyed meshDict entries written against
+        //- the pre-split patch names, without this class needing to
+        //- reach into and rewrite the caller's meshDict itself.
         const triSurf* surfaceWithPatches
         (
-            IOdictionary* meshDictPtr = nullptr,
             const word prefix = "patch_",
             const bool forceOverwrite = false
         ) const;

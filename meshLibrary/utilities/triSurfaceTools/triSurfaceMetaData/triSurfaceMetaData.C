@@ -120,8 +120,7 @@ void Foam::Module::triSurfaceMetaData::createMetaData()
 
 Foam::Module::triSurfaceMetaData::triSurfaceMetaData(const triSurf& surface)
 :
-    surf_(surface),
-    metaDict_()
+    surf_(surface)
 {
     createMetaData();
 }

@@ -44,11 +44,7 @@ Foam::Module::meshOctreeInsideOutside::meshOctreeInsideOutside
 :
     octreeModifier_(octree),
     cubeGroup_(octree.numberOfLeaves(), -1),
-    cubesInGroup_(),
-    groupType_(),
-    boundaryDATACubes_(),
-    hasOutsideNeighbour_(octree.numberOfLeaves(), false),
-    neighbouringGroups_()
+    hasOutsideNeighbour_(octree.numberOfLeaves(), false)
 {
     initialiseBoxes();
 

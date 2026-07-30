@@ -48,6 +48,7 @@ SourceFiles
 #include "labelledTri.H"
 #include "DynamicList.H"
 #include "Map.H"
+#include "HashTable.H"
 
 namespace Foam
 {
@@ -70,6 +71,23 @@ protected:
 
         //- map of point subsets
         Map<meshSubset> facetSubsets_;
+
+        //- map from a patch's name before triSurfacePatchManipulator
+        //- split it by feature edges to the literal names of the
+        //- patches it was split into; empty if this surface was not
+        //- produced by such a split. Consulted by findPatches() so
+        //- patch-name-keyed meshDict entries (patchCellSize,
+        //- localRefinement, keepCellsIntersectingPatches, ...) written
+        //- against the pre-split name keep resolving correctly.
+        HashTable<wordList> origPatchNames_;
+
+        //- geometricType of each pre-split patch, keyed by its
+        //- (pre-split) name; empty if this surface was not produced by
+        //- a split. Consulted by renameBoundaryPatches to default-rename
+        //- every split patch back to its original name/type when the
+        //- user hasn't configured a renameBoundary entry of their own
+        //- for that original patch.
+        HashTable<word> origPatchTypes_;
 
 
     // Disallow bitwise assignment
@@ -116,8 +134,22 @@ public:
         wordList patchNames() const;
 
         //- return a list of patch indices corresponding to the given
-        // name, expanding regular expressions
+        // name, expanding regular expressions and pre-split patch names
+        // (see origPatchNamesMap())
         labelList findPatches(const word& patchName) const;
+
+        //- access to the pre-split -> post-split patch name map
+        //- (see origPatchNames_)
+        inline const HashTable<wordList>& origPatchNamesMap() const;
+
+        //- set the pre-split -> post-split patch name map
+        inline void setOrigPatchNamesMap(const HashTable<wordList>&);
+
+        //- access to the pre-split patch type map (see origPatchTypes_)
+        inline const HashTable<word>& origPatchTypesMap() const;
+
+        //- set the pre-split patch type map
+        inline void setOrigPatchTypesMap(const HashTable<word>&);
 
         //- append a triangle to the end of the list
         inline void appendTriangle(const labelledTri& tria);

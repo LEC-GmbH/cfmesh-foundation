@@ -533,11 +533,7 @@ Foam::Module::refineBoundaryLayers::refineEdgeHexCell::refineEdgeHexCell
     cellI_(cellI),
     nLayersI_(),
     nLayersJ_(),
-    cellsFromCell_(),
-    bndLayers_(ref),
-    faceInDirection_(),
-    faceOrientation_(),
-    cellPoints_()
+    bndLayers_(ref)
 {
     determineFacesInDirections();
 
@@ -1108,13 +1104,7 @@ Foam::Module::refineBoundaryLayers::refineCornerHexCell::refineCornerHexCell
     nLayersI_(),
     nLayersJ_(),
     nLayersK_(),
-    splitEdgeInDirection_(),
-    cellsFromCell_(),
-    bndLayers_(ref),
-    faceInDirection_(),
-    faceOrientation_(),
-    facePoints_(),
-    cellPoints_()
+    bndLayers_(ref)
 {
     determineFacesInDirections();
 

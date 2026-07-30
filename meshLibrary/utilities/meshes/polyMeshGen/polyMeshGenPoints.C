@@ -39,6 +39,7 @@ License
 Foam::Module::polyMeshGenPoints::polyMeshGenPoints(const Time& runTime)
 :
     runTime_(runTime),
+    regionName_(polyMesh::defaultRegion),
     points_
     (
         IOobject
@@ -49,8 +50,7 @@ Foam::Module::polyMeshGenPoints::polyMeshGenPoints(const Time& runTime)
             runTime
         ),
         0
-    ),
-    pointSubsets_()
+    )
 {}
 
 
@@ -61,6 +61,7 @@ Foam::Module::polyMeshGenPoints::polyMeshGenPoints
 )
 :
     runTime_(runTime),
+    regionName_(polyMesh::defaultRegion),
     points_
     (
         IOobject
@@ -71,9 +72,21 @@ Foam::Module::polyMeshGenPoints::polyMeshGenPoints
             runTime
         ),
         points
-    ),
-    pointSubsets_()
+    )
 {}
+
+
+void Foam::Module::polyMeshGenPoints::setMeshLocation
+(
+    const word& regionName,
+    const fileName& meshPath
+)
+{
+    regionName_ = regionName;
+    meshPath_ = meshPath;
+
+    points_.instance() = resolvedInstance();
+}
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -159,7 +172,7 @@ void Foam::Module::polyMeshGenPoints::read()
         IOobject
         (
             "points",
-            runTime_.constant(),
+            resolvedInstance(),
             "polyMesh",
             runTime_,
             IOobject::MUST_READ
@@ -171,7 +184,7 @@ void Foam::Module::polyMeshGenPoints::read()
     IOobjectList allSets
     (
         runTime_,
-        runTime_.constant(),
+        resolvedInstance(),
         "polyMesh/sets"
     );
 
@@ -204,7 +217,7 @@ void Foam::Module::polyMeshGenPoints::write() const
             IOobject
             (
                 setIt().name(),
-                runTime_.constant(),
+                resolvedInstance(),
                 "polyMesh/sets",
                 runTime_,
                 IOobject::NO_READ,

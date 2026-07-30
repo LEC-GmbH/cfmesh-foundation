@@ -88,8 +88,6 @@ Foam::Module::knuppMetric::knuppMetric(partTetMeshSimplex& simplex)
 :
     simplexSmoother(simplex),
     p_(simplex.pts()[simplex.tets()[0][3]]),
-    normals_(),
-    centres_(),
     beta_()
 {
     forAll(tets_, tetI)

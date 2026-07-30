@@ -281,7 +281,6 @@ void Foam::Module::polyMeshGen2DEngine::findZMaxOffsetPoints() const
 Foam::Module::polyMeshGen2DEngine::polyMeshGen2DEngine(const polyMeshGen& mesh)
 :
     mesh_(mesh),
-    bb_(),
     activeFacePtr_(nullptr),
     activeFaceLabelsPtr_(nullptr),
     zMinPointPtr_(nullptr),

@@ -42,10 +42,6 @@ Foam::Module::detectBoundaryLayers::detectBoundaryLayers
 :
     meshSurface_(meshSurface),
     nFirstLayers_(0),
-    layerAtBndFace_(),
-    layerAtPatch_(),
-    hairEdges_(),
-    hairEdgesAtBoundaryPoint_(),
     is2DMesh_(is2DMesh)
 {
     Info<< "Detecting layers" << endl;

@@ -49,18 +49,14 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
         return;
     }
 
-    if (!meshDictPtr_)
+    if (!haveMeshDict_)
     {
         WarningInFunction
             << "meshDict is not available" << endl;
         return;
     }
 
-    const scalar maxSize
-    (
-        scalingFactor_ *
-        readScalar(meshDictPtr_->lookup("maxCellSize"))
-    );
+    const scalar maxSize(scalingFactor_ * maxCellSize_);
 
     octreeModifier.searchRangeAccess() = 0.25*maxSize;
 
@@ -119,10 +115,11 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
 
     // set other refinement parameters
     // set boundary ref level
-    if (meshDictPtr_->found("boundaryCellSize"))
+    if (haveBoundaryCellSize_)
     {
         direction boundaryRefLevel_ = globalRefLevel_;
-        scalar cs(readScalar(meshDictPtr_->lookup("boundaryCellSize")));
+        scalar cs(boundaryCellSize_);
+
         cs *= (scalingFactor_ + SMALL);
 
         octreeModifier.searchRangeAccess() = cs;
@@ -150,18 +147,7 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
         Info<< "Requested boundary cell size corresponds to octree level "
             << label(boundaryRefLevel_) << endl;
 
-        scalar thickness(0.0);
-        if
-        (
-            meshDictPtr_->readIfPresent
-            (
-                "boundaryCellSizeRefinementThickness",
-                thickness
-            )
-        )
-        {
-            thickness = mag(thickness);
-        }
+        const scalar thickness(mag(boundaryCellSizeRefinementThickness_));
 
         forAll(surfRefLevel_, triI)
         {
@@ -171,47 +157,39 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
     }
 
     // set patch-wise ref levels
-    if (meshDictPtr_->found("patchCellSize"))
+    if (!patchCellSizeDict_.empty())
     {
         patchRefinementList refPatches;
 
-        if (meshDictPtr_->isDict("patchCellSize"))
+        const dictionary& dict = patchCellSizeDict_;
+        const wordList patchNames = dict.toc();
+
+        const wordList allPatches = surface.patchNames();
+
+        refPatches.setSize(allPatches.size());
+
+        label counter(0);
+
+        forAll(patchNames, patchI)
         {
-            const dictionary& dict = meshDictPtr_->subDict("patchCellSize");
-            const wordList patchNames = dict.toc();
-
-            const wordList allPatches = surface.patchNames();
-
-            refPatches.setSize(allPatches.size());
-
-            label counter(0);
-
-            forAll(patchNames, patchI)
+            if (!dict.isDict(patchNames[patchI]))
             {
-                if (!dict.isDict(patchNames[patchI]))
-                {
-                    continue;
-                }
-
-                const dictionary& patchDict = dict.subDict(patchNames[patchI]);
-                const scalar cs = readScalar(patchDict.lookup("cellSize"));
-
-                labelList matchedIDs = surface.findPatches(patchNames[patchI]);
-                forAll(matchedIDs, matchI)
-                {
-                    refPatches[counter] =
-                        patchRefinement(allPatches[matchedIDs[matchI]], cs);
-                    ++counter;
-                }
+                continue;
             }
 
-            refPatches.setSize(counter);
+            const dictionary& patchDict = dict.subDict(patchNames[patchI]);
+            const scalar cs = readScalar(patchDict.lookup("cellSize"));
+
+            labelList matchedIDs = surface.findPatches(patchNames[patchI]);
+            forAll(matchedIDs, matchI)
+            {
+                refPatches[counter] =
+                    patchRefinement(allPatches[matchedIDs[matchI]], cs);
+                ++counter;
+            }
         }
-        else
-        {
-            patchRefinementList prl(meshDictPtr_->lookup("patchCellSize"));
-            refPatches.transfer(prl);
-        }
+
+        refPatches.setSize(counter);
 
         forAll(refPatches, patchI)
         {
@@ -256,39 +234,31 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
         }
     }
 
-    if (meshDictPtr_->found("subsetCellSize"))
+    if (!subsetCellSizeDict_.empty())
     {
         patchRefinementList refPatches;
 
-        if (meshDictPtr_->isDict("subsetCellSize"))
+        const dictionary& dict = subsetCellSizeDict_;
+        const wordList patchNames = dict.toc();
+
+        refPatches.setSize(patchNames.size());
+        label counter(0);
+
+        forAll(patchNames, patchI)
         {
-            const dictionary& dict = meshDictPtr_->subDict("subsetCellSize");
-            const wordList patchNames = dict.toc();
-
-            refPatches.setSize(patchNames.size());
-            label counter(0);
-
-            forAll(patchNames, patchI)
+            if (!dict.isDict(patchNames[patchI]))
             {
-                if (!dict.isDict(patchNames[patchI]))
-                {
-                    continue;
-                }
-
-                const dictionary& patchDict = dict.subDict(patchNames[patchI]);
-                const scalar cs = readScalar(patchDict.lookup("cellSize"));
-
-                refPatches[counter] = patchRefinement(patchNames[patchI], cs);
-                ++counter;
+                continue;
             }
 
-            refPatches.setSize(counter);
+            const dictionary& patchDict = dict.subDict(patchNames[patchI]);
+            const scalar cs = readScalar(patchDict.lookup("cellSize"));
+
+            refPatches[counter] = patchRefinement(patchNames[patchI], cs);
+            ++counter;
         }
-        else
-        {
-            patchRefinementList srl(meshDictPtr_->lookup("subsetCellSize"));
-            refPatches.transfer(srl);
-        }
+
+        refPatches.setSize(counter);
 
         forAll(refPatches, patchI)
         {
@@ -335,11 +305,10 @@ void Foam::Module::meshOctreeCreator::setRootCubeSizeAndRefParameters()
         }
     }
 
-    if (meshDictPtr_->found("localRefinement"))
+    if (!localRefinementDict_.empty())
     {
-        if (meshDictPtr_->isDict("localRefinement"))
         {
-            const dictionary& dict = meshDictPtr_->subDict("localRefinement");
+            const dictionary& dict = localRefinementDict_;
             const wordList entries = dict.toc();
 
             // map patch name to its index
@@ -613,7 +582,7 @@ void Foam::Module::meshOctreeCreator::createOctreeBoxes()
     // perform automatic octree refinement
     {
         Info<< "Performing automatic refinement" << endl;
-        meshOctreeAutomaticRefinement autoRef(octree_, *meshDictPtr_, false);
+        meshOctreeAutomaticRefinement autoRef(octree_, meshDict_, false);
 
         if (hexRefinement_)
         {

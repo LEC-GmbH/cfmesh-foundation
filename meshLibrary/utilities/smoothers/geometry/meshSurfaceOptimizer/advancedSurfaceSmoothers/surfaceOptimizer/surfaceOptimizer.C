@@ -339,9 +339,7 @@ Foam::Module::surfaceOptimizer::surfaceOptimizer
 )
 :
     pts_(pts),
-    trias_(trias),
-    pMin_(),
-    pMax_()
+    trias_(trias)
 {
     pMin_ = pts_[trias_[0][1]];
     pMax_ = pMin_;

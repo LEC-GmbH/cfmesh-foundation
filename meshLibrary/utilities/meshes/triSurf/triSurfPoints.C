@@ -33,16 +33,12 @@ License
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::Module::triSurfPoints::triSurfPoints()
-:
-    points_(),
-    pointSubsets_()
 {}
 
 
 Foam::Module::triSurfPoints::triSurfPoints(const pointField& points)
 :
-    points_(points),
-    pointSubsets_()
+    points_(points)
 {}
 
 

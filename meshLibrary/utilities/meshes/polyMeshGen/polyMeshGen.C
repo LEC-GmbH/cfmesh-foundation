@@ -31,25 +31,12 @@ License
 #include "polyMeshGen.H"
 #include "OSspecific.H"
 #include "demandDrivenData.H"
-#include "OFstream.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::Module::polyMeshGen::polyMeshGen(const Time& t)
 :
-    polyMeshGenCells(t),
-    metaDict_
-    (
-        IOobject
-        (
-            "meshMetaDict",
-            runTime_.constant(),
-            "polyMesh",
-            runTime_,
-            IOobject::READ_IF_PRESENT,
-            IOobject::NO_WRITE
-        )
-    )
+    polyMeshGenCells(t)
 {}
 
 
@@ -61,19 +48,7 @@ Foam::Module::polyMeshGen::polyMeshGen
     const cellList& cells
 )
 :
-    polyMeshGenCells(t, points, faces, cells),
-    metaDict_
-    (
-        IOobject
-        (
-            "meshMetaDict",
-            runTime_.constant(),
-            "polyMesh",
-            runTime_,
-            IOobject::READ_IF_PRESENT,
-            IOobject::NO_WRITE
-        )
-    )
+    polyMeshGenCells(t, points, faces, cells)
 {}
 
 
@@ -97,23 +72,21 @@ Foam::Module::polyMeshGen::polyMeshGen
         patchNames,
         patchStart,
         nFacesInPatch
-    ),
-    metaDict_
-    (
-        IOobject
-        (
-            "meshMetaDict",
-            runTime_.constant(),
-            "polyMesh",
-            runTime_,
-            IOobject::READ_IF_PRESENT,
-            IOobject::NO_WRITE
-        )
     )
 {}
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+void Foam::Module::polyMeshGen::setMeshLocation
+(
+    const word& regionName,
+    const fileName& meshPath
+)
+{
+    polyMeshGenFaces::setMeshLocation(regionName, meshPath);
+}
+
 
 void Foam::Module::polyMeshGen::read()
 {
@@ -124,7 +97,7 @@ void Foam::Module::polyMeshGen::read()
 void Foam::Module::polyMeshGen::write() const
 {
     // remove old mesh before writting
-    const fileName meshDir = runTime_.path()/runTime_.constant()/"polyMesh";
+    const fileName meshDir = runTime_.path()/resolvedInstance()/"polyMesh";
 
     rm(meshDir/"points");
     rm(meshDir/"faces");
@@ -137,7 +110,7 @@ void Foam::Module::polyMeshGen::write() const
     rm(meshDir/"cellZones");
     rm(meshDir/"meshModifiers");
     rm(meshDir/"parallelData");
-    rm(meshDir/"meshMetaDict");
+    rm(meshDir/"meshMetaDict");   // stale leftover from older cfMesh versions
 
     // remove sets if they exist
     if (isDir(meshDir/"sets"))
@@ -147,12 +120,6 @@ void Foam::Module::polyMeshGen::write() const
 
     // write the mesh
     polyMeshGenCells::write();
-
-    // write meta data
-    OFstream fName(meshDir/"meshMetaDict");
-
-    metaDict_.writeHeader(fName);
-    metaDict_.writeData(fName);
 }
 
 

@@ -167,14 +167,17 @@ void Foam::Module::meshOptimizer::calculatePointLocations()
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::Module::meshOptimizer::meshOptimizer(polyMeshGen& mesh)
+Foam::Module::meshOptimizer::meshOptimizer
+(
+    polyMeshGen& mesh,
+    const dictionary& meshDict
+)
 :
     mesh_(mesh),
-    vertexLocation_(),
-    lockedFaces_(),
+    meshDict_(meshDict),
+    qualitySettingsDict_(meshDict.subOrEmptyDict("meshQualitySettings")),
     msePtr_(nullptr),
-    enforceConstraints_(false),
-    badPointsSubsetName_()
+    enforceConstraints_(false)
 {
     calculatePointLocations();
 }

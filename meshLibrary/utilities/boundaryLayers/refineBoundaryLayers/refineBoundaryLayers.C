@@ -55,20 +55,9 @@ Foam::Module::refineBoundaryLayers::refineBoundaryLayers(polyMeshGen& mesh)
     globalNumLayers_(1),
     globalThicknessRatio_(1.0),
     globalMaxThicknessFirstLayer_(VGREAT),
-    numLayersForPatch_(),
-    thicknessRatioForPatch_(),
-    maxThicknessForPatch_(),
-    discontinuousLayersForPatch_(),
-    cellSubsetName_(),
     done_(false),
     is2DMesh_(false),
-    specialMode_(false),
-    nLayersAtBndFace_(),
-    splitEdges_(),
-    splitEdgesAtPoint_(),
-    newVerticesForSplitEdge_(),
-    facesFromFace_(),
-    newFaces_()
+    specialMode_(false)
 {}
 
 

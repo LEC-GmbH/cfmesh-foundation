@@ -87,7 +87,8 @@ void Foam::Module::meshOptimizer::untangleMeshFV
                         mesh_,
                         badFaces,
                         false,
-                        &changedFace
+                        &changedFace,
+                        qualitySettingsDict_
                     );
             }
             else
@@ -98,7 +99,8 @@ void Foam::Module::meshOptimizer::untangleMeshFV
                         mesh_,
                         badFaces,
                         false,
-                        &changedFace
+                        &changedFace,
+                        qualitySettingsDict_
                     );
             }
 
@@ -159,7 +161,8 @@ void Foam::Module::meshOptimizer::untangleMeshFV
                         mesh_,
                         badFaces,
                         false,
-                        &changedFace
+                        &changedFace,
+                        qualitySettingsDict_
                     );
             }
             else
@@ -170,7 +173,8 @@ void Foam::Module::meshOptimizer::untangleMeshFV
                         mesh_,
                         badFaces,
                         false,
-                        &changedFace
+                        &changedFace,
+                        qualitySettingsDict_
                     );
             }
 
@@ -273,10 +277,9 @@ void Foam::Module::meshOptimizer::optimizeBoundaryLayer
     const bool addBufferLayer
 )
 {
-    if (mesh_.returnTime().foundObject<IOdictionary>("meshDict"))
+    if (!meshDict_.empty())
     {
-        const dictionary& meshDict =
-            mesh_.returnTime().lookupObject<IOdictionary>("meshDict");
+        const dictionary& meshDict = meshDict_;
 
         bool smoothLayer(false);
 
@@ -353,10 +356,9 @@ void Foam::Module::meshOptimizer::optimizeBoundaryLayer
 void Foam::Module::meshOptimizer::untangleBoundaryLayer()
 {
     bool untangleLayer(true);
-    if (mesh_.returnTime().foundObject<IOdictionary>("meshDict"))
+    if (!meshDict_.empty())
     {
-        const dictionary& meshDict =
-            mesh_.returnTime().lookupObject<IOdictionary>("meshDict");
+        const dictionary& meshDict = meshDict_;
 
         if (meshDict.found("boundaryLayers") )
         {
@@ -439,7 +441,8 @@ void Foam::Module::meshOptimizer::optimizeLowQualityFaces
                 mesh_,
                 lowQualityFaces,
                 false,
-                &changedFace
+                &changedFace,
+                qualitySettingsDict_
             );
 
         changedFace = false;

@@ -54,9 +54,7 @@ namespace Module
 Foam::Module::coneRefinement::coneRefinement()
 :
     objectRefinement(),
-    p0_(),
     r0_(-1.0),
-    p1_(),
     r1_(-1.0)
 {}
 

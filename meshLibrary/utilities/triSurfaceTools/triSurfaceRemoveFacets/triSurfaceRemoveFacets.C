@@ -34,8 +34,7 @@ License
 
 Foam::Module::triSurfaceRemoveFacets::triSurfaceRemoveFacets(triSurf& surface)
 :
-    surf_(surface),
-    selectedEntities_()
+    surf_(surface)
 {}
 
 

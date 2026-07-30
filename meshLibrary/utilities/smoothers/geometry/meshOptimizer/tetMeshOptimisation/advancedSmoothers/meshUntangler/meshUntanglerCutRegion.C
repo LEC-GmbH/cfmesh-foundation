@@ -155,10 +155,6 @@ Foam::Module::meshUntangler::cutRegion::cutRegion(const boundBox& bb)
     cPtsPtr_(nullptr),
     cEdgesPtr_(nullptr),
     cFacesPtr_(nullptr),
-    newVertexLabel_(),
-    vertexDistance_(),
-    vertexTypes_(),
-    newEdgeLabel_(),
     origNumVertices_(),
     tol_(SMALL*bb.mag()),
     valid_(true)

@@ -54,7 +54,6 @@ namespace Module
 Foam::Module::boxRefinement::boxRefinement()
 :
     objectRefinement(),
-    centre_(),
     lengthX_(-1.0),
     lengthY_(-1.0),
     lengthZ_(-1.0)

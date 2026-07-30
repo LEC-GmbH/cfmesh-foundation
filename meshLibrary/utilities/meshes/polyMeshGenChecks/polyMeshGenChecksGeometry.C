@@ -2073,7 +2073,8 @@ Foam::label Foam::Module::polyMeshGenChecks::findBadFacesAdditionalChecks
     const polyMeshGen& mesh,
     const bool report,
     labelHashSet& badFaces,
-    const boolList* activeFacePtr
+    const boolList* activeFacePtr,
+    const dictionary& qualitySettingsDict
 
 )
 {
@@ -2120,17 +2121,11 @@ Foam::label Foam::Module::polyMeshGenChecks::findBadFacesAdditionalChecks
     scalar minCellPartTetrahedra = VSMALL;
 
     //Check whether quality criteria is specified by user
-    if (mesh.returnTime().foundObject<IOdictionary>("meshDict"))
+    if (!qualitySettingsDict.empty())
     {
-        const dictionary& meshDict =
-            mesh.returnTime().lookupObject<IOdictionary>("meshDict");
+        const dictionary& qualityDict = qualitySettingsDict;
 
-        if (meshDict.found("meshQualitySettings"))
-        {
-            const dictionary& qualityDict =
-                meshDict.subDict("meshQualitySettings");
-
-            //Reading maximum non-orthogonality defined by the user
+        //Reading maximum non-orthogonality defined by the user
             if (qualityDict.readIfPresent("maxNonOrthogonality", maxNonOrtho))
             {
                 polyMeshGenChecks::checkFaceDotProduct
@@ -2333,7 +2328,6 @@ Foam::label Foam::Module::polyMeshGenChecks::findBadFacesAdditionalChecks
                 );
 
             }
-        }
     }
 
     label nBadFaces = badFaces.size();
@@ -2346,7 +2340,8 @@ Foam::label Foam::Module::polyMeshGenChecks::findBadFacesRelaxed
     const polyMeshGen& mesh,
     labelHashSet& badFaces,
     const bool report,
-    const boolList* activeFacePtr
+    const boolList* activeFacePtr,
+    const dictionary& qualitySettingsDict
 )
 {
     badFaces.clear();
@@ -2356,7 +2351,8 @@ Foam::label Foam::Module::polyMeshGenChecks::findBadFacesRelaxed
         mesh,
         report,
         badFaces,
-        activeFacePtr
+        activeFacePtr,
+        qualitySettingsDict
     );
 
     polyMeshGenChecks::checkFacePyramids
@@ -2388,7 +2384,8 @@ Foam::label Foam::Module::polyMeshGenChecks::findBadFaces
     const polyMeshGen& mesh,
     labelHashSet& badFaces,
     const bool report,
-    const boolList* activeFacePtr
+    const boolList* activeFacePtr,
+    const dictionary& qualitySettingsDict
 )
 {
     badFaces.clear();
@@ -2398,7 +2395,8 @@ Foam::label Foam::Module::polyMeshGenChecks::findBadFaces
         mesh,
         report,
         badFaces,
-        activeFacePtr
+        activeFacePtr,
+        qualitySettingsDict
     );
 
     polyMeshGenChecks::checkFacePyramids
@@ -2448,7 +2446,8 @@ Foam::label Foam::Module::polyMeshGenChecks::findLowQualityFaces
     const polyMeshGen& mesh,
     labelHashSet& badFaces,
     const bool report,
-    const boolList* activeFacePtr
+    const boolList* activeFacePtr,
+    const dictionary& qualitySettingsDict
 )
 {
     badFaces.clear();
@@ -2458,7 +2457,8 @@ Foam::label Foam::Module::polyMeshGenChecks::findLowQualityFaces
         mesh,
         report,
         badFaces,
-        activeFacePtr
+        activeFacePtr,
+        qualitySettingsDict
     );
 
     polyMeshGenChecks::checkFaceDotProduct

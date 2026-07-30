@@ -47,6 +47,7 @@ SourceFiles
 #include "meshSurfaceEngine.H"
 #include "meshSurfacePartitioner.H"
 #include "partTriMesh.H"
+#include "dictionary.H"
 
 #include <map>
 
@@ -294,8 +295,13 @@ public:
         //- optimize the surface of a 2D mesh
         void optimizeSurface2D(const label nIterations = 5);
 
-        //- untangle the surface of a 2D mesh
-        void untangleSurface2D();
+        //- untangle the surface of a 2D mesh. qualitySettingsDict, if given,
+        //- is meshDict's meshQualitySettings subDict (passed in explicitly
+        //- rather than looked up from the Time registry)
+        void untangleSurface2D
+        (
+            const dictionary& qualitySettingsDict = dictionary::null
+        );
 };
 
 

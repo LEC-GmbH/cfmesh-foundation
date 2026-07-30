@@ -87,7 +87,6 @@ void Foam::Module::surfaceRefinement::initialise()
 Foam::Module::surfaceRefinement::surfaceRefinement()
 :
     objectRefinement(),
-    fName_(),
     distance_(-1),
     surface_(maxThreads()),
     search_(maxThreads())
@@ -122,7 +121,6 @@ Foam::Module::surfaceRefinement::surfaceRefinement
 )
 :
     objectRefinement(name, dict),
-    fName_(),
     distance_(-1),
     surface_(maxThreads()),
     search_(maxThreads())

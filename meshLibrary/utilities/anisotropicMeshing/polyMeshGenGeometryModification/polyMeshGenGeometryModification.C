@@ -34,16 +34,25 @@ License
 
 // * * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * //
 
-void Foam::Module::polyMeshGenGeometryModification::checkModification()
+void Foam::Module::polyMeshGenGeometryModification::checkModification
+(
+    const dictionary& anisotropicSourcesDict
+)
 {
-    if (meshDict_.found("anisotropicSources"))
+    // active whenever the caller passed a real dict at all (i.e. the
+    // anisotropicSources key was present in meshDict), matching this
+    // class's historical behaviour - even an empty anisotropicSources {}
+    // block must activate (constructing a no-op coordinateModifier), NOT
+    // just a non-empty one: modifyGeometry()/revertGeometryModification()
+    // are only ever called by callers who already checked
+    // activeModification() themselves for this class, but the sibling
+    // surface-/edge-mesh variants are dereferenced unconditionally by
+    // their callers, so keep the semantics identical across all three
+    if (&anisotropicSourcesDict != &dictionary::null)
     {
         modificationActive_ = true;
 
-        const dictionary& anisotropicDict =
-            meshDict_.subDict("anisotropicSources");
-
-        coordinateModifierPtr_ = new coordinateModifier(anisotropicDict);
+        coordinateModifierPtr_ = new coordinateModifier(anisotropicSourcesDict);
     }
 }
 
@@ -53,15 +62,14 @@ void Foam::Module::polyMeshGenGeometryModification::checkModification()
 Foam::Module::polyMeshGenGeometryModification::polyMeshGenGeometryModification
 (
     polyMeshGen& mesh,
-    const dictionary& meshDict
+    const dictionary& anisotropicSourcesDict
 )
 :
     mesh_(mesh),
-    meshDict_(meshDict),
     coordinateModifierPtr_(nullptr),
     modificationActive_(false)
 {
-    checkModification();
+    checkModification(anisotropicSourcesDict);
 }
 
 

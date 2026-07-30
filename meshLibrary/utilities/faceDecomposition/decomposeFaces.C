@@ -37,7 +37,6 @@ License
 Foam::Module::decomposeFaces::decomposeFaces(polyMeshGen& mesh)
 :
     mesh_(mesh),
-    newFacesForFace_(),
     done_(false)
 {}
 

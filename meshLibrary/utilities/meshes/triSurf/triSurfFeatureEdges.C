@@ -33,9 +33,6 @@ License
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::Module::triSurfFeatureEdges::triSurfFeatureEdges()
-:
-    featureEdges_(),
-    featureEdgeSubsets_()
 {}
 
 
@@ -44,8 +41,7 @@ Foam::Module::triSurfFeatureEdges::triSurfFeatureEdges
     const DynamicList<edge>& featureEdges
 )
 :
-    featureEdges_(featureEdges),
-    featureEdgeSubsets_()
+    featureEdges_(featureEdges)
 {}
 
 

@@ -38,15 +38,7 @@ Foam::Module::triSurfaceCurvatureEstimator::triSurfaceCurvatureEstimator
     const triSurf& surface
 )
 :
-    surface_(surface),
-    edgePointCurvature_(),
-    patchPositions_(),
-    gaussianCurvature_(),
-    meanCurvature_(),
-    maxCurvature_(),
-    minCurvature_(),
-    maxCurvatureVector_(),
-    minCurvatureVector_()
+    surface_(surface)
 {
     calculateEdgeCurvature();
     calculateSurfaceCurvatures();

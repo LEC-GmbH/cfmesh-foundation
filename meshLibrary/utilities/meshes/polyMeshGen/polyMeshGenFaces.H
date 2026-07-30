@@ -47,6 +47,7 @@ SourceFiles
 #include "labelIOList.H"
 #include "boundaryPatch.H"
 #include "DynamicList.H"
+#include "HashTable.H"
 
 namespace Foam
 {
@@ -71,6 +72,29 @@ protected:
 
         //- face subsets
         Map<meshSubset> faceSubsets_;
+
+        //- map from a patch's name before triSurfacePatchManipulator
+        //- split it by feature edges to the literal names of the
+        //- patches it was split into; empty if this mesh's surface was
+        //- not produced by such a split. Consulted by findPatches() so
+        //- patch-name-keyed meshDict entries (boundaryLayers.
+        //- patchBoundaryLayers, renameBoundary.newPatchNames, ...)
+        //- written against the pre-split name keep resolving correctly.
+        //- Copied from the originating triSurf's own map (see
+        //- triSurfFacets::origPatchNamesMap()) when boundary patches are
+        //- created during mesh extraction.
+        HashTable<wordList> origPatchNames_;
+
+        //- geometricType of each pre-split patch, keyed by its
+        //- (pre-split) name; empty if this mesh's surface was not
+        //- produced by a split. Consulted by renameBoundaryPatches to
+        //- default-rename every split patch back to its original
+        //- name/type when the user hasn't configured a renameBoundary
+        //- entry of their own for that original patch. Copied from the
+        //- originating triSurf's own map (see
+        //- triSurfFacets::origPatchTypesMap()) when boundary patches are
+        //- created during mesh extraction.
+        HashTable<word> origPatchTypes_;
 
 
     // Addressing data
@@ -132,6 +156,15 @@ public:
 
     // Member functions
 
+        //- set the region/mesh-path this mesh is read from/written to -
+        //- must be called (if at all) before any read()/write(), since it
+        //- also fixes up faces_'s already-constructed IOobject instance
+        void setMeshLocation
+        (
+            const word& regionName,
+            const fileName& meshPath
+        );
+
         //- access to faces
         inline const faceListPMG& faces() const;
 
@@ -161,8 +194,22 @@ public:
         word getPatchName(const label patchID) const;
 
         //- return a list of patch indices corresponding to the given
-        // name, expanding regular expressions
+        // name, expanding regular expressions and pre-split patch names
+        // (see origPatchNamesMap())
         labelList findPatches(const word& patchName) const;
+
+        //- access to the pre-split -> post-split patch name map
+        //- (see origPatchNames_)
+        inline const HashTable<wordList>& origPatchNamesMap() const;
+
+        //- set the pre-split -> post-split patch name map
+        inline void setOrigPatchNamesMap(const HashTable<wordList>&);
+
+        //- access to the pre-split patch type map (see origPatchTypes_)
+        inline const HashTable<word>& origPatchTypesMap() const;
+
+        //- set the pre-split patch type map
+        inline void setOrigPatchTypesMap(const HashTable<word>&);
 
 
     // Subsets

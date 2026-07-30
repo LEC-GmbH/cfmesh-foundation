@@ -156,8 +156,7 @@ Foam::Module::meshSurfaceCheckEdgeTypes::meshSurfaceCheckEdgeTypes
     const meshSurfaceEngine& mse
 )
 :
-    surfaceEngine_(mse),
-    edgeType_()
+    surfaceEngine_(mse)
 {
     classifyEdges();
 }

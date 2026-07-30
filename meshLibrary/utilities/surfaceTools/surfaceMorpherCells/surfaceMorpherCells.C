@@ -58,10 +58,7 @@ Foam::Module::surfaceMorpherCells::surfaceMorpherCells
     mesh_(mesh),
     nIntFaces_(0),
     boundaryVertex_(mesh.points().size()),
-    cellFlags_(mesh.cells().size()),
-    newBoundaryFaces_(),
-    newBoundaryOwners_(),
-    newBoundaryPatches_()
+    cellFlags_(mesh.cells().size())
 {}
 
 

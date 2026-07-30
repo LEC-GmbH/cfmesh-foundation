@@ -42,11 +42,7 @@ License
 
 Foam::Module::partTriMesh::partTriMesh(const meshSurfacePartitioner& mPart)
 :
-    mPart_(mPart),
-    surf_(),
-    pointLabelInMeshSurface_(),
-    meshSurfacePointLabelInTriMesh_(),
-    pointType_()
+    mPart_(mPart)
 {
     const meshSurfaceEngine& meshSurface = mPart.surfaceEngine();
     List<direction> useFace(meshSurface.boundaryFaces().size(), direction(1));
@@ -62,11 +58,7 @@ Foam::Module::partTriMesh::partTriMesh
     const label additionalLayers
 )
 :
-    mPart_(mPart),
-    surf_(),
-    pointLabelInMeshSurface_(),
-    meshSurfacePointLabelInTriMesh_(),
-    pointType_()
+    mPart_(mPart)
 {
     const meshSurfaceEngine& meshSurface = mPart.surfaceEngine();
     const labelListList2D& pointFaces = meshSurface.pointFaces();

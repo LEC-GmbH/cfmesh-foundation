@@ -155,8 +155,7 @@ Foam::Module::checkNonMappableCellConnections::checkNonMappableCellConnections
     polyMeshGen& mesh
 )
 :
-    mesh_(mesh),
-    cellType_()
+    mesh_(mesh)
 {}
 
 

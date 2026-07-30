@@ -47,11 +47,6 @@ Foam::Module::partTetMesh::partTetMesh
 )
 :
     origMesh_(mesh),
-    points_(),
-    tets_(),
-    nodeLabelInOrigMesh_(),
-    smoothVertex_(),
-    pointTets_(),
     internalPointsOrderPtr_(nullptr),
     boundaryPointsOrderPtr_(nullptr)
 {
@@ -75,11 +70,6 @@ Foam::Module::partTetMesh::partTetMesh
 )
 :
     origMesh_(mesh),
-    points_(),
-    tets_(),
-    nodeLabelInOrigMesh_(),
-    smoothVertex_(),
-    pointTets_(),
     internalPointsOrderPtr_(nullptr),
     boundaryPointsOrderPtr_(nullptr)
 {
@@ -151,11 +141,6 @@ Foam::Module::partTetMesh::partTetMesh
 )
 :
     origMesh_(mesh),
-    points_(),
-    tets_(),
-    nodeLabelInOrigMesh_(),
-    smoothVertex_(),
-    pointTets_(),
     internalPointsOrderPtr_(nullptr),
     boundaryPointsOrderPtr_(nullptr)
 {

@@ -71,9 +71,7 @@ void Foam::Module::quadricMetric::evaluateGradients
 Foam::Module::quadricMetric::quadricMetric(partTetMeshSimplex& simplex)
 :
     simplexSmoother(simplex),
-    p_(simplex.pts()[simplex.tets()[0][3]]),
-    normals_(),
-    centres_()
+    p_(simplex.pts()[simplex.tets()[0][3]])
 {
     forAll(tets_, tetI)
     {

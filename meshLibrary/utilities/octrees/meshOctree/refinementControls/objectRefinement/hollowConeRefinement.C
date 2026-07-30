@@ -53,10 +53,8 @@ namespace Module
 Foam::Module::hollowConeRefinement::hollowConeRefinement()
 :
     objectRefinement(),
-    p0_(),
     r0Outer_(-1.0),
     r0Inner_(0.0),
-    p1_(),
     r1Outer_(-1.0),
     r1Inner_(0.0)
 {}

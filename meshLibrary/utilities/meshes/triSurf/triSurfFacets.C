@@ -37,10 +37,6 @@ License
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 Foam::Module::triSurfFacets::triSurfFacets()
-:
-    triangles_(),
-    patches_(),
-    facetSubsets_()
 {}
 
 
@@ -50,8 +46,7 @@ Foam::Module::triSurfFacets::triSurfFacets
 )
 :
     triangles_(triangles),
-    patches_(1),
-    facetSubsets_()
+    patches_(1)
 {
     forAll(triangles_, triI)
     {
@@ -69,8 +64,7 @@ Foam::Module::triSurfFacets::triSurfFacets
 )
 :
     triangles_(triangles),
-    patches_(patches),
-    facetSubsets_()
+    patches_(patches)
 {}
 
 
@@ -94,6 +88,20 @@ Foam::labelList Foam::Module::triSurfFacets::findPatches
     const word& patchName
 ) const
 {
+    if (origPatchNames_.found(patchName))
+    {
+        const wordList& newNames = origPatchNames_[patchName];
+
+        DynamicList<label> patchIDs;
+
+        forAll(newNames, i)
+        {
+            patchIDs.append(findMatchingStrings(regExp(newNames[i]), patchNames()));
+        }
+
+        return patchIDs;
+    }
+
     const labelList patchIDs =
         findMatchingStrings(regExp(patchName), patchNames());
 

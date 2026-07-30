@@ -292,8 +292,7 @@ Foam::Module::meshSurfaceCheckInvertedVertices::meshSurfaceCheckInvertedVertices
 )
 :
     surfacePartitioner_(mpart),
-    activePointsPtr_(nullptr),
-    invertedVertices_()
+    activePointsPtr_(nullptr)
 {
     checkVertices();
 }
@@ -306,8 +305,7 @@ Foam::Module::meshSurfaceCheckInvertedVertices::meshSurfaceCheckInvertedVertices
 )
 :
     surfacePartitioner_(mpart),
-    activePointsPtr_(&activePoints),
-    invertedVertices_()
+    activePointsPtr_(&activePoints)
 {
     checkVertices();
 }

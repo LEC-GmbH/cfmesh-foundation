@@ -40,9 +40,6 @@ Foam::Module::partTetMeshSimplex::partTetMeshSimplex
     const partTetMesh& tm,
     const label pI
 )
-:
-    pts_(),
-    tets_()
 {
     const DynamicList<point>& points = tm.points();
     const DynamicList<partTet>& tets = tm.tets();
@@ -131,8 +128,7 @@ Foam::Module::partTetMeshSimplex::partTetMeshSimplex
     const label pointI
 )
 :
-    pts_(pts),
-    tets_()
+    pts_(pts)
 {
     tets_.setSize(tets.size());
 

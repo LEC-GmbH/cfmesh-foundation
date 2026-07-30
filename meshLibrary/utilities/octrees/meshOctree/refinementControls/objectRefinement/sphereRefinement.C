@@ -55,7 +55,6 @@ namespace Module
 Foam::Module::sphereRefinement::sphereRefinement()
 :
     objectRefinement(),
-    centre_(),
     radius_(-1.0)
 {}
 

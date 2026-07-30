@@ -46,8 +46,6 @@ namespace Module
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::Module::coordinateModification::coordinateModification()
-:
-    name_()
 {}
 
 

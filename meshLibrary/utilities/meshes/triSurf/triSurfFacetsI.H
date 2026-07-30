@@ -166,4 +166,36 @@ Foam::Module::triSurfFacets::operator[](const label triI) const
 }
 
 
+inline const Foam::HashTable<Foam::wordList>&
+Foam::Module::triSurfFacets::origPatchNamesMap() const
+{
+    return origPatchNames_;
+}
+
+
+inline void Foam::Module::triSurfFacets::setOrigPatchNamesMap
+(
+    const HashTable<wordList>& origPatchNames
+)
+{
+    origPatchNames_ = origPatchNames;
+}
+
+
+inline const Foam::HashTable<Foam::word>&
+Foam::Module::triSurfFacets::origPatchTypesMap() const
+{
+    return origPatchTypes_;
+}
+
+
+inline void Foam::Module::triSurfFacets::setOrigPatchTypesMap
+(
+    const HashTable<word>& origPatchTypes
+)
+{
+    origPatchTypes_ = origPatchTypes;
+}
+
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

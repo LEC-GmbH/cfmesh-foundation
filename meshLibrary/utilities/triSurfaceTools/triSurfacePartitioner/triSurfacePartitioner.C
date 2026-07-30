@@ -39,13 +39,7 @@ Foam::Module::triSurfacePartitioner::triSurfacePartitioner
 )
 :
     surface_(surface),
-    corners_(),
-    cornerPatches_(),
-    patchPatches_(surface.patches().size()),
-    edgeGroups_(),
-    edgeGroupEdgeGroups_(),
-    patchesEdgeGroups_(),
-    edgeGroupsCorners_()
+    patchPatches_(surface.patches().size())
 {
     calculatePatchAddressing();
 }

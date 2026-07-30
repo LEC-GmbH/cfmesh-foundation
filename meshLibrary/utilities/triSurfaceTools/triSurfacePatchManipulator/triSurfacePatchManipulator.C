@@ -31,7 +31,6 @@ License
 #include "triSurfacePatchManipulator.H"
 #include "helperFunctions.H"
 #include "demandDrivenData.H"
-#include "checkMeshDict.H"
 #include "HashTable.H"
 
 #include <stdexcept>
@@ -88,7 +87,6 @@ void Foam::Module::triSurfacePatchManipulator::detectedSurfaceRegions
 const Foam::Module::triSurf*
 Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
 (
-    IOdictionary* meshDictPtr,
     const word prefix,
     const bool forceOverwrite
 ) const
@@ -191,82 +189,82 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
         }
     }
 
-    if (meshDictPtr)
+    // create mapping between the patches on the original surface
+    // and the renamed patches
+    HashTable<wordList> patchesForPatch;
+    HashTable<word> patchTypes;
+
+    const geometricSurfacePatchList& origPatches = surf_.patches();
+    forAll(origPatches, patchI)
     {
-        // create mapping between the patches on the original surface
-        // and the renamed patches
-        HashTable<wordList> patchesForPatch;
-        HashTable<word> patchTypes;
+        patchTypes(origPatches[patchI].name()) =
+            origPatches[patchI].geometricType();
+    }
 
-        const geometricSurfacePatchList& origPatches = surf_.patches();
-        forAll(origPatches, patchI)
+    // find the mapping of patch ids
+    List<labelHashSet> patchToNewPatches(origPatches.size());
+    forAll(facetsInPatch, patchI)
+    {
+        forAllRow(facetsInPatch, patchI, fI)
         {
-            patchTypes(origPatches[patchI].name()) =
-                origPatches[patchI].geometricType();
+            const label opatchI = surf_[facetsInPatch[patchI][fI]].region();
+
+            patchToNewPatches[opatchI].insert(patchI);
         }
+    }
 
-        // find the mapping of patch ids
-        List<labelHashSet> patchToNewPatches(origPatches.size());
-        forAll(facetsInPatch, patchI)
-        {
-            forAllRow(facetsInPatch, patchI, fI)
-            {
-                const label opatchI = surf_[facetsInPatch[patchI][fI]].region();
+    bool foundProblematic(false);
+    forAll(patchToNewPatches, patchI)
+    {
+        const word& pName = origPatches[patchI].name();
 
-                patchToNewPatches[opatchI].insert(patchI);
-            }
-        }
-
-        bool foundProblematic(false);
-        forAll(patchToNewPatches, patchI)
-        {
-            const word& pName = origPatches[patchI].name();
-
-            if
-            (
-                (patchTypes[pName] == "symmetryPlane") &&
-                (patchToNewPatches[patchI].size() > 1)
-            )
-            {
-                SeriousError << "Symmetry plane patch with a name " << pName
-                    << " is decomposed into "
-                    << patchToNewPatches[patchI].size()
-                    << " separate parts. Please split the patch into parts "
-                    << "bounded by feature edges"
-                    << " or change the type to symmetry."
-                    << endl;
-
-                foundProblematic = true;
-            }
-
-            patchesForPatch(pName).setSize
-            (
-                patchToNewPatches[patchI].size()
-            );
-
-            label counter(0);
-
-            for (const label it : patchToNewPatches[patchI].toc())
-            {
-                patchesForPatch[pName][counter++] = newPatches[it].name();
-            }
-        }
-
-        if (foundProblematic)
-        {
-            throw std::logic_error
-            (
-                "Cannot optimize symmetryPlane. Exitting.."
-            );
-        }
-
-        // update the values in meshDict based on the created patches
-        checkMeshDict(*meshDictPtr).updateDictionaries
+        if
         (
-            patchesForPatch,
-            patchTypes
+            (patchTypes[pName] == "symmetryPlane") &&
+            (patchToNewPatches[patchI].size() > 1)
+        )
+        {
+            SeriousError << "Symmetry plane patch with a name " << pName
+                << " is decomposed into "
+                << patchToNewPatches[patchI].size()
+                << " separate parts. Please split the patch into parts "
+                << "bounded by feature edges"
+                << " or change the type to symmetry."
+                << endl;
+
+            foundProblematic = true;
+        }
+
+        patchesForPatch(pName).setSize
+        (
+            patchToNewPatches[patchI].size()
+        );
+
+        label counter(0);
+
+        for (const label it : patchToNewPatches[patchI].toc())
+        {
+            patchesForPatch[pName][counter++] = newPatches[it].name();
+        }
+    }
+
+    if (foundProblematic)
+    {
+        throw std::logic_error
+        (
+            "Cannot optimize symmetryPlane. Exitting.."
         );
     }
+
+    // record the original -> split patch name/type mapping on the new
+    // surface, so downstream patch-name resolution
+    // (triSurfFacets::findPatches(), and polyMeshGenFaces::findPatches()
+    // once copied across at mesh extraction) keeps resolving meshDict
+    // entries written against the pre-split patch names, and
+    // renameBoundaryPatches can default-rename split patches back to
+    // their original name/type
+    newSurfPtr->setOrigPatchNamesMap(patchesForPatch);
+    newSurfPtr->setOrigPatchTypesMap(patchTypes);
 
     return newSurfPtr;
 }

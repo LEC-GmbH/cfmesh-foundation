@@ -170,9 +170,6 @@ Foam::Module::tetCreatorOctree::tetCreatorOctree
 )
 :
     octreeCheck_(octree, meshDict, true),
-    tetPoints_(),
-    tets_(),
-    sortedLeaves_(),
     subNodeLabelsPtr_(nullptr),
     cubeLabelPtr_(nullptr),
     faceCentreLabelPtr_(nullptr),

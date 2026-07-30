@@ -1,0 +1,316 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | cfMesh: A library for mesh generation
+#  \\    /   O peration     | www.cfmesh.com
+#   \\  /    A nd           |
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# Script
+#     AllrunOptionsCheck
+#
+# Description
+#     Regression check for the cfMesh CLI/stage-control surface:
+#     -mode/-region/-mesh/-dict, -overwrite/-noOverwrite, and the
+#     castellatedMesh/snap/addLayers stage toggles (including the
+#     addLayers-disabled optimiseMesh() fallback). Runs each scenario in
+#     its own scratch copy of this tutorial's case files (never touches
+#     this directory's own Allrun-produced constant/polyMesh or logs),
+#     reports PASS/FAIL per scenario, and exits non-zero if anything
+#     failed.
+#
+#     Not part of the normal Allrun/checkMesh acceptance flow - run this
+#     by hand when the CLI surface changes, to re-verify the whole
+#     option matrix without re-deriving it by hand each time.
+#
+#------------------------------------------------------------------------------
+cd ${0%/*} || exit 1
+
+CASE_DIR=$(pwd)
+WORK_DIR=$(mktemp -d)
+FAILED=0
+NCHECKS=0
+
+cleanup()
+{
+    rm -rf "$WORK_DIR"
+}
+trap cleanup EXIT
+
+pass()
+{
+    NCHECKS=$((NCHECKS + 1))
+    echo "  PASS: $1"
+}
+
+fail()
+{
+    NCHECKS=$((NCHECKS + 1))
+    FAILED=$((FAILED + 1))
+    echo "  FAIL: $1"
+}
+
+# Baseline reference values (cartesianMesh/multipleOrifices, all stages
+# enabled, default options) - kept in sync with baseline.log.checkMesh
+BASELINE_CELLS=248450
+
+# freshCase <name>: create $WORK_DIR/<name> with this tutorial's STL and
+# meshDict, cd into it. Callers may edit system/meshDict afterwards.
+freshCase()
+{
+    name=$1
+    mkdir -p "$WORK_DIR/$name"
+    cp "$CASE_DIR/multipleOrifices.stl" "$WORK_DIR/$name/"
+    cp -r "$CASE_DIR/system" "$WORK_DIR/$name/system"
+    cd "$WORK_DIR/$name" || exit 1
+}
+
+# cellCount <checkMesh output file>
+cellCount()
+{
+    grep -m1 "^ *cells:" "$1" | tr -s ' ' | cut -d' ' -f3
+}
+
+echo "=== CLI/stage option matrix ==="
+
+# --- 1: default run (no flags) --------------------------------------------
+freshCase default
+cfMesh -mode cartesian > log.cfMesh 2>&1
+if [ $? -eq 0 ] && checkMesh -constant > log.checkMesh 2>&1 \
+    && grep -q "Mesh OK" log.checkMesh \
+    && [ "$(cellCount log.checkMesh)" = "$BASELINE_CELLS" ]
+then
+    pass "default run matches baseline ($BASELINE_CELLS cells)"
+else
+    fail "default run (see $WORK_DIR/default/log.cfMesh)"
+fi
+
+# --- 2: -region --------------------------------------------------------
+freshCase region
+mkdir -p system/testRegion
+cp system/meshDict system/testRegion/meshDict
+cfMesh -mode cartesian -region testRegion > log.cfMesh 2>&1
+if [ $? -eq 0 ] && checkMesh -constant -region testRegion > log.checkMesh 2>&1 \
+    && grep -q "Mesh OK" log.checkMesh \
+    && [ "$(cellCount log.checkMesh)" = "$BASELINE_CELLS" ] \
+    && [ ! -d constant/polyMesh ]
+then
+    pass "-region writes/reads constant/testRegion/polyMesh only"
+else
+    fail "-region (see $WORK_DIR/region/log.cfMesh)"
+fi
+
+# --- 3: -mesh ------------------------------------------------------------
+freshCase mesh
+mkdir -p system/meshes/0.015
+cp system/meshDict system/meshes/0.015/meshDict
+cfMesh -mode cartesian -mesh 0.015 > log.cfMesh 2>&1
+if [ $? -eq 0 ] && checkMesh -constant -mesh 0.015 > log.checkMesh 2>&1 \
+    && grep -q "Mesh OK" log.checkMesh \
+    && [ "$(cellCount log.checkMesh)" = "$BASELINE_CELLS" ]
+then
+    pass "-mesh writes/reads constant/meshes/0.015/polyMesh"
+else
+    fail "-mesh (see $WORK_DIR/mesh/log.cfMesh)"
+fi
+
+# --- 4: -dict pointing at a non-canonically-named file --------------------
+freshCase dict
+cp system/meshDict system/customMeshDict
+cfMesh -mode cartesian -dict system/customMeshDict > log.cfMesh 2>&1
+if [ $? -eq 0 ] && checkMesh -constant > log.checkMesh 2>&1 \
+    && grep -q "Mesh OK" log.checkMesh \
+    && [ "$(cellCount log.checkMesh)" = "$BASELINE_CELLS" ]
+then
+    pass "-dict <non-canonical file> matches baseline"
+else
+    fail "-dict (see $WORK_DIR/dict/log.cfMesh)"
+fi
+
+# --- 5: -overwrite (deprecated, should warn and behave as default) --------
+freshCase overwrite
+cfMesh -mode cartesian -overwrite > log.cfMesh 2>&1
+if [ $? -eq 0 ] && grep -q "Deprecated option 'overwrite'" log.cfMesh \
+    && checkMesh -constant > log.checkMesh 2>&1 \
+    && grep -q "Mesh OK" log.checkMesh
+then
+    pass "-overwrite warns and behaves as default"
+else
+    fail "-overwrite (see $WORK_DIR/overwrite/log.cfMesh)"
+fi
+
+# --- 6: -noOverwrite (one time directory per stage) ------------------------
+freshCase noOverwrite
+cfMesh -mode cartesian -noOverwrite > log.cfMesh 2>&1
+if [ $? -eq 0 ] && [ -d 1 ] && [ -d 2 ] && [ -d 3 ] && [ -d 4 ] \
+    && checkMesh -time 4 > log.checkMesh 2>&1 \
+    && grep -q "Mesh OK" log.checkMesh \
+    && [ "$(cellCount log.checkMesh)" = "$BASELINE_CELLS" ]
+then
+    pass "-noOverwrite: 4 stage time directories, final matches baseline"
+else
+    fail "-noOverwrite (see $WORK_DIR/noOverwrite/log.cfMesh)"
+fi
+
+# --- 7: invalid -mode -> clean FatalError, exit 1 --------------------------
+freshCase badMode
+cfMesh -mode bogus > log.cfMesh 2>&1
+if [ $? -eq 1 ] && grep -q "Unknown mesh generation mode" log.cfMesh
+then
+    pass "invalid -mode fatals cleanly"
+else
+    fail "invalid -mode (see $WORK_DIR/badMode/log.cfMesh)"
+fi
+
+# --- 8: missing -mode and meshMode -> clean FatalError, exit 1 -------------
+freshCase noMode
+cfMesh > log.cfMesh 2>&1
+if [ $? -eq 1 ] && grep -q "Mesh generation mode not specified" log.cfMesh
+then
+    pass "missing -mode/meshMode fatals cleanly"
+else
+    fail "missing -mode/meshMode (see $WORK_DIR/noMode/log.cfMesh)"
+fi
+
+# --- 9: -dict pointing at a nonexistent file -> clean FatalError -----------
+freshCase badDict
+cfMesh -mode cartesian -dict system/doesNotExist.dict > log.cfMesh 2>&1
+if [ $? -eq 1 ] && grep -q "Cannot find file" log.cfMesh
+then
+    pass "-dict <missing file> fatals cleanly"
+else
+    fail "-dict <missing file> (see $WORK_DIR/badDict/log.cfMesh)"
+fi
+
+# --- 10: -mode CLI overrides a wrong meshMode dict entry -------------------
+freshCase modeOverride
+echo "meshMode tetrahedral;" >> system/meshDict
+cfMesh -mode cartesian > log.cfMesh 2>&1
+if [ $? -eq 0 ] && checkMesh -constant > log.checkMesh 2>&1 \
+    && grep -q "Mesh OK" log.checkMesh \
+    && [ "$(cellCount log.checkMesh)" = "$BASELINE_CELLS" ]
+then
+    pass "-mode overrides a mismatched meshMode dict entry"
+else
+    fail "-mode override (see $WORK_DIR/modeOverride/log.cfMesh)"
+fi
+
+# --- 11: every way of splitting castellatedMesh(1)/snap(2)/addLayers(3)
+#         across separate invocations must yield the exact same mesh as
+#         running them all in one invocation - unless a stage that a
+#         later invocation still needs to run (addLayers, matching
+#         patchBoundaryLayers regexes against *original* patch names)
+#         hasn't run yet, in which case optimiseMesh/finalise must be
+#         explicitly deferred (optimiseMesh false; finalise false;) in
+#         the intervening invocation(s), or their own patch renaming/
+#         quality-optimisation passes will interfere with it
+runSplit()
+{
+    # runSplit <name> <invocation 1 extra dict lines> \
+    #          [<invocation 2 extra lines> [<invocation 3 extra lines>]]
+    # one argument per cfMesh invocation, run in sequence (an empty
+    # argument still runs that invocation, just with no dict overrides)
+    splitName=$1
+    shift
+    freshCase "$splitName"
+    invocation=0
+    for extraLines in "$@"
+    do
+        invocation=$((invocation + 1))
+        { cat "$CASE_DIR/system/meshDict"; printf '%s\n' "$extraLines"; } \
+            > system/meshDict
+        cfMesh -mode cartesian > "log.cfMesh.$invocation" 2>&1 \
+            || { fail "$splitName invocation $invocation crashed/fataled"; \
+                 return; }
+    done
+    if checkMesh -constant > log.checkMesh 2>&1 \
+        && grep -q "Mesh OK" log.checkMesh \
+        && [ "$(cellCount log.checkMesh)" = "$BASELINE_CELLS" ]
+    then
+        pass "$splitName matches baseline ($BASELINE_CELLS cells)"
+    else
+        fail "$splitName (see $WORK_DIR/$splitName/log.checkMesh)"
+    fi
+}
+
+runSplit "1-2-3_together" \
+    ""
+
+runSplit "1_then_2-3" \
+    "snap false;
+addLayers false;" \
+    "castellatedMesh false;"
+
+runSplit "1-2_then_3" \
+    "addLayers false;
+optimiseMesh false;
+finalise false;" \
+    "castellatedMesh false;
+snap false;"
+
+runSplit "1_then_2_then_3" \
+    "snap false;
+addLayers false;
+finalise false;" \
+    "castellatedMesh false;
+addLayers false;
+optimiseMesh false;
+finalise false;" \
+    "castellatedMesh false;
+snap false;"
+
+# --- 12: snap false alone - no crash, valid (coarser) mesh -----------------
+freshCase noSnap
+echo "snap false;" >> system/meshDict
+cfMesh -mode cartesian > log.cfMesh 2>&1
+if [ $? -eq 0 ] && checkMesh -constant > log.checkMesh 2>&1 \
+    && grep -q "Mesh OK" log.checkMesh
+then
+    pass "snap false: no crash, valid mesh"
+else
+    fail "snap false (see $WORK_DIR/noSnap/log.cfMesh)"
+fi
+
+# --- 13: addLayers false alone (single invocation, snap still true) -
+#         regression check for the optimiseMesh() fallback (without it:
+#         silently skips final mesh-quality cleanup along with the
+#         layers, producing an invalid mesh)
+freshCase noAddLayers
+echo "addLayers false;" >> system/meshDict
+cfMesh -mode cartesian > log.cfMesh 2>&1
+if [ $? -eq 0 ] && checkMesh -constant > log.checkMesh 2>&1 \
+    && grep -q "Mesh OK" log.checkMesh
+then
+    pass "addLayers false: optimiseMesh() fallback runs, valid mesh"
+else
+    fail "addLayers false (see $WORK_DIR/noAddLayers/log.cfMesh)"
+fi
+
+# --- 14: castellatedMesh only (snap and addLayers both false) --------------
+freshCase castellatedOnly
+{
+    echo "snap false;"
+    echo "addLayers false;"
+} >> system/meshDict
+cfMesh -mode cartesian > log.cfMesh 2>&1
+if [ $? -eq 0 ] && checkMesh -constant > log.checkMesh 2>&1 \
+    && grep -q "Mesh OK" log.checkMesh
+then
+    pass "castellatedMesh-only: no crash, valid mesh"
+else
+    fail "castellatedMesh-only (see $WORK_DIR/castellatedOnly/log.cfMesh)"
+fi
+
+cd "$CASE_DIR" || exit 1
+
+echo "=== $((NCHECKS - FAILED))/$NCHECKS passed ==="
+if [ $FAILED -ne 0 ]
+then
+    echo "$FAILED check(s) FAILED - work dirs kept for inspection: not cleaned up"
+    trap - EXIT
+    exit 1
+fi
+
+exit 0
+
+#------------------------------------------------------------------------------

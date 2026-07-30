@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
         triSurfacePatchManipulator manipulator(*surfacePtr);
 
         const triSurf* surfaceWithPatches =
-            manipulator.surfaceWithPatches(&meshDict);
+            manipulator.surfaceWithPatches();
 
         // delete the old surface and assign the new one
         deleteDemandDrivenData(surfacePtr);

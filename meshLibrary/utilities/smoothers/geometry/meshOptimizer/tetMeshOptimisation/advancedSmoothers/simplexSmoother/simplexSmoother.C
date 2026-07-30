@@ -38,8 +38,7 @@ Foam::Module::simplexSmoother::simplexSmoother(partTetMeshSimplex& simplex)
 :
     points_(simplex.pts()),
     tets_(simplex.tets()),
-    pointI_(tets_[0][3]),
-    bb_()
+    pointI_(tets_[0][3])
 {
     point min(VGREAT, VGREAT, VGREAT), max(-VGREAT, -VGREAT, -VGREAT);
     forAll(tets_, tetI)

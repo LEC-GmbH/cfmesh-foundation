@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 //    mOpt.optimizeLowQualityFaces(15);
 //    mOpt.untangleMeshFV(5, 50, 0);
 
-    meshOptimizer mOpt(pmg);
+    meshOptimizer mOpt(pmg, meshDict);
     mOpt.optimizeBoundaryLayer();
 
     forAll(pmg.points(), pointI)

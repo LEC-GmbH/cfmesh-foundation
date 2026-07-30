@@ -1,0 +1,21 @@
+#!/bin/sh
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | cfMesh: A library for mesh generation
+#  \\    /   O peration     | www.cfmesh.com
+#   \\  /    A nd           |
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# Script
+#     cartesianMesh
+#
+# Description
+#     Compatibility wrapper: the cartesianMesh/cartesian2DMesh/tetMesh/pMesh
+#     executables have been consolidated into a single cfMesh executable,
+#     with the mesh generation mode selected by -mode.
+#
+#------------------------------------------------------------------------------
+
+exec cfMesh -mode cartesian "$@"
+
+#------------------------------------------------------------------------------
