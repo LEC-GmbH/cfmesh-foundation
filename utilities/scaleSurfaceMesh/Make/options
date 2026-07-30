@@ -1,4 +1,5 @@
 EXE_INC = \
+    -fopenmp -DUSE_OMP \
     -I$(LIB_SRC)/fileFormats/lnInclude \
     -I$(LIB_SRC)/surfMesh/lnInclude \
     -I$(LIB_SRC)/meshTools/lnInclude \
@@ -7,6 +8,7 @@ EXE_INC = \
     -I../../cfMeshLibrary/lnInclude
 
 EXE_LIBS = \
+    -fopenmp \
     -lfileFormats \
     -lsurfMesh \
     -lmeshTools \
