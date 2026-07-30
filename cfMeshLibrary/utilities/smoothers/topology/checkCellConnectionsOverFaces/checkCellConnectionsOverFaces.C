@@ -34,6 +34,7 @@ License
 #include <map>
 
 #include "helperFunctions.H"
+#include "polyMeshGenAddressing.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -149,7 +150,11 @@ Foam::Module::checkCellConnectionsOverFaces::checkCellConnectionsOverFaces
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-bool Foam::Module::checkCellConnectionsOverFaces::checkCellGroups()
+bool Foam::Module::checkCellConnectionsOverFaces::checkCellGroups
+(
+    const bool haveInsidePoint,
+    const point& insidePoint
+)
 {
     if (nGroups_ == 1)
     {
@@ -158,29 +163,56 @@ bool Foam::Module::checkCellConnectionsOverFaces::checkCellGroups()
 
     Warning << "Mesh has " << nGroups_ << " unconnected regions" << endl;
 
-    labelList nCellsInGroup(nGroups_, 0);
+    label keepGroup(-1);
 
-    forAll(cellGroup_, cI)
+    if (haveInsidePoint)
     {
-        ++nCellsInGroup[cellGroup_[cI]];
-    }
+        // keep the group containing the cell whose centre is nearest
+        // to insidePoint
+        const vectorField& cellCentres = mesh_.addressingData().cellCentres();
 
-    // find groups which has most cells this group will be kept
-    label maxGroup(-1);
-    forAll(nCellsInGroup, groupI)
-    {
-        if (nCellsInGroup[groupI] > maxGroup)
+        label nearestCell(-1);
+        scalar nearestDistSqr(GREAT);
+
+        forAll(cellCentres, cellI)
         {
-            maxGroup = nCellsInGroup[groupI];
-            nGroups_ = groupI;
+            const scalar distSqr = magSqr(cellCentres[cellI] - insidePoint);
+
+            if (distSqr < nearestDistSqr)
+            {
+                nearestDistSqr = distSqr;
+                nearestCell = cellI;
+            }
+        }
+
+        keepGroup = cellGroup_[nearestCell];
+    }
+    else
+    {
+        // keep the group which has the most cells
+        labelList nCellsInGroup(nGroups_, 0);
+
+        forAll(cellGroup_, cI)
+        {
+            ++nCellsInGroup[cellGroup_[cI]];
+        }
+
+        label maxNumCells(-1);
+        forAll(nCellsInGroup, groupI)
+        {
+            if (nCellsInGroup[groupI] > maxNumCells)
+            {
+                maxNumCells = nCellsInGroup[groupI];
+                keepGroup = groupI;
+            }
         }
     }
 
-    // remove cells which are not in the group which has max num of cells
+    // remove cells which are not in the group which shall be kept
     boolList removeCell(mesh_.cells().size(), false);
     forAll(cellGroup_, cellI)
     {
-        if (cellGroup_[cellI] != nGroups_)
+        if (cellGroup_[cellI] != keepGroup)
         {
             removeCell[cellI] = true;
         }

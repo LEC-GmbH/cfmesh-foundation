@@ -41,6 +41,7 @@ SourceFiles
 #define checkCellConnectionsOverFaces_H
 
 #include "polyMeshGenModifier.H"
+#include "point.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -93,9 +94,16 @@ public:
 
     // Member Functions
 
-        //- check if all cells are connected as a single domain
+        //- check if all cells are connected as a single domain.
+        //- If haveInsidePoint, the group containing the cell whose centre
+        //- is nearest to insidePoint is kept; otherwise the group with
+        //- the most cells is kept, as before.
         //- return true if the mesh has been changed
-        bool checkCellGroups();
+        bool checkCellGroups
+        (
+            const bool haveInsidePoint = false,
+            const point& insidePoint = point::zero
+        );
 };
 
 

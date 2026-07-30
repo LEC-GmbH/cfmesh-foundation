@@ -43,6 +43,7 @@ SourceFiles
 #include "polyMeshGenModifier.H"
 #include "boolList.H"
 #include "HashSet.H"
+#include "point.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -99,8 +100,15 @@ public:
 
     // Member Functions
 
-        //- clean topologically problematic cells
-        bool cleanTopology();
+        //- clean topologically problematic cells. If haveInsidePoint, the
+        //- disconnected-region check keeps the region containing the cell
+        //- nearest to insidePoint instead of the region with the most
+        //- cells - see checkCellConnectionsOverFaces::checkCellGroups()
+        bool cleanTopology
+        (
+            const bool haveInsidePoint = false,
+            const point& insidePoint = point::zero
+        );
 
         //- check and fix vertices where two or more groups of cells meet
         void checkInvalidConnectionsForVerticesCells

@@ -51,6 +51,7 @@ License
 #include "checkBoundaryFacesSharingTwoEdges.H"
 #include "polyMeshGenGeometryModification.H"
 #include "surfaceMeshGeometryModification.H"
+#include "coordinateModifier.H"
 #include "polyMeshGenToFoamMesh.H"
 #include "addToRunTimeSelectionTable.H"
 
@@ -98,6 +99,28 @@ void Foam::Module::cartesian2DMeshGenerator::surfacePreparation()
     // removes unnecessary cells and morph the boundary
     // such that there is only one boundary face per cell
     // It also checks topology of cells after morphing is performed
+
+    // which disconnected region to keep if the surface encloses more
+    // than one - the region containing insidePoint if given (resolved
+    // into the same modified space anisotropicSources may already have
+    // put the mesh into), otherwise the region with the most cells
+    point insidePoint;
+    const bool haveInsidePoint =
+        meshDict_.readIfPresent("insidePoint", insidePoint);
+
+    if (haveInsidePoint)
+    {
+        const dictionary& anisotropicSourcesDict =
+            meshDict_.subOrEmptyDict("anisotropicSources");
+
+        if (!anisotropicSourcesDict.empty())
+        {
+            insidePoint =
+                coordinateModifier(anisotropicSourcesDict)
+               .modifiedPoint(insidePoint);
+        }
+    }
+
     bool changed;
 
     do
@@ -115,7 +138,14 @@ void Foam::Module::cartesian2DMeshGenerator::surfacePreparation()
             changed = true;
         }
 
-        if (checkCellConnectionsOverFaces(mesh_).checkCellGroups())
+        if
+        (
+            checkCellConnectionsOverFaces(mesh_).checkCellGroups
+            (
+                haveInsidePoint,
+                insidePoint
+            )
+        )
         {
             changed = true;
         }

@@ -63,7 +63,11 @@ Foam::Module::topologicalCleaner::topologicalCleaner
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-bool Foam::Module::topologicalCleaner::cleanTopology()
+bool Foam::Module::topologicalCleaner::cleanTopology
+(
+    const bool haveInsidePoint,
+    const point& insidePoint
+)
 {
     checkInvalidConnectionsForVerticesCells();
 
@@ -77,7 +81,14 @@ bool Foam::Module::topologicalCleaner::cleanTopology()
 
     decomposeCells();
 
-    if (checkCellConnectionsOverFaces(mesh_).checkCellGroups())
+    if
+    (
+        checkCellConnectionsOverFaces(mesh_).checkCellGroups
+        (
+            haveInsidePoint,
+            insidePoint
+        )
+    )
     {
         changed_ = true;
     }

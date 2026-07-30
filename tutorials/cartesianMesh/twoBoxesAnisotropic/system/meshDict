@@ -1,0 +1,63 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                |
+| \\      /  F ield         | cfMesh: A library for mesh generation          |
+|  \\    /   O peration     |                                                |
+|   \\  /    A nd           | Author: Franjo Juretic                         |
+|    \\/     M anipulation  | E-mail: franjo.juretic@c-fields.com            |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version   2.0;
+    format    ascii;
+    class     dictionary;
+    location  "system";
+    object    meshDict;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Same two-disjoint-boxes geometry as ../twoBoxes, plus an active
+// anisotropicSources transform - a fixture for insidePoint
+// vs anisotropicSources coordinate spaces. The plane sits at x=-1 with
+// scalingDistance 3 and scalingFactor 4, strong enough that box2 (whose
+// whole x-extent [3,6] lies beyond scalingDistance, so it gets a full,
+// rigid displacement) ends up displaced to roughly x in [0.75,3.75] in
+// the modified space the castellated mesh is actually built in - close
+// enough to box1's own (partially, non-uniformly displaced) modified
+// position that a *naive* comparison (insidePoint used as-given, not
+// transformed) lands closer to box2 than to box1.
+//
+// Verified both ways: with the
+// transform-aware code temporarily disabled, this exact meshDict gives
+// the WRONG answer (box2 kept, box1 discarded) - proving this fixture
+// actually discriminates a correct implementation from an incorrect
+// one, unlike a milder transform which turned out to leave enough
+// separation between the two regions that even a naive comparison
+// still happened to pick the right one by luck.
+//
+// insidePoint (0.5 0.5 0.5) is box1's original, unmodified centre.
+// With the transform-aware implementation, box1 (not box2) is kept,
+// exactly as in ../twoBoxes, despite the transform being active.
+
+surfaceFile "twoBoxesAnisotropic.stl";
+
+maxCellSize 0.2;
+
+boundaryCellSize 0.1;
+
+anisotropicSources
+{
+    Plane
+    {
+        type            plane;
+        origin          (-1 0 0);
+        normal          (1 0 0);
+        scalingDistance 3;
+        scalingFactor   4;
+    }
+}
+
+insidePoint (0.5 0.5 0.5);
+
+
+// ************************************************************************* //

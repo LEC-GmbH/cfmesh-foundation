@@ -1,0 +1,34 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                |
+| \\      /  F ield         | cfMesh: A library for mesh generation          |
+|  \\    /   O peration     |                                                |
+|   \\  /    A nd           | Author: Franjo Juretic                         |
+|    \\/     M anipulation  | E-mail: franjo.juretic@c-fields.com            |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version   2.0;
+    format    ascii;
+    class     dictionary;
+    location  "system";
+    object    meshDict;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Two disjoint closed boxes ("box1", a 1x1x1 cube at the origin; "box2", a
+// 3x3x3 cube offset in x) - a minimal fixture for insidePoint region
+// selection. Without insidePoint, cfMesh's existing
+// "keep the connected region with the most cells" default should discard
+// box1 and keep only box2, since box2 is much larger at any given cell size.
+
+surfaceFile "twoBoxes.stl";
+
+maxCellSize 0.2;
+
+boundaryCellSize 0.1;
+
+insidePoint (0.5 0.5 0.5);
+
+
+// ************************************************************************* //
