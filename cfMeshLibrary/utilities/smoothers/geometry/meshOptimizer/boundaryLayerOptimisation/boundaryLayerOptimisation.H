@@ -152,7 +152,14 @@ class boundaryLayerOptimisation
         //- optimise hair normals inside the mesh
         void optimiseHairNormalsInside();
 
-        //- calculate hair edges at a boundary faces
+        //- calculate hair edges at a boundary face - fills in one entry
+        //- per leading point of the face (index-aligned, i.e. entry i is
+        //- the hair edge at point f[i]) for as many points as the local
+        //- cell topology allows unambiguously determining one; the
+        //- returned list is shorter than the face's point count (even
+        //- empty) when it isn't, e.g. on an irregular boundary-layer
+        //- transition cell - callers must iterate the returned list
+        //- itself, not the face
         void hairEdgesAtBndFace
         (
             const label cellI,

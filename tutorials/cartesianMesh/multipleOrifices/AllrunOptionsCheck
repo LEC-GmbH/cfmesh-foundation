@@ -12,12 +12,15 @@
 # Description
 #     Regression check for the cfMesh CLI/stage-control surface:
 #     -mode/-region/-mesh/-dict, -overwrite/-noOverwrite, and the
-#     castellatedMesh/snap/addLayers stage toggles (including the
-#     addLayers-disabled optimiseMesh() fallback). Runs each scenario in
-#     its own scratch copy of this tutorial's case files (never touches
-#     this directory's own Allrun-produced constant/polyMesh or logs),
-#     reports PASS/FAIL per scenario, and exits non-zero if anything
-#     failed.
+#     castellatedMesh/snap/addLayers stage toggles, including splitting
+#     them across separate invocations (each stage is stateless, matching
+#     snappyHexMesh: it never tries to detect or compensate for what an
+#     earlier stage did or didn't do, in this invocation or an earlier
+#     one - running a stage without its prerequisites having run is on
+#     the caller). Runs each scenario in its own scratch copy of this
+#     tutorial's case files (never touches this directory's own
+#     Allrun-produced constant/polyMesh or logs), reports PASS/FAIL per
+#     scenario, and exits non-zero if anything failed.
 #
 #     Not part of the normal Allrun/checkMesh acceptance flow - run this
 #     by hand when the CLI surface changes, to re-verify the whole
@@ -139,15 +142,16 @@ else
     fail "-overwrite (see $WORK_DIR/overwrite/log.cfMesh)"
 fi
 
-# --- 6: -noOverwrite (one time directory per stage) ------------------------
+# --- 6: -noOverwrite (one time directory per stage: castellatedMesh/snap/
+#        addLayers - no separate finalise stage) ---------------------------
 freshCase noOverwrite
 cfMesh -mode cartesian -noOverwrite > log.cfMesh 2>&1
-if [ $? -eq 0 ] && [ -d 1 ] && [ -d 2 ] && [ -d 3 ] && [ -d 4 ] \
-    && checkMesh -time 4 > log.checkMesh 2>&1 \
+if [ $? -eq 0 ] && [ -d 1 ] && [ -d 2 ] && [ -d 3 ] \
+    && checkMesh -time 3 > log.checkMesh 2>&1 \
     && grep -q "Mesh OK" log.checkMesh \
     && [ "$(cellCount log.checkMesh)" = "$BASELINE_CELLS" ]
 then
-    pass "-noOverwrite: 4 stage time directories, final matches baseline"
+    pass "-noOverwrite: 3 stage time directories, final matches baseline"
 else
     fail "-noOverwrite (see $WORK_DIR/noOverwrite/log.cfMesh)"
 fi
@@ -197,13 +201,13 @@ fi
 
 # --- 11: every way of splitting castellatedMesh(1)/snap(2)/addLayers(3)
 #         across separate invocations must yield the exact same mesh as
-#         running them all in one invocation - unless a stage that a
-#         later invocation still needs to run (addLayers, matching
-#         patchBoundaryLayers regexes against *original* patch names)
-#         hasn't run yet, in which case optimiseMesh/finalise must be
-#         explicitly deferred (optimiseMesh false; finalise false;) in
-#         the intervening invocation(s), or their own patch renaming/
-#         quality-optimisation passes will interfere with it
+#         running them all in one invocation. No extra dict overrides are
+#         needed to defer quality-optimisation/renaming across the split -
+#         each stage is self-contained (snap() always ends with its own
+#         buffer-layer optimisation + collapse; addLayers() falls back to
+#         running that same optimisation itself, via bufferLayerOptimised_,
+#         whenever snap() didn't already run it earlier in this same
+#         invocation, then always finishes with its own patch rename/merge)
 runSplit()
 {
     # runSplit <name> <invocation 1 extra dict lines> \
@@ -242,20 +246,15 @@ addLayers false;" \
     "castellatedMesh false;"
 
 runSplit "1-2_then_3" \
-    "addLayers false;
-optimiseMesh false;
-finalise false;" \
+    "addLayers false;" \
     "castellatedMesh false;
 snap false;"
 
 runSplit "1_then_2_then_3" \
     "snap false;
-addLayers false;
-finalise false;" \
+addLayers false;" \
     "castellatedMesh false;
-addLayers false;
-optimiseMesh false;
-finalise false;" \
+addLayers false;" \
     "castellatedMesh false;
 snap false;"
 
@@ -272,16 +271,16 @@ else
 fi
 
 # --- 13: addLayers false alone (single invocation, snap still true) -
-#         regression check for the optimiseMesh() fallback (without it:
-#         silently skips final mesh-quality cleanup along with the
-#         layers, producing an invalid mesh)
+#         snap() always finishes with its own full mesh-quality
+#         optimisation regardless of whether addLayers runs afterwards,
+#         so disabling addLayers alone must still leave a valid mesh
 freshCase noAddLayers
 echo "addLayers false;" >> system/meshDict
 cfMesh -mode cartesian > log.cfMesh 2>&1
 if [ $? -eq 0 ] && checkMesh -constant > log.checkMesh 2>&1 \
     && grep -q "Mesh OK" log.checkMesh
 then
-    pass "addLayers false: optimiseMesh() fallback runs, valid mesh"
+    pass "addLayers false: snap()'s own optimisation is enough, valid mesh"
 else
     fail "addLayers false (see $WORK_DIR/noAddLayers/log.cfMesh)"
 fi

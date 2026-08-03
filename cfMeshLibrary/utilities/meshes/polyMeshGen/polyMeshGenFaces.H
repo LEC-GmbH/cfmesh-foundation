@@ -78,20 +78,17 @@ protected:
         //- patches it was split into; empty if this mesh's surface was
         //- not produced by such a split. Consulted by findPatches() so
         //- patch-name-keyed meshDict entries (boundaryLayers.
-        //- patchBoundaryLayers, renameBoundary.newPatchNames, ...)
-        //- written against the pre-split name keep resolving correctly.
-        //- Copied from the originating triSurf's own map (see
-        //- triSurfFacets::origPatchNamesMap()) when boundary patches are
-        //- created during mesh extraction.
+        //- patchBoundaryLayers, ...) written against the pre-split name
+        //- keep resolving correctly. Copied from the originating
+        //- triSurf's own map (see triSurfFacets::origPatchNamesMap())
+        //- when boundary patches are created during mesh extraction.
         HashTable<wordList> origPatchNames_;
 
         //- geometricType of each pre-split patch, keyed by its
         //- (pre-split) name; empty if this mesh's surface was not
         //- produced by a split. Consulted by renameBoundaryPatches to
-        //- default-rename every split patch back to its original
-        //- name/type when the user hasn't configured a renameBoundary
-        //- entry of their own for that original patch. Copied from the
-        //- originating triSurf's own map (see
+        //- collapse every split patch back to its original name/type.
+        //- Copied from the originating triSurf's own map (see
         //- triSurfFacets::origPatchTypesMap()) when boundary patches are
         //- created during mesh extraction.
         HashTable<word> origPatchTypes_;

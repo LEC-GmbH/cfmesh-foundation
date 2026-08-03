@@ -84,7 +84,14 @@ void Foam::Module::boundaryLayerOptimisation::hairEdgesAtBndFace
     }
 
     const face& bf = faces[c[baseFace]];
-    hairEdges.setSize(bf.size());
+
+    // built up point-by-point via append(), not pre-sized to bf.size() -
+    // on an irregular cell (e.g. a boundary-layer transition cell created
+    // by allowDiscontinuity) the loop below may stop before reaching
+    // every point, and the caller must be able to tell how far it
+    // actually got rather than trust the rest to be valid
+    hairEdges.clear();
+    hairEdges.setCapacity(bf.size());
 
     forAll(bf, pI)
     {
@@ -110,20 +117,28 @@ void Foam::Module::boundaryLayerOptimisation::hairEdgesAtBndFace
             otherPrevFace = edgeFaces[prevEdge][1];
         }
 
-        label commonEdge;
-        for (commonEdge = 0; commonEdge < edges.size(); ++commonEdge)
+        // the hair edge at bf[pI] must actually touch bf[pI] - on a
+        // simple hex-like cell, otherNextFace and otherPrevFace share
+        // exactly one edge (the hair edge itself), but on an irregular
+        // cell they can share more than one, and only the one touching
+        // bf[pI] (if any) is a valid candidate; the others are
+        // unrelated coincidental adjacencies elsewhere in the cell
+        label commonEdge(-1);
+        forAll(edges, eI)
         {
             if
             (
-                (findIndex(edgeFaces[commonEdge], otherNextFace) != -1)
-             && (findIndex(edgeFaces[commonEdge], otherPrevFace) != -1)
+                (edges[eI][0] == bf[pI] || edges[eI][1] == bf[pI])
+             && (findIndex(edgeFaces[eI], otherNextFace) != -1)
+             && (findIndex(edgeFaces[eI], otherPrevFace) != -1)
             )
             {
+                commonEdge = eI;
                 break;
             }
         }
 
-        if (commonEdge == edges.size())
+        if (commonEdge == -1)
         {
             break;
         }
@@ -131,11 +146,11 @@ void Foam::Module::boundaryLayerOptimisation::hairEdgesAtBndFace
         // there exists a common edge which shall be used as a hair
         if (edges[commonEdge].start() == bf[pI])
         {
-            hairEdges[pI] = edges[commonEdge];
+            hairEdges.append(edges[commonEdge]);
         }
         else
         {
-            hairEdges[pI] = edges[commonEdge].reverseEdge();
+            hairEdges.append(edges[commonEdge].reverseEdge());
         }
     }
 }
@@ -388,11 +403,15 @@ void Foam::Module::boundaryLayerOptimisation::optimiseThicknessVariation
                             )
                         );
 
-                    // check thickness variation over all hair edges
+                    // check thickness variation over all hair edges -
+                    // hairEdges may have fewer entries than bf has
+                    // points (e.g. an irregular boundary-layer
+                    // transition cell), so iterate it directly rather
+                    // than assuming it matches bf point-for-point
                     DynamicList<edge> hairEdges;
                     hairEdgesAtBndFace(faceOwner[bfI], baseFaceI, hairEdges);
 
-                    forAll(bf, pI)
+                    forAll(hairEdges, pI)
                     {
                         const edge& nhe = hairEdges[pI];
 

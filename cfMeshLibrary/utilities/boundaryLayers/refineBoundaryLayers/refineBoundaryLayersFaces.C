@@ -209,18 +209,16 @@ void Foam::Module::refineBoundaryLayers::refineFace
     // add points in the matrix
     for (label i = 0; i < nLayersDir0; ++i)
     {
-        facePoints[i][0] = newVerticesForSplitEdge_[dir0Edges.second()][i];
-        facePoints[i][nLayersDir1] =
-            newVerticesForSplitEdge_[dir0Edges.first()][i];
+        facePoints[i][0] = vertexOnSplitEdge(dir0Edges.second(), i);
+        facePoints[i][nLayersDir1] = vertexOnSplitEdge(dir0Edges.first(), i);
     }
     facePoints[nLayersDir0][0] = splitEdges_[dir0Edges.second()].end();
     facePoints[nLayersDir0][nLayersDir1] = splitEdges_[dir0Edges.first()].end();
 
     for (label i = 1; i < nLayersDir1; ++i)
     {
-        facePoints[0][i] = newVerticesForSplitEdge_[dir1Edges.first()][i];
-        facePoints[nLayersDir0][i] =
-            newVerticesForSplitEdge_[dir1Edges.second()][i];
+        facePoints[0][i] = vertexOnSplitEdge(dir1Edges.first(), i);
+        facePoints[nLayersDir0][i] = vertexOnSplitEdge(dir1Edges.second(), i);
     }
 
     // create missing vertices if there are any

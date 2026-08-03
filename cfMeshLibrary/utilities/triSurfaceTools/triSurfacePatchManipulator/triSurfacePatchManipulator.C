@@ -261,8 +261,8 @@ Foam::Module::triSurfacePatchManipulator::surfaceWithPatches
     // (triSurfFacets::findPatches(), and polyMeshGenFaces::findPatches()
     // once copied across at mesh extraction) keeps resolving meshDict
     // entries written against the pre-split patch names, and
-    // renameBoundaryPatches can default-rename split patches back to
-    // their original name/type
+    // renameBoundaryPatches can collapse split patches back to their
+    // original name/type
     newSurfPtr->setOrigPatchNamesMap(patchesForPatch);
     newSurfPtr->setOrigPatchTypesMap(patchTypes);
 

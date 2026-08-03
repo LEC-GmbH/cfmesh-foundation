@@ -30,7 +30,22 @@ Class
     Foam::Module::renameBoundaryPatches
 
 Description
-    Renames boundary patches based on user intput and sets correct patch types
+    Collapses any feature-edge-split boundary patch back to its one
+    pre-split name/type (a mesh never exposes a split sub-name like
+    "patch1_3" in its written output), fixes empty patches, and
+    flattens symmetry planes. If constructed with a meshDict, also
+    renames/merges patches according to the optional renameBoundary
+    subDict (newPatchNames/defaultName/defaultType, mirroring
+    snappyHexMesh's own rename/merge model).
+
+    Callers apply these two constructors at different pipeline points:
+    the no-dict overload right after patches are first assigned (so any
+    later per-patch-name-keyed config, e.g. boundaryLayers.
+    patchBoundaryLayers, still resolves against stable, un-merged
+    names), and the meshDict overload only once no further per-patch
+    config remains to be resolved - merging patches together any
+    earlier would erase the very per-region distinction such config
+    depends on.
 
 SourceFiles
     renameBoundaryPatches.C
@@ -70,7 +85,9 @@ class renameBoundaryPatches
 
     // Private member functions
 
-        //- calculate new boundary and replace the existing one
+        //- rename/merge patches per renameBoundaryDict_ and collapse
+        //- any remaining feature-edge-split patch back to its
+        //- pre-split name/type; replace the existing boundary
         void calculateNewBoundary();
 
         //- find empty patches in 3D meshes and change them to wall
@@ -89,7 +106,17 @@ class renameBoundaryPatches
 
 public:
 
-    //- Construct from mesh and IOdictionary
+    //- Construct from mesh; collapses feature-edge-split patches back
+    //- to their pre-split name/type only - no user-configured
+    //- rename/merge
+    renameBoundaryPatches
+    (
+        polyMeshGen& mesh,
+        const bool allowEmptyPatches = false
+    );
+
+    //- Construct from mesh and IOdictionary; additionally applies the
+    //- optional renameBoundary rename/merge
     renameBoundaryPatches
     (
         polyMeshGen& mesh,

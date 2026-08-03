@@ -487,4 +487,28 @@ void Foam::Module::refineBoundaryLayers::generateNewVertices()
 }
 
 
+Foam::label Foam::Module::refineBoundaryLayers::vertexOnSplitEdge
+(
+    const label seI,
+    const label layerI
+) const
+{
+    if (layerI < 0 || layerI >= newVerticesForSplitEdge_[seI].size())
+    {
+        FatalErrorInFunction
+            << "Cannot generate boundary layers: split edge "
+            << splitEdges_[seI] << " only has "
+            << (newVerticesForSplitEdge_[seI].size() - 1)
+            << " layer(s) generated for it, but layer " << layerI
+            << " was requested by a neighbouring cell. This happens"
+            << " when patches with very different nLayers meet without"
+            << " enough separation between them (e.g. no real feature"
+            << " edge) for cfMesh to represent both independently."
+            << exit(FatalError);
+    }
+
+    return newVerticesForSplitEdge_[seI][layerI];
+}
+
+
 // ************************************************************************* //

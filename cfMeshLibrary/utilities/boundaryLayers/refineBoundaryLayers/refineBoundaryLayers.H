@@ -152,6 +152,13 @@ class refineBoundaryLayers
         //- generate new points on edges, faces and in cells
         void generateNewVertices();
 
+        //- point generated at layerI on split edge seI - fatal if seI
+        //- was not generated with enough layers for this (happens when
+        //- patches with very different nLayers meet without enough
+        //- separation between them - e.g. no real feature edge - for
+        //- cfMesh to represent both independently)
+        label vertexOnSplitEdge(const label seI, const label layerI) const;
+
         //- refine a given face and return the new faces
         //- generates new points at cross-split faces
         void refineFace

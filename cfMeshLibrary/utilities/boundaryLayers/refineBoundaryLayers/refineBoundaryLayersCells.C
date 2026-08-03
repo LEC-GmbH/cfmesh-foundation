@@ -142,7 +142,7 @@ void Foam::Module::refineBoundaryLayers::generateNewCellsPrism
                 }
             }
 
-            cf.append(newVerticesForSplitEdge_[seI][layerI]);
+            cf.append(vertexOnSplitEdge(seI, layerI));
         }
 
         // add faces to cells
@@ -792,7 +792,6 @@ generateNewPoints()
     const edge& seDirI = splitEdges[splitEdgeInDirection_[0]];
     const edge& seDirJ = splitEdges[splitEdgeInDirection_[1]];
     const edge& seDirK = splitEdges[splitEdgeInDirection_[2]];
-    const labelListList2D& ptsAtEdge = bndLayers_.newVerticesForSplitEdge_;
 
     // const references to vertices of the cell ordered in a local
     // i, j, k coordinate system
@@ -812,7 +811,7 @@ generateNewPoints()
         (
             Foam::mag
             (
-                points[ptsAtEdge[splitEdgeInDirection_[0]][i]] -
+                points[bndLayers_.vertexOnSplitEdge(splitEdgeInDirection_[0], i)] -
                 points[seDirI.start()]
             ) /
             seDirI.mag(points)
@@ -824,7 +823,7 @@ generateNewPoints()
             (
                 Foam::mag
                 (
-                    points[ptsAtEdge[splitEdgeInDirection_[1]][j]] -
+                    points[bndLayers_.vertexOnSplitEdge(splitEdgeInDirection_[1], j)] -
                     points[seDirJ.start()]
                 ) /
                 seDirJ.mag(points)
@@ -836,7 +835,7 @@ generateNewPoints()
                 (
                     Foam::mag
                     (
-                        points[ptsAtEdge[splitEdgeInDirection_[2]][k]] -
+                        points[bndLayers_.vertexOnSplitEdge(splitEdgeInDirection_[2], k)] -
                         points[seDirK.start()]
                     ) /
                     seDirK.mag(points)

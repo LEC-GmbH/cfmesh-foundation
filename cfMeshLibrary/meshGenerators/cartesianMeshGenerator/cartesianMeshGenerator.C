@@ -321,6 +321,19 @@ void Foam::Module::cartesianMeshGenerator::projectSurfaceAfterBackScaling
 
 void Foam::Module::cartesianMeshGenerator::replaceBoundaries()
 {
+    renameBoundaryPatches rbp(mesh_);
+}
+
+
+void Foam::Module::cartesianMeshGenerator::renamePatches()
+{
+    // the user's renameBoundary rename/merge, if configured, runs here
+    // (end of addLayers()) rather than in replaceBoundaries() (end of
+    // snap()) because boundaryLayers.patchBoundaryLayers - consumed by
+    // refBoundaryLayers(), which addLayers() has just called - resolves
+    // per-patch layer settings by patch name; merging patches together
+    // any earlier would erase the very per-region distinction that
+    // config depends on
     renameBoundaryPatches rbp(mesh_, meshDict_);
 }
 
@@ -349,6 +362,12 @@ void Foam::Module::cartesianMeshGenerator::snap()
 {
     mapMeshToSurface();
 
+    // this is where boundary faces actually get assigned to their real
+    // (possibly feature-edge-split) patches - createCastellatedMesh()'s
+    // own output has no such assignment yet (every boundary face is
+    // still in a single default patch), so collapsing split patches
+    // back to their pre-split names has to happen after this, not
+    // inside createCastellatedMesh()
     extractPatches();
 
     mapEdgesAndCorners();
@@ -356,14 +375,27 @@ void Foam::Module::cartesianMeshGenerator::snap()
     optimiseMeshSurface();
 
     generateBoundaryLayers();
+
+    // optimise the freshly-inserted buffer layer now, so snap()'s own
+    // output is already good quality - matching snappyHexMesh's own
+    // snap/addLayers split, where a stage's written mesh is always
+    // fully valid, never "needs a later stage to become good quality"
+    optimiseMesh(true);
+
+    replaceBoundaries();
 }
 
 
 void Foam::Module::cartesianMeshGenerator::addLayers()
 {
-    optimiseMesh(true);
-
+    // assumes snap() already ran (this invocation or an earlier one) and
+    // left an optimised buffer layer in place - matching snappyHexMesh's
+    // own addLayers stage, which never compensates for a skipped/deferred
+    // snap either; running addLayers without snap having run is on the
+    // caller, not something to special-case here
     refBoundaryLayers();
+
+    renamePatches();
 }
 
 
@@ -372,14 +404,6 @@ void Foam::Module::cartesianMeshGenerator::optimiseMesh(const bool layersExist)
     optimiseFinalMesh(layersExist);
 
     projectSurfaceAfterBackScaling(layersExist);
-}
-
-
-void Foam::Module::cartesianMeshGenerator::finalise()
-{
-    renumberMesh();
-
-    replaceBoundaries();
 }
 
 

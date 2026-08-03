@@ -49,17 +49,22 @@ using namespace Foam;
 // writeMesh()-after-every-enabled-phase behaviour: by default (overwrite)
 // every stage lands in the same constant/ location; with -noOverwrite, each
 // stage advances runTime and lands in its own time directory instead,
-// mirroring snappyHexMesh.C's mesh.time()++.
+// mirroring snappyHexMesh.C's mesh.time()++. Always renumbers first - every
+// written mesh is a complete, real mesh someone may inspect or use
+// directly (e.g. an intermediate -noOverwrite stage), not just the final
+// one, so every write should be well-formed, not just the last.
 void writeStageMesh
 (
     const string& stageName,
-    const Module::meshGenerator& generator,
+    Module::meshGenerator& generator,
     const word& regionName,
     const fileName& meshPath,
     const bool overwrite,
     Time& runTime
 )
 {
+    generator.renumberMesh();
+
     if (!overwrite)
     {
         runTime++;
@@ -146,9 +151,15 @@ int main(int argc, char *argv[])
     );
 
     // Stage control mirroring snappyHexMeshDict's castellatedMesh/snap/
-    // addLayers switches exactly - no cfMesh-side bookkeeping of what
-    // already ran; a disabled castellatedMesh just means reading back
-    // whatever mesh currently exists instead of generating one.
+    // addLayers switches exactly, including the number of stages (3, not
+    // 4 - there is no separate "finalise" stage; the implicit collapse of
+    // feature-edge-split patches back to their pre-split names happens
+    // inside createCastellatedMesh() itself, and renumbering happens on
+    // every write, inside writeStageMesh() itself, same as snappyHexMesh
+    // has no separate post-addLayers stage either) - no cfMesh-side
+    // bookkeeping of what already ran; a disabled castellatedMesh just
+    // means reading back whatever mesh currently exists instead of
+    // generating one.
     if (meshDict.lookupOrDefault<bool>("castellatedMesh", true))
     {
         generatorPtr->createCastellatedMesh();
@@ -167,8 +178,7 @@ int main(int argc, char *argv[])
         generatorPtr->readMesh();
     }
 
-    const bool snapEnabled = meshDict.lookupOrDefault<bool>("snap", true);
-    if (snapEnabled)
+    if (meshDict.lookupOrDefault<bool>("snap", true))
     {
         generatorPtr->snap();
         writeStageMesh
@@ -188,65 +198,6 @@ int main(int argc, char *argv[])
         writeStageMesh
         (
             "layer",
-            generatorPtr(),
-            regionName,
-            meshPath,
-            overwrite,
-            runTime
-        );
-    }
-    else if
-    (
-        snapEnabled
-     && meshDict.lookupOrDefault<bool>("optimiseMesh", true)
-    )
-    {
-        // addLayers() also runs final mesh-quality optimisation as part
-        // of its own sequence - run it here too, so disabling addLayers
-        // doesn't silently skip mesh cleanup along with the layers.
-        // Only meaningful once the surface has actually been snapped -
-        // if snap was disabled too, there is nothing yet worth
-        // optimising against (e.g. a deliberate castellatedMesh-only
-        // stop, matching workflowControls.stopAfter's old
-        // templateGeneration checkpoint).
-        // optimiseMesh defaults to true (matching addLayers/snap/
-        // castellatedMesh's own always-on-by-default convention), but
-        // can be explicitly disabled for a staged workflow that intends
-        // to run addLayers in a later invocation - addLayers() runs this
-        // same optimisation itself once layers actually exist, so
-        // running it prematurely here would perturb the mesh addLayers
-        // is about to work with, changing the eventual result
-        generatorPtr->optimiseMesh(false);
-        writeStageMesh
-        (
-            "optimised",
-            generatorPtr(),
-            regionName,
-            meshPath,
-            overwrite,
-            runTime
-        );
-    }
-
-    if (meshDict.lookupOrDefault<bool>("finalise", true))
-    {
-        // renumberMesh() is harmless regardless of when it runs, but
-        // replaceBoundaries() (patch renaming, per meshDict's
-        // renameBoundary) is not: refineBoundaryLayers/boundaryLayers'
-        // own patchBoundaryLayers matching (called from addLayers(),
-        // possibly in a *later* invocation of a staged workflow) matches
-        // against whatever patch names currently exist on the mesh - if
-        // renaming already happened here, those patch-name regexes see
-        // the post-rename names instead of the original ones they were
-        // written against, and silently match fewer (or no) patches.
-        // Defer finalise (set finalise false) in any invocation that
-        // isn't the one actually running addLayers, in a staged
-        // workflow that splits snap and addLayers into separate
-        // invocations
-        generatorPtr->finalise();
-        writeStageMesh
-        (
-            "final",
             generatorPtr(),
             regionName,
             meshPath,

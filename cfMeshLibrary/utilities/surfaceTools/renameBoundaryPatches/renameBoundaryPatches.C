@@ -41,16 +41,6 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
 {
     Info<< "Renaming boundary patches" << endl;
 
-    HashTable<label> patchToLabel;
-    forAll(mesh_.boundaries(), patchI)
-    {
-        patchToLabel.insert
-        (
-            mesh_.boundaries()[patchI].patchName(),
-            patchI
-        );
-    }
-
     labelList patchToNew(mesh_.boundaries().size(), -1);
 
     // Map every boundary face to the patch it currently belongs to.
@@ -298,6 +288,16 @@ void Foam::Module::renameBoundaryPatches::calculateNewBoundary()
             newPatchTypes[patchI];
     }
 
+    // the mesh's boundary now carries the pre-split names directly (no
+    // patchN_M survives), so this map - pre-split name to the literal
+    // split names it used to have - is stale from this point on; clear
+    // it so a later findPatches() call (e.g. addLayers()'s own
+    // boundaryLayers.patchBoundaryLayers resolution) matches the
+    // now-current patch names directly instead of searching for split
+    // names that no longer exist
+    mesh_.setOrigPatchNamesMap(HashTable<wordList>());
+    mesh_.setOrigPatchTypesMap(HashTable<word>());
+
     Info<< "Finished renaming boundary patches" << endl;
 }
 
@@ -330,6 +330,35 @@ void Foam::Module::renameBoundaryPatches::checkSymmetryPlanes()
 Foam::Module::renameBoundaryPatches::renameBoundaryPatches
 (
     polyMeshGen& mesh,
+    const bool allowEmptyPatches
+)
+:
+    mesh_(mesh),
+    renameBoundaryDict_(dictionary::null)
+{
+    // a mesh whose surface was split by feature edges
+    // (mesh_.origPatchNamesMap() non-empty) needs its split patches
+    // collapsed back to their pre-split name/type - see
+    // calculateNewBoundary(). No-op otherwise. renameBoundaryDict_ is
+    // dictionary::null here, so calculateNewBoundary() never applies
+    // any user-configured rename/merge through this constructor.
+    if (!mesh_.origPatchNamesMap().empty())
+    {
+        calculateNewBoundary();
+    }
+
+    if (!allowEmptyPatches)
+    {
+        checkEmptyPatches();
+    }
+
+    checkSymmetryPlanes();
+}
+
+
+Foam::Module::renameBoundaryPatches::renameBoundaryPatches
+(
+    polyMeshGen& mesh,
     const IOdictionary& meshDict,
     const bool allowEmptyPatches
 )
@@ -337,10 +366,10 @@ Foam::Module::renameBoundaryPatches::renameBoundaryPatches
     mesh_(mesh),
     renameBoundaryDict_(meshDict.subOrEmptyDict("renameBoundary"))
 {
-    // even without a user-configured renameBoundary, a mesh whose surface
-    // was split by feature edges (mesh_.origPatchNamesMap() non-empty)
-    // needs its split patches default-renamed back to their pre-split
-    // name/type - see calculateNewBoundary()
+    // a user-configured renameBoundary, or a mesh whose surface was split
+    // by feature edges (mesh_.origPatchNamesMap() non-empty), needs its
+    // patches renamed/collapsed back to a stable name/type - see
+    // calculateNewBoundary(). No-op otherwise.
     if (meshDict.found("renameBoundary") || !mesh_.origPatchNamesMap().empty())
     {
         calculateNewBoundary();

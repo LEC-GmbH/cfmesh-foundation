@@ -134,21 +134,25 @@ public:
         virtual void addLayers() = 0;
 
         //- final mesh-quality optimisation (surface untangling, mesh
-        //- smoothing, etc.) - not itself a layer-adding operation, so the
-        //- caller runs this even when addLayers is disabled, instead of
-        //- silently skipping mesh cleanup along with the layers.
-        //- addLayers() also calls this itself as part of its own sequence
-        //- when layers are actually added, in the same relative order as
-        //- before this method existed. layersExist must reflect whether
-        //- boundary layer cells actually exist in the mesh right now -
-        //- some of the optimisation performed here assumes they do (e.g.
-        //- refining/smoothing the layer itself) and will fatal if asked
-        //- to run against a mesh that has none
+        //- smoothing, etc.) - called by snap() right after it inserts the
+        //- single geometry-adapted buffer boundary layer, so snap()'s own
+        //- output is already good quality (matching snappyHexMesh's own
+        //- snap/addLayers split, where a stage's written mesh is always
+        //- fully valid); addLayers() only calls this itself if snap()
+        //- didn't already (e.g. a staged workflow reading an unoptimised
+        //- buffer layer back from an earlier invocation). layersExist
+        //- must reflect whether boundary layer cells actually exist in
+        //- the mesh right now - some of the optimisation performed here
+        //- assumes they do (e.g. refining/smoothing the layer itself) and
+        //- will fatal if asked to run against a mesh that has none
         virtual void optimiseMesh(const bool layersExist) = 0;
 
-        //- renumber the mesh and apply boundary renaming - always run,
-        //- regardless of which stages above were selected
-        virtual void finalise() = 0;
+        //- renumber the mesh - the caller runs this before every write, no
+        //- matter which stage it is: every written mesh (e.g. an
+        //- intermediate -noOverwrite stage) is a complete, real mesh
+        //- someone may inspect or use directly, not just the final one, so
+        //- every write should be well-formed, not just the last
+        virtual void renumberMesh() = 0;
 
         //- convert the generated mesh into a Foam::polyMesh identified by
         //- the given IOobject (region/instance/local all taken from it) -

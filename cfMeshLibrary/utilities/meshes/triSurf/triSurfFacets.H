@@ -83,10 +83,8 @@ protected:
 
         //- geometricType of each pre-split patch, keyed by its
         //- (pre-split) name; empty if this surface was not produced by
-        //- a split. Consulted by renameBoundaryPatches to default-rename
-        //- every split patch back to its original name/type when the
-        //- user hasn't configured a renameBoundary entry of their own
-        //- for that original patch.
+        //- a split. Consulted by renameBoundaryPatches to collapse
+        //- every split patch back to its original name/type.
         HashTable<word> origPatchTypes_;
 
 

@@ -111,11 +111,12 @@ class cartesian2DMeshGenerator
         //- refine boundary layers
         void refBoundaryLayers();
 
-        //- replace boundaries
+        //- collapse feature-edge-split boundary patches back to their
+        //- pre-split name/type
         void replaceBoundaries();
 
-        //- renumber the mesh
-        void renumberMesh();
+        //- apply the user's renameBoundary rename/merge, if configured
+        void renamePatches();
 
         //- Disallow default bitwise copy construct
         cartesian2DMeshGenerator(const cartesian2DMeshGenerator&);
@@ -160,8 +161,8 @@ public:
         //- final mesh-quality optimisation
         void optimiseMesh(const bool layersExist) override;
 
-        //- renumber the mesh and apply boundary renaming
-        void finalise() override;
+        //- renumber the mesh
+        void renumberMesh() override;
 
         //- convert the generated mesh into a Foam::polyMesh
         autoPtr<polyMesh> generatePolyMesh(const IOobject& io) const override;
