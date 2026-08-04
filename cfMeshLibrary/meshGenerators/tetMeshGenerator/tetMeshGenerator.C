@@ -79,24 +79,35 @@ void Foam::Module::tetMeshGenerator::surfacePreparation()
     // such that there is only one boundary face per cell
     // It also checks topology of cells after morphing is performed
 
-    // which disconnected region to keep if the surface encloses more
-    // than one - the region containing insidePoint if given (resolved
-    // into the same modified space anisotropicSources may already have
-    // put the mesh into), otherwise the region with the most cells
-    point insidePoint;
-    const bool haveInsidePoint =
-        meshDict_.readIfPresent("insidePoint", insidePoint);
+    // which disconnected region(s) to keep if the surface encloses more
+    // than one - the union of regions containing insidePoints if given
+    // (resolved into the same modified space anisotropicSources may
+    // already have put the mesh into), otherwise the region with the
+    // most cells
+    pointField insidePoints;
+    if (!meshDict_.readIfPresent("insidePoints", insidePoints))
+    {
+        point singleInsidePoint;
+        if (meshDict_.readIfPresent("insidePoint", singleInsidePoint))
+        {
+            insidePoints.setSize(1);
+            insidePoints[0] = singleInsidePoint;
+        }
+    }
 
-    if (haveInsidePoint)
+    if (insidePoints.size())
     {
         const dictionary& anisotropicSourcesDict =
             meshDict_.subOrEmptyDict("anisotropicSources");
 
         if (!anisotropicSourcesDict.empty())
         {
-            insidePoint =
-                coordinateModifier(anisotropicSourcesDict)
-               .modifiedPoint(insidePoint);
+            coordinateModifier cModifier(anisotropicSourcesDict);
+
+            forAll(insidePoints, i)
+            {
+                insidePoints[i] = cModifier.modifiedPoint(insidePoints[i]);
+            }
         }
     }
 
@@ -106,10 +117,7 @@ void Foam::Module::tetMeshGenerator::surfacePreparation()
         cmPtr->morphMesh();
         deleteDemandDrivenData(cmPtr);
     }
-    while
-    (
-        topologicalCleaner(mesh_).cleanTopology(haveInsidePoint, insidePoint)
-    );
+    while (topologicalCleaner(mesh_).cleanTopology(insidePoints, *octreePtr_));
 }
 
 

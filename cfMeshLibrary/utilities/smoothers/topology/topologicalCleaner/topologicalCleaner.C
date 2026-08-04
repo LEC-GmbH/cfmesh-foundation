@@ -32,6 +32,7 @@ License
 #include "topologicalCleaner.H"
 #include "decomposeCells.H"
 #include "checkCellConnectionsOverFaces.H"
+#include "meshOctree.H"
 #include "meshSurfaceEngine.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -65,8 +66,8 @@ Foam::Module::topologicalCleaner::topologicalCleaner
 
 bool Foam::Module::topologicalCleaner::cleanTopology
 (
-    const bool haveInsidePoint,
-    const point& insidePoint
+    const pointField& insidePoints,
+    const meshOctree& octree
 )
 {
     checkInvalidConnectionsForVerticesCells();
@@ -85,8 +86,8 @@ bool Foam::Module::topologicalCleaner::cleanTopology
     (
         checkCellConnectionsOverFaces(mesh_).checkCellGroups
         (
-            haveInsidePoint,
-            insidePoint
+            insidePoints,
+            octree
         )
     )
     {

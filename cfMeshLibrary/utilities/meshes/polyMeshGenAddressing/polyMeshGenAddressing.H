@@ -48,6 +48,7 @@ SourceFiles
     polyMeshGenAddressingCellCentresAndVols.C
     polyMeshGenAddressingFaceCentresAndAreas.C
     polyMeshGenAddressingUpdateGeometry.C
+    polyMeshGenAddressingFindCell.C
 
 \*---------------------------------------------------------------------------*/
 
@@ -60,6 +61,7 @@ SourceFiles
 #include "HashSet.H"
 #include "Map.H"
 #include "labelListListOps.H"
+#include "pointField.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -67,6 +69,9 @@ namespace Foam
 {
 namespace Module
 {
+
+// Forward declarations
+class meshOctree;
 
 /*---------------------------------------------------------------------------*\
                     Class polyMeshGenAddressing Declaration
@@ -202,6 +207,14 @@ class polyMeshGenAddressing
         void calcEdgeVectors() const;
 
 
+    // Point-location calculations
+
+        //- is p inside cell cellI? Tests each of the cell's tets (formed
+        //- by fanning every face into triangles around its own centre,
+        //- then pairing each triangle with the cell centre)
+        bool pointInCell(const label cellI, const point& p) const;
+
+
     // Disallow bitwise construct
 
         //- Default constructor
@@ -254,6 +267,26 @@ public:
             const vectorField& faceCentres() const;
             const scalarField& cellVolumes() const;
             const vectorField& faceAreas() const;
+
+
+        // Point location
+
+            //- index of the cell containing p, or -1 if p is not inside
+            //- any cell of this mesh. Plain exhaustive scan - use
+            //- findCells() below instead when an octree is available
+            //- and there is more than a handful of points to resolve
+            label findCell(const point& p) const;
+
+            //- as findCell(), for every point in points at once,
+            //- accelerated using octree to narrow each point down to
+            //- the handful of cells that actually share its octree leaf
+            //- before falling back to an exhaustive scan (only reached
+            //- if that narrowing fails to find a match)
+            labelList findCells
+            (
+                const pointField& points,
+                const meshOctree& octree
+            ) const;
 
 
     //  Storage management

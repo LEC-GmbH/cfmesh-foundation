@@ -41,7 +41,7 @@ SourceFiles
 #define checkCellConnectionsOverFaces_H
 
 #include "polyMeshGenModifier.H"
-#include "point.H"
+#include "pointField.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -49,6 +49,9 @@ namespace Foam
 {
 namespace Module
 {
+
+// Forward declarations
+class meshOctree;
 
 /*---------------------------------------------------------------------------*\
                 Class checkCellConnectionsOverFaces Declaration
@@ -95,14 +98,17 @@ public:
     // Member Functions
 
         //- check if all cells are connected as a single domain.
-        //- If haveInsidePoint, the group containing the cell whose centre
-        //- is nearest to insidePoint is kept; otherwise the group with
-        //- the most cells is kept, as before.
+        //- If insidePoints is non-empty, the union of groups containing
+        //- the cell which actually contains each point is kept
+        //- (FatalError if any point is not inside any cell) - octree is
+        //- used to accelerate that resolution, see
+        //- polyMeshGenAddressing::findCells(); otherwise the group with
+        //- the most cells is kept, as before, and octree is unused.
         //- return true if the mesh has been changed
         bool checkCellGroups
         (
-            const bool haveInsidePoint = false,
-            const point& insidePoint = point::zero
+            const pointField& insidePoints,
+            const meshOctree& octree
         );
 };
 

@@ -35,6 +35,8 @@ License
 
 #include "helperFunctions.H"
 #include "polyMeshGenAddressing.H"
+#include "meshOctree.H"
+#include "boundBox.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -152,8 +154,8 @@ Foam::Module::checkCellConnectionsOverFaces::checkCellConnectionsOverFaces
 
 bool Foam::Module::checkCellConnectionsOverFaces::checkCellGroups
 (
-    const bool haveInsidePoint,
-    const point& insidePoint
+    const pointField& insidePoints,
+    const meshOctree& octree
 )
 {
     if (nGroups_ == 1)
@@ -163,29 +165,30 @@ bool Foam::Module::checkCellConnectionsOverFaces::checkCellGroups
 
     Warning << "Mesh has " << nGroups_ << " unconnected regions" << endl;
 
-    label keepGroup(-1);
+    labelHashSet keepGroups;
 
-    if (haveInsidePoint)
+    if (insidePoints.size())
     {
-        // keep the group containing the cell whose centre is nearest
-        // to insidePoint
-        const vectorField& cellCentres = mesh_.addressingData().cellCentres();
+        // keep the union of groups containing the cell that actually
+        // contains each insidePoint
+        const labelList resolvedCells =
+            mesh_.addressingData().findCells(insidePoints, octree);
 
-        label nearestCell(-1);
-        scalar nearestDistSqr(GREAT);
-
-        forAll(cellCentres, cellI)
+        forAll(insidePoints, pI)
         {
-            const scalar distSqr = magSqr(cellCentres[cellI] - insidePoint);
+            const label cellI = resolvedCells[pI];
 
-            if (distSqr < nearestDistSqr)
+            if (cellI == -1)
             {
-                nearestDistSqr = distSqr;
-                nearestCell = cellI;
+                FatalErrorInFunction
+                    << "insidePoint " << insidePoints[pI]
+                    << " is not inside the mesh." << nl
+                    << "Mesh bounding box: " << boundBox(mesh_.points())
+                    << exit(FatalError);
             }
-        }
 
-        keepGroup = cellGroup_[nearestCell];
+            keepGroups.insert(cellGroup_[cellI]);
+        }
     }
     else
     {
@@ -197,6 +200,7 @@ bool Foam::Module::checkCellConnectionsOverFaces::checkCellGroups
             ++nCellsInGroup[cellGroup_[cI]];
         }
 
+        label keepGroup(-1);
         label maxNumCells(-1);
         forAll(nCellsInGroup, groupI)
         {
@@ -206,16 +210,30 @@ bool Foam::Module::checkCellConnectionsOverFaces::checkCellGroups
                 keepGroup = groupI;
             }
         }
+
+        keepGroups.insert(keepGroup);
     }
 
-    // remove cells which are not in the group which shall be kept
+    // remove cells which are not in a group which shall be kept. Keeping
+    // more than one group (multiple insidePoints resolving to different
+    // groups) is a legitimate, stable end state - nGroups_ > 1 no longer
+    // implies more cells still need removing, so whether anything was
+    // actually marked for removal (not just whether nGroups_ > 1) is
+    // what the caller's do-while(changed) loop needs to terminate
     boolList removeCell(mesh_.cells().size(), false);
+    bool anyRemoved(false);
     forAll(cellGroup_, cellI)
     {
-        if (cellGroup_[cellI] != keepGroup)
+        if (!keepGroups.found(cellGroup_[cellI]))
         {
             removeCell[cellI] = true;
+            anyRemoved = true;
         }
+    }
+
+    if (!anyRemoved)
+    {
+        return false;
     }
 
     polyMeshGenModifier(mesh_).removeCells(removeCell);
