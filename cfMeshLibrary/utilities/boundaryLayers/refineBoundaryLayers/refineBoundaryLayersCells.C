@@ -351,6 +351,152 @@ determineFacesInDirections()
 
 
 void Foam::Module::refineBoundaryLayers::refineEdgeHexCell::
+computeCellPoints()
+{
+    const cell& c = bndLayers_.mesh_.cells()[cellI_];
+
+    bndLayers_.sortFacePoints
+    (
+        c[faceInDirection_[0]],
+        cellPoints_[0],
+        faceOrientation_[0]
+    );
+    bndLayers_.sortFacePoints
+    (
+        c[faceInDirection_[1]],
+        cellPoints_[1],
+        faceOrientation_[1]
+    );
+}
+
+
+void Foam::Module::refineBoundaryLayers::refineEdgeHexCell::
+repairUndersizedCrossSplitFaces()
+{
+    const cell& c = bndLayers_.mesh_.cells()[cellI_];
+    labelListList2D& facesFromFace = bndLayers_.facesFromFace_;
+    DynamicList<DynamicList<label>>& newFaces = bndLayers_.newFaces_;
+
+    auto isValidQuad = [](const DynamicList<label>& mf)
+    {
+        return
+            (mf[0] != mf[1]) && (mf[0] != mf[2]) && (mf[0] != mf[3])
+         && (mf[1] != mf[2]) && (mf[1] != mf[3]) && (mf[2] != mf[3]);
+    };
+
+    // append the missing sub-faces for one primary boundary face
+    // (faceInDirection_[dirIdx]) directly to facesFromFace_/newFaces_ -
+    // the exact same registration path generateNewFaces() itself uses
+    // for a face it successfully split, so every later consumer
+    // (populateExistingFaces() on this same cell, and crucially
+    // generateNewCells()'s own boundary-patch/face-numbering pass,
+    // which only ever walks facesFromFace_ to find a boundary face's
+    // sub-faces - see its "store new boundary faces" loop) treats these
+    // exactly like a normal split, rather than the earlier attempt's
+    // route (returning them only via cellsFromCell_), which left them
+    // registered as if they were new *internal* faces instead - a real,
+    // separate mesh-numbering corruption (missing neighbour) that
+    // crashed a later, unrelated pass. See the task file for the full
+    // finding.
+    auto repairSide = [&](const label dirIdx, const bool alongI)
+    {
+        const label faceI = c[faceInDirection_[dirIdx]];
+        const label nNeeded = alongI ? nLayersI_ : nLayersJ_;
+
+        // the pre-existing (undersized) split, if any - its newFaces_
+        // slots are reused in place below rather than discarded, since
+        // an orphaned (unreferenced-by-any-facesFromFace_-row, but still
+        // counted in newFaces_.size()) slot would silently desync the
+        // "copy newFaces to the mesh" pass further down in
+        // generateNewCells(), which walks facesFromFace_/[numFacesBefore,
+        // newFaces_.size()) to decide how many faces to actually copy -
+        // any slot visited by neither leaves the tail of the mesh's real
+        // face list as degenerate (zero-point) faces, which segfaults
+        // the very next addressing calculation (face centres/areas) that
+        // blindly reads point 0 of every face.
+        const DynamicList<label> haveIndices = facesFromFace[faceI];
+
+        if (haveIndices.size() == nNeeded)
+        {
+            return;
+        }
+
+        const label fixedCoord =
+            (dirIdx == 2) ? 0 : (dirIdx == 3) ? nLayersJ_
+          : (dirIdx == 4) ? 0 : nLayersI_;
+
+        DynamicList<label> newSubFaces;
+
+        for (label k = 0; k < nNeeded; ++k)
+        {
+            DynamicList<label> mf;
+            mf.setSize(4);
+
+            if (alongI)
+            {
+                mf[0] = cellPoints_[0][k][fixedCoord];
+                mf[1] = cellPoints_[1][k][fixedCoord];
+                mf[2] = cellPoints_[1][k + 1][fixedCoord];
+                mf[3] = cellPoints_[0][k + 1][fixedCoord];
+            }
+            else
+            {
+                mf[0] = cellPoints_[0][fixedCoord][k];
+                mf[1] = cellPoints_[0][fixedCoord][k + 1];
+                mf[2] = cellPoints_[1][fixedCoord][k + 1];
+                mf[3] = cellPoints_[1][fixedCoord][k];
+            }
+
+            if (!isValidQuad(mf))
+            {
+                // a genuinely malformed local input surface can leave
+                // cellPoints_ with coincident points at this grid
+                // position - leave facesFromFace_ exactly as it was
+                // (the original, silently-incomplete behaviour) rather
+                // than register a degenerate face; strictly no worse
+                // than before this fix for that one slot.
+                return;
+            }
+
+            // faceInDirection_[2]/[4] (j=0/i=0) need the reversed
+            // winding to point outward, matching populateExistingFaces()'s
+            // own (already-correct, unmodified) use of the equivalent
+            // in-range sub-faces for these two sides
+            if ((dirIdx == 2) || (dirIdx == 4))
+            {
+                mf = help::reverseFace(mf);
+            }
+
+            if (k < haveIndices.size())
+            {
+                // reuse the existing slot's own index - only its
+                // *storage*, not its (now-superseded) geometry - so
+                // every newFaces_ index that ever existed stays
+                // referenced by exactly one facesFromFace_ row
+                newFaces[haveIndices[k]] = mf;
+                newSubFaces.append(haveIndices[k]);
+            }
+            else
+            {
+                newSubFaces.append(newFaces.size());
+                newFaces.append(mf);
+            }
+        }
+
+        if (newSubFaces.size() == nNeeded)
+        {
+            facesFromFace[faceI] = newSubFaces;
+        }
+    };
+
+    repairSide(2, true);
+    repairSide(3, true);
+    repairSide(4, false);
+    repairSide(5, false);
+}
+
+
+void Foam::Module::refineBoundaryLayers::refineEdgeHexCell::
 populateExistingFaces()
 {
     const cell& c = bndLayers_.mesh_.cells()[cellI_];
@@ -416,25 +562,7 @@ populateExistingFaces()
 void Foam::Module::refineBoundaryLayers::refineEdgeHexCell::
 generateMissingFaces()
 {
-    const cell& c = bndLayers_.mesh_.cells()[cellI_];
-
-    // fill up the matrix of points for this cell
-    // the matrix is used for generation of new cells
-    FixedList<labelListList2D, 2> cellPoints;
-
-    // fill in the data for a cross-split faces
-    bndLayers_.sortFacePoints
-    (
-        c[faceInDirection_[0]],
-        cellPoints[0],
-        faceOrientation_[0]
-    );
-    bndLayers_.sortFacePoints
-    (
-        c[faceInDirection_[1]],
-        cellPoints[1],
-        faceOrientation_[1]
-    );
+    const FixedList<labelListList2D, 2>& cellPoints = cellPoints_;
 
     // generate new internal faces for this cell
     // generate faces with normal in the i direction
@@ -527,7 +655,8 @@ generateMissingFaces()
 Foam::Module::refineBoundaryLayers::refineEdgeHexCell::refineEdgeHexCell
 (
     const label cellI,
-    const refineBoundaryLayers& ref
+    refineBoundaryLayers& ref,
+    const bool repairOnly
 )
 :
     cellI_(cellI),
@@ -536,6 +665,15 @@ Foam::Module::refineBoundaryLayers::refineEdgeHexCell::refineEdgeHexCell
     bndLayers_(ref)
 {
     determineFacesInDirections();
+
+    computeCellPoints();
+
+    if (repairOnly)
+    {
+        repairUndersizedCrossSplitFaces();
+
+        return;
+    }
 
     populateExistingFaces();
 
@@ -1135,6 +1273,26 @@ void Foam::Module::refineBoundaryLayers::generateNewCells()
         if (nLayersAtBndFace_[bfI] > 1)
         {
             ++refType[cellI];
+        }
+    }
+
+    // A refType==2 cell's two primary boundary faces each need to have
+    // been cross-split into the OTHER face's own layer count by
+    // generateNewFaces()'s boundary-face refinement pass - which can be
+    // skipped for a corner whose local input triangulation is malformed/
+    // self-intersecting (not a function of the dihedral angle between the two
+    // patches). Repair any such under-split face directly, before
+    // numFacesBefore/pointNewFaces below are captured, so every
+    // downstream consumer (this cell's own populateExistingFaces(), and
+    // the "store new boundary faces" pass later in this function) sees
+    // a properly and consistently split boundary face like any other,
+    // rather than silently leaving some of its sub-faces missing (open
+    // cells) as before this fix.
+    forAll(refType, cellI)
+    {
+        if (refType[cellI] == 2)
+        {
+            refineEdgeHexCell repairPass(cellI, *this, true);
         }
     }
 

@@ -231,8 +231,10 @@ class refineBoundaryLayers
                 //- container for new cells
                 List<DynamicList<DynamicList<label>>> cellsFromCell_;
 
-                //- const reference to the boundary layer class
-                const refineBoundaryLayers& bndLayers_;
+                //- reference to the boundary layer class - non-const
+                //- because repairUndersizedCrossSplitFaces() must be able
+                //- to append to its facesFromFace_/newFaces_
+                refineBoundaryLayers& bndLayers_;
 
                 //- faces sorted into directions of a hex shape
                 FixedList<label, 6> faceInDirection_;
@@ -251,6 +253,22 @@ class refineBoundaryLayers
                 //- populate faceInDirection_ and wrongFaceOrientation_
                 void determineFacesInDirections();
 
+                //- populate cellPoints_ from the two cross-split
+                //- (faceInDirection_[0]/[1]) faces
+                void computeCellPoints();
+
+                //- a primary boundary face (faceInDirection_[2..5]) can
+                //- have been left un-split in the cross direction by
+                //- generateNewFaces()'s boundary-face refinement pass
+                //- (e.g. at a corner whose local input triangulation is
+                //- malformed/self-intersecting) - directly append the
+                //- missing sub-faces to bndLayers_.facesFromFace_/
+                //- newFaces_ so every downstream consumer (this cell's
+                //- own populateExistingFaces() included) sees a properly
+                //- and consistently split boundary face, rather than
+                //- silently leaving some grid slots without this face.
+                void repairUndersizedCrossSplitFaces();
+
                 //- populate new cells with new faces generated from already
                 //- existing faces
                 void populateExistingFaces();
@@ -260,11 +278,18 @@ class refineBoundaryLayers
 
         public:
 
-            //- construct from cell label and the refineBoundaryLayers
+            //- construct from cell label and the refineBoundaryLayers.
+            //- repairOnly restricts the constructor to
+            //- determineFacesInDirections()/repairUndersizedCrossSplitFaces()
+            //- only (used in an early pass over every refType==2 cell,
+            //- before generateNewCells()'s main dispatch loop captures
+            //- its own point-to-face addressing) - cellsFromCell_ is left
+            //- empty and newCells() must not be called on such an object.
             refineEdgeHexCell
             (
                 const label cellI,
-                const refineBoundaryLayers& ref
+                refineBoundaryLayers& ref,
+                const bool repairOnly = false
             );
 
 
