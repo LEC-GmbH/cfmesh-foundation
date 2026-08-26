@@ -1,22 +1,14 @@
 #!/bin/sh
 cd ${0%/*} || exit 1    # Run from this directory
 
+[ -n "$WM_PROJECT_DIR" ] || {
+    echo "Allwmake error: WM_PROJECT_DIR not set"
+    echo "    Check the OpenFOAM entries in your dot-files and source them."
+    exit 1
+}
+
 # Parse arguments for library compilation
-. ../wmake/scripts/AllwmakeParseArguments
-
-# Perform various checks
-wmakeCheckPwd "$WM_PROJECT_DIR/cfmesh" || {
-    echo "Allwmake error: Current directory is not \$WM_PROJECT_DIR/cfmesh"
-    echo "    The environment variables are inconsistent with the installation."
-    echo "    Check the OpenFOAM entries in your dot-files and source them."
-    exit 1
-}
-
-[ -n "$FOAM_EXT_LIBBIN" ] || {
-    echo "Allwmake error: FOAM_EXT_LIBBIN not set"
-    echo "    Check the OpenFOAM entries in your dot-files and source them."
-    exit 1
-}
+. $WM_PROJECT_DIR/wmake/scripts/AllwmakeParseArguments
 
 wmake $targetType cfMeshLibrary
 wmake -all $targetType utilities

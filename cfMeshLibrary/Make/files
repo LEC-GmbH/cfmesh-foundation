@@ -424,4 +424,4 @@ $(voronoiMeshGenerator)/voronoiMeshGenerator.C
 $(writeAsFPMA)/writeMeshFPMA.C
 $(writeAsFPMA)/fpmaMesh.C
 
-LIB = $(FOAM_LIBBIN)/libcfMeshLibrary
+LIB = $(FOAM_SITE_LIBBIN)/libcfMeshLibrary

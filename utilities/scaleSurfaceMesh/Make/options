@@ -8,6 +8,7 @@ EXE_INC = \
     -I../../cfMeshLibrary/lnInclude
 
 EXE_LIBS = \
+    -L$(FOAM_SITE_LIBBIN) \
     -fopenmp \
     -lfileFormats \
     -lsurfMesh \
