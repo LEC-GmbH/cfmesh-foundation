@@ -36,6 +36,10 @@ cfMesh is a library for mesh generation built on OpenFOAM.
   bin to PATH for the scripts. The sections below are those of the original
   cfMesh.
 
+  The work of LEC GmbH in this repository was done with the support of an
+  AI coding assistant (Claude Code by Anthropic). AGENTS.md holds the
+  guidance for such assistants.
+
 * License
   cfMesh is free software; you can redistribute it and/or modify it under the
   terms of the GNU General Public License as published by the Free Software
