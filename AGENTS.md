@@ -4,7 +4,7 @@ Guidance for coding agents working in this repository.
 
 ## What this is
 
-cfMesh for the OpenFOAM of the OpenFOAM Foundation (OpenFOAM-14), maintained
+cfMesh for Foundation OpenFOAM (version 14), maintained
 by LEC GmbH. It starts from https://gitlab.com/openfoam/community/cfmesh;
 `README.md` lists the differences.
 
@@ -22,7 +22,7 @@ by LEC GmbH. It starts from https://gitlab.com/openfoam/community/cfmesh;
 
 ## Build and test
 
-With the OpenFOAM-14 environment set:
+With the environment of Foundation OpenFOAM-14 set:
 
     ./Allwmake
 

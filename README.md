@@ -1,8 +1,8 @@
-# cfMesh for OpenFOAM-14
+# cfMesh for Foundation OpenFOAM
 
-cfMesh is a library for mesh generation built on OpenFOAM. This repository is
-cfMesh for the OpenFOAM of the OpenFOAM Foundation (OpenFOAM-14), maintained
-by LEC GmbH. It starts from
+cfMesh is a library for mesh generation. This repository is cfMesh for
+Foundation OpenFOAM (the OpenFOAM of the OpenFOAM Foundation, version 14),
+maintained by LEC GmbH. It starts from
 [cfMesh](https://gitlab.com/openfoam/community/cfmesh).
 
 [`README.original`](README.original) is the README of the upstream cfMesh,
@@ -20,11 +20,11 @@ this repository.
 | `objectRefinements`, `type surface` | Refines the cells inside a closed surface. |
 | `localRefinement`, `distLevels` and `distCellSizes` | Several refinement shells around one patch. |
 | `meshDict` | Settings that had a keyword and a dictionary form are dictionaries only. |
-| Code | cfMesh's own containers are replaced by OpenFOAM's, and utilities that duplicate OpenFOAM tools are removed. |
+| Code | cfMesh's own containers are replaced by those of Foundation OpenFOAM, and utilities that duplicate its tools are removed. |
 
 ## Building
 
-With the OpenFOAM-14 environment set:
+With the environment of Foundation OpenFOAM-14 set:
 
 ```sh
 ./Allwmake
@@ -48,7 +48,7 @@ The user guide of the original cfMesh is in [`userGuide`](userGuide).
 ## Bug reports and contributions
 
 - **Bug reports** go to the [issue tracker](../../issues) of this repository.
-  A report that can be reproduced has the OpenFOAM version, `meshDict`, the
+  A report that can be reproduced has the Foundation OpenFOAM version, `meshDict`, the
   surface file and the log of the mesher.
 - **Pull requests** are welcome. [`AGENTS.md`](AGENTS.md) describes the
   layout of the code and the conventions for code and commits; they hold for
@@ -67,3 +67,7 @@ cfMesh is the work of Franjo Juretic, Philippose Rajan and Ivor Clifford
 The work of LEC GmbH in this repository was done with the support of an AI
 coding assistant (Claude Code by Anthropic). `AGENTS.md` holds the guidance
 for such assistants.
+
+This offering is not approved or endorsed by the OpenFOAM Foundation or by
+OpenCFD Limited, the producer of the OpenFOAM software and owner of the
+OPENFOAM® trade mark.
