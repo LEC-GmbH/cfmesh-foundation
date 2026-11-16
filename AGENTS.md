@@ -6,7 +6,7 @@ Guidance for coding agents working in this repository.
 
 cfMesh for the OpenFOAM of the OpenFOAM Foundation (OpenFOAM-14), maintained
 by LEC GmbH. It starts from https://gitlab.com/openfoam/community/cfmesh;
-`README` lists the differences.
+`README.md` lists the differences.
 
 ## Layout
 
@@ -49,4 +49,4 @@ code (`tutorials/Allrun` runs all of them) and check the result with
 - One change per commit; the body says what was wrong and what the code
   does now.
 - A change in behaviour or a new keyword of `meshDict` is described in
-  `README`.
+  `README.md`.

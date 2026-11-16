@@ -8,38 +8,6 @@
 
 cfMesh is a library for mesh generation built on OpenFOAM.
 
-* This repository
-  cfMesh for the OpenFOAM of the OpenFOAM Foundation (OpenFOAM-14), maintained
-  by LEC GmbH. It starts from https://gitlab.com/openfoam/community/cfmesh and
-  differs from it as follows:
-
-  + Parallelisation is shared-memory (OpenMP) only; the MPI layer is removed.
-  + One executable, cfMesh, runs all generators. The generator is selected
-    with -mode or meshMode in meshDict (cartesian, cartesian2D, tet,
-    polyhedral); the scripts in bin (cartesianMesh, cartesian2DMesh, tetMesh,
-    pMesh) call it.
-  + The stages follow snappyHexMesh: castellatedMesh, snap and addLayers are
-    switches in meshDict, and the mesh is written after each stage. -region,
-    -mesh, -dict, -overwrite and -noOverwrite are supported.
-  + insidePoints selects which disconnected regions of the surface are meshed.
-  + The objectRefinement type surface refines the cells inside a closed
-    surface.
-  + distLevels and distCellSizes in localRefinement give several refinement
-    shells around one patch.
-  + Settings that had a keyword and a dictionary form in meshDict are
-    dictionaries only.
-  + cfMesh's own containers are replaced by OpenFOAM's, and utilities that
-    duplicate OpenFOAM tools are removed.
-
-  To build, set the OpenFOAM-14 environment and run ./Allwmake. The library
-  and the utilities install to $FOAM_SITE_LIBBIN and $FOAM_SITE_APPBIN; add
-  bin to PATH for the scripts. The sections below are those of the original
-  cfMesh.
-
-  The work of LEC GmbH in this repository was done with the support of an
-  AI coding assistant (Claude Code by Anthropic). AGENTS.md holds the
-  guidance for such assistants.
-
 * License
   cfMesh is free software; you can redistribute it and/or modify it under the
   terms of the GNU General Public License as published by the Free Software
